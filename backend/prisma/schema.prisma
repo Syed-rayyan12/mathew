@@ -1,0 +1,250 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String      @id @default(cuid()) @db.VarChar(15)
+  email       String      @unique
+  password    String
+  firstName   String
+  lastName    String
+  phone       String?
+  address     String?
+  role        Role        @default(PARENT)
+  avatar      String?
+  isVerified  Boolean     @default(false)
+  isActive    Boolean     @default(false)
+  isOnline    Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  nurseries   Nursery[]   @relation("NurseryOwner")
+  groups      Group[]     @relation("GroupOwner")
+  reviews     Review[]
+  shortlist   Shortlist[]
+  nurseryName String?
+  @@map("users")
+}
+
+model Group {
+  id          String      @id @default(cuid()) @db.VarChar(15)
+  name        String
+  slug        String      @unique
+  email       String?
+  phone       String?
+  firstName   String?
+  lastName    String?
+  address     String      @default("")
+  city        String      @default("")
+  postcode    String      @default("")
+  aboutUs     String?
+  description String?
+  logo        String?
+  cardImage   String?
+  images      String[]
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  ownerId     String      @db.VarChar(15)
+  owner       User        @relation("GroupOwner", fields: [ownerId], references: [id])
+  nurseries   Nursery[]   @relation("GroupNurseries")
+  
+  @@map("groups")
+}
+
+model Nursery {
+  id           String        @id @default(cuid()) @db.VarChar(15)
+  name         String
+  slug         String        @unique
+  description  String?
+  address      String
+  city         String
+  postcode     String
+  phone        String?
+  email        String?
+  website      String?
+  logo         String?
+  cardImage    String?
+  images       String[]
+  reviewCount  Int           @default(0)
+  isVerified   Boolean       @default(false)
+  isApproved   Boolean       @default(false)
+  isActive     Boolean       @default(true)
+  openingHours Json?
+  ageRange     String?
+  capacity     Int?
+  fees         Json?
+  facilities   String[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  ownerId      String        @db.VarChar(15)
+  groupId      String?       @db.VarChar(15)
+  aboutUs      String?
+  philosophy   String?
+  videoUrl     String?
+  group        Group?        @relation("GroupNurseries", fields: [groupId], references: [id], onDelete: SetNull)
+  owner        User          @relation("NurseryOwner", fields: [ownerId], references: [id])
+  reviews      Review[]
+  shortlists   Shortlist[]
+
+  @@map("nurseries")
+}
+
+model Review {
+  id            String     @id @default(cuid()) @db.VarChar(15)
+  title         String?
+  content       String
+  isApproved    Boolean    @default(true)  // Auto-approved when created
+  isRejected    Boolean    @default(false) // Admin can reject reviews
+  rejectedAt    DateTime?
+  rejectionReason String?
+  reviewType    ReviewType @default(NURSERY) // Differentiate between group and nursery reviews
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  userId        String?    @db.VarChar(15)
+  nurseryId     String     @db.VarChar(15)
+  activities    Float?
+  care          Float?
+  cleanliness   Float?
+  connection    String?
+  email         String
+  facilities    Float?
+  firstName     String
+  food          Float?
+  initialsOnly  Boolean    @default(false)
+  isVerified    Boolean    @default(false)
+  lastName      String
+  learning      Float?
+  management    Float?
+  overallRating Float
+  resources     Float?
+  safeguarding  Float?
+  staff         Float?
+  telephone     String?
+  value         Float?
+  visitDate     DateTime?
+  nursery       Nursery    @relation(fields: [nurseryId], references: [id], onDelete: Cascade)
+  user          User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("reviews")
+}
+
+model Shortlist {
+  id        String   @id @default(cuid()) @db.VarChar(15)
+  createdAt DateTime @default(now())
+  userId    String   @db.VarChar(15)
+  nurseryId String   @db.VarChar(15)
+  nursery   Nursery  @relation(fields: [nurseryId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, nurseryId])
+  @@map("shortlists")
+}
+
+model Article {
+  id              String          @id @default(cuid()) @db.VarChar(15)
+  name            String
+  cardHeading     String
+  cardParagraph   String
+  slug            String          @unique
+  
+  // Slug page content - sections with heading and paragraph
+  sections        Json            // Array of {heading: string, paragraph: string}
+  
+  // List section
+  listHeading     String?
+  listItems       Json?           // Array of {heading: string, paragraph: string}
+  
+  // Tip section
+  tipText         String?
+  
+  // Final section
+  finalHeading    String?
+  finalParagraph  String?
+  
+  // Images
+  cardImage       String?
+  slugImage       String?
+  
+  // Publishing info
+  category        ArticleCategory
+  isPublished     Boolean         @default(true)
+  publishedAt     DateTime        @default(now())
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@map("articles")
+}
+
+model ContactSubmission {
+  id        String   @id @default(cuid()) @db.VarChar(15)
+  firstName String
+  lastName  String
+  email     String
+  phone     String?
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("contact_submissions")
+}
+
+model Subscription {
+  id        String   @id @default(cuid()) @db.VarChar(15)
+  name      String
+  price     Float
+  duration  Int
+  features  String[]
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("subscriptions")
+}
+
+enum Role {
+  ADMIN
+  NURSERY_OWNER
+  PARENT
+  USER
+}
+
+enum ArticleCategory {
+  CHILDCARE_TIPS
+  FUNDING_COSTS
+  ACTIVITIES_LEARNING
+  NURSERY_UPDATES
+}
+
+enum ReviewType {
+  NURSERY  // Review for individual nursery
+  GROUP    // Review for nursery group
+}
+
+
+model Notification {
+  id        String   @id @default(cuid())
+
+  title     String   @db.Text
+  message   String   @db.Text
+
+  entity    NotificationEntity
+  entityId  String
+
+  isRead    Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
+
+enum NotificationEntity {
+  USER
+  NURSERY
+  GROUP
+  REVIEW
+}

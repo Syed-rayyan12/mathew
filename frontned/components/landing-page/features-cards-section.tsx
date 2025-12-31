@@ -6,7 +6,7 @@ import { Star } from 'lucide-react';
 
 const features = [
     {
-        title: 'UK\'s most comprehensive <span class="text-secondary">nursery</span> directory ',
+        title: 'UK\'s most comprehensive  <span class="text-secondary">nursery</span> directory ',
         icon: '/images/icon-1.png',
         rating: 4.5,
         description: 'It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of content here, making it look like readable English.',

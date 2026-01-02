@@ -1,6 +1,7 @@
 
-import { Phone } from 'lucide-react'
+import {  Phone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 
 const AboutUsSection = () => {
     return (
@@ -39,11 +40,10 @@ Whether you’re a parent ready to find the right fit, or a nursery looking to g
 
                         {/* Read More Button */}
                         <div className="flex items-center gap-4">
-
-                            <Button className="bg-primary hover:bg-primary/90 text-white rounded-[6px] px-10 py-6">
+                            
+                            <Link href='/about' className='bg-primary hover:bg-primary/90 text-white rounded-[6px] px-10 py-6'>
                                 Read More
-                            </Button>
-
+                            </Link>
                             {/* Phone section */}
                             <div className="flex items-center gap-3 ">
                                     <Phone className="w-6 h-6 text-[]" />

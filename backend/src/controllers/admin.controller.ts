@@ -5,8 +5,8 @@ import { AuthRequest } from '../middleware';
 import { createNotification } from './notification.controller';
 
 // Fixed admin credentials
-const ADMIN_EMAIL = 'admin@mathewnursery.com';
-const ADMIN_PASSWORD = 'Admin@123';
+const ADMIN_EMAIL = 'admin@mathew.com';
+const ADMIN_PASSWORD = 'Admin@123456';
 
 // Admin Signin
 export const adminSignin = async (
@@ -843,7 +843,7 @@ export const getMonthlyUserStats = async (
     }
 
     // Count users per month
-    users.forEach((user) => {
+    users.forEach((user: any) => {
       const monthKey = new Date(user.createdAt).toLocaleDateString('en-US', { 
         year: 'numeric', 
         month: 'short' 
@@ -917,7 +917,7 @@ export const getMonthlyReviewStats = async (
     }
 
     // Count reviews per month
-    reviews.forEach((review) => {
+    reviews.forEach((review: any) => {
       const monthKey = new Date(review.createdAt).toLocaleDateString('en-US', { 
         year: 'numeric', 
         month: 'short' 
@@ -943,7 +943,7 @@ export const getMonthlyReviewStats = async (
       data: {
         monthlyReviews: chartData,
         totalReviews: reviews.length,
-        totalApproved: reviews.filter(r => r.isApproved).length,
+        totalApproved: reviews.filter((r: any) => r.isApproved).length,
       },
     });
   } catch (error) {

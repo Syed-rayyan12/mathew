@@ -1,7 +1,13 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DATABASE_PUBLIC_URL || process.env.DATABASE_URL,
+    },
+  },
+});
 
 async function createAdmin() {
   try {

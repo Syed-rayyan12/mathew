@@ -79,7 +79,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
       // Call backend logout API to update status
       const token = localStorage.getItem('accessToken');
       if (token) {
-        await fetch('http://localhost:5000/api/auth/logout', {
+        await fetch('https://mathew-production.up.railway.app/api/auth/logout', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,

@@ -334,7 +334,7 @@ export default function ReviewsOverview() {
                 <CardTitle className="text-xl font-bold font-sans text-foreground">
                   Recent Reviews
                 </CardTitle>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 break-words">
                   See the latest feedback from parents for {nursery.name}.
                 </p>
               </CardHeader>
@@ -346,7 +346,7 @@ export default function ReviewsOverview() {
                   currentReviewData.reviews.map((review) => (
                     <div
                       key={review.id}
-                      className="border rounded-lg p-4 flex flex-col gap-3 hover:bg-gray-50 transition"
+                      className="border rounded-lg p-4 flex flex-col gap-3 min-w-0 hover:bg-gray-50 transition"
                     >
                       <div className="flex justify-between items-center">
                         <div>
@@ -364,7 +364,7 @@ export default function ReviewsOverview() {
                       </div>
 
                       <RatingStars rating={review.overallRating} />
-                      <p className="text-sm text-gray-500">{review.content}</p>
+                      <p className="text-sm text-gray-500 min-w-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{review.content}</p>
 
                       {/* Action Buttons */}
                       <div className="flex gap-2 mt-2">

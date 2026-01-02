@@ -395,7 +395,7 @@ export default function NurseryReviewForm() {
                 name="review"
                 value={form.review}
                 onChange={handleChange}
-                className="border p-3 rounded-xl min-h-[150px]"
+                className="border p-3 rounded-xl whitespace-pre-wrap break-words [overflow-wrap:anywhere] min-h-[150px]"
                 placeholder="Please tell us about your experience (200–1000 characters)"
               ></textarea>
             </div>

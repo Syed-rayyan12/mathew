@@ -415,7 +415,7 @@ export default function NurseryDetailsPage() {
                             {review.connection && (
                               <h2 className="font-heading text-base md:text-lg lg:text-[22px] font-medium text-[#1F2937] mb-2 md:mb-3">{review.connection}</h2>
                             )}
-                            <p className="text-gray-600 font-sans text-sm md:text-base lg:text-[18px]">{review.content}</p>
+                            <p className="text-gray-600 font-sans text-sm md:text-base min-w-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] lg:text-[18px]">{review.content}</p>
                           </div>
                         );
                       })}

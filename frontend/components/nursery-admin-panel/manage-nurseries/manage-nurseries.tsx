@@ -29,7 +29,7 @@ const [debouncedSearch, setDebouncedSearch] = useState('');
     try {
       setLoading(true);
       const response = await adminService.getAllNurseries({
-        searchQuery,
+        searchQuery: debouncedSearch,
         sortBy,
         sortOrder,
         status: statusFilter,
@@ -46,14 +46,18 @@ const [debouncedSearch, setDebouncedSearch] = useState('');
     }
   };
 
+
   useEffect(() => {
-    fetchNurseries();
-    const timer = setTimeout(() => {
+  const timer = setTimeout(() => {
     setDebouncedSearch(searchQuery);
-  }, 500); // 500ms wait
+  }, 500);
 
   return () => clearTimeout(timer);
-  }, [searchQuery, statusFilter, sortBy, sortOrder]);
+}, [searchQuery]);
+
+  useEffect(() => {
+    fetchNurseries();
+  }, [debouncedSearch, statusFilter, sortBy, sortOrder]);
 
   // Add Nursery
   const handleAddNursery = (newNursery: any) => {

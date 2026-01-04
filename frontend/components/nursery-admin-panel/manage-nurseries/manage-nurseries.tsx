@@ -19,7 +19,7 @@ export default function ManageNurseries() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-
+const [debouncedSearch, setDebouncedSearch] = useState('');
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openViewModal, setOpenViewModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
@@ -48,6 +48,11 @@ export default function ManageNurseries() {
 
   useEffect(() => {
     fetchNurseries();
+    const timer = setTimeout(() => {
+    setDebouncedSearch(searchQuery);
+  }, 500); // 500ms wait
+
+  return () => clearTimeout(timer);
   }, [searchQuery, statusFilter, sortBy, sortOrder]);
 
   // Add Nursery

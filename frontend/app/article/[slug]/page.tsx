@@ -129,7 +129,7 @@ export default function ArticleDetailPage() {
                 </div>
                 <div className="relative px-24 max-lg:px-8 max-sm:px-4 -mt-40 max-sm:-mt-20 mb-20 z-10">
                     <div className="mx-auto p-6 max-sm:p-4 bg-white shadow-2xl rounded-2xl space-y-6 max-sm:space-y-4">
-                            <div className="w-30 max-sm:w-fit h-10 max-sm:h-8 px-4 rounded-2xl flex justify-center items-center bg-[#D5F7FF]">
+                            <div className="w-36 max-sm:w-fit h-10 max-sm:h-8 px-4 rounded-2xl flex justify-center items-center bg-[#D5F7FF]">
                                 <span className="text-sm max-sm:text-xs font-medium text-secondary">{getCategoryLabel(article.category)}</span>
                             </div>
 

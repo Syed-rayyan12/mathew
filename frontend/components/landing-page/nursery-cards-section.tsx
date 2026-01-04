@@ -171,7 +171,7 @@ const NurseryCardsSection = () => {
             <div className='flex justify-center items-center mt-44'>
                 <Link href="/nursery-group">
                     <Button className="mt-2 bg-primary hover:bg-transparent hover:text-primary border-2 transition-all duration-300 cursor-pointer border-primary text-white rounded-[6px] px-10 py-6">
-                        Search All Groups
+                        View All Groups
                     </Button>
                 </Link>
             </div>

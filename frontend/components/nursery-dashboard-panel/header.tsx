@@ -13,6 +13,7 @@ import {
 import { Bell, ClosedCaption, HatGlassesIcon, Search, X, Menu } from 'lucide-react';
 import { Separator } from '@/components/ui/separator'; // ✅ correct import
 import { Button } from '@/components/ui/button';
+import NotificationDropdown from '../nursery-admin-panel/notification-dropdown';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -128,7 +129,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
       {/* Right section */}
       <div className="flex items-center gap-4">
         {/* Notifications */}
-        <DropdownMenu>
+        {/* <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
            
@@ -217,7 +218,8 @@ const Header = ({ onMenuClick }: HeaderProps) => {
             </div>
              </div>
           </DropdownMenuContent>
-        </DropdownMenu>
+        </DropdownMenu> */}
+          <NotificationDropdown />
 
         {/* Profile Avatar */}
         <DropdownMenu>

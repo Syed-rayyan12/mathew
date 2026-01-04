@@ -41,13 +41,13 @@ Whether you’re a parent ready to find the right fit, or a nursery looking to g
                         {/* Read More Button */}
                         <div className="flex items-center gap-4">
                             
-                            <Link href='/about' className='bg-primary hover:bg-primary/90 text-white rounded-[6px] px-10 py-6'>
+                            <Link href='/about' className='bg-primary hover:bg-primary/90 text-white rounded-[6px] px-10 py-4'>
                                 Read More
                             </Link>
                             {/* Phone section */}
                             <div className="flex items-center gap-3 ">
                                     <Phone className="w-6 h-6 text-[]" />
-                                <span className="text-foreground font-medium text-[18px]  font-sans  font-normal">+1 (555) 123-4567</span>
+                                <span className="text-foreground font-medium text-[18px]  font-sans  font-normal">077700 900123</span>
                             </div>
                         </div>
                     </div>

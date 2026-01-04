@@ -103,11 +103,11 @@ export default function NurseryLoginPage() {
       if (response.ok && data.success) {
         // Store email, accessToken, and user details
         localStorage.setItem("accessToken", data.data.accessToken);
-        localStorage.setItem("email", data.data.email);
-        localStorage.setItem("firstName", data.data.firstName || "");
-        localStorage.setItem("lastName", data.data.lastName || "");
-        localStorage.setItem("phone", data.data.phone || "");
-        localStorage.setItem("nurseryName", data.data.nurseryName || "");
+        localStorage.setItem("email", data.data.user.email);
+        localStorage.setItem("firstName", data.data.user.firstName || "");
+        localStorage.setItem("lastName", data.data.user.lastName || "");
+        localStorage.setItem("phone", data.data.user.phone || "");
+        localStorage.setItem("nurseryName", data.data.user.nurseryName || "");
 
         toast.success("Login successful! Redirecting to settings...");
 

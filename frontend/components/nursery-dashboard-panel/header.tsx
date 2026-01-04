@@ -20,20 +20,35 @@ interface HeaderProps {
 }
 
 const Header = ({ onMenuClick }: HeaderProps) => {
-  const [ownerName, setOwnerName] = useState<string>('Nursery Owner');
-  const [nurseryEmail, setNurseryEmail] = useState<string>('');
+  const [ownerName, setOwnerName] = useState<string>('no');
+  const [nurseryEmail, setNurseryEmail] = useState<string>('no');
+  const [nurseryName, setNurseryName] = useState<string>('no');
   const [initials, setInitials] = useState<string>('NO');
   const [nurseryCount, setNurseryCount] = useState<number>(0);
 
   useEffect(() => {
-    // Load nursery data from localStorage
-    const storedEmail = localStorage.getItem('email', );
-    
-    if (storedEmail) {
-      setNurseryEmail(storedEmail);
+    // Load user data from localStorage
+    const storedEmail = localStorage.getItem('email') || 'no';
+    const storedFirstName = localStorage.getItem('firstName') || '';
+    const storedLastName = localStorage.getItem('lastName') || '';
+    const storedNurseryName = localStorage.getItem('nurseryName') || 'no';
+
+    setNurseryEmail(storedEmail);
+    setNurseryName(storedNurseryName);
+
+    const fullName = `${storedFirstName} ${storedLastName}`.trim();
+    setOwnerName(fullName || 'no');
+
+    // Generate initials from firstName and lastName
+    if (storedFirstName && storedLastName) {
+      setInitials(`${storedFirstName.charAt(0)}${storedLastName.charAt(0)}`.toUpperCase());
+    } else if (storedFirstName) {
+      setInitials(storedFirstName.substring(0, 2).toUpperCase());
+    } else {
+      setInitials('NO');
     }
 
-    // Load user and nursery data
+    // Load nursery data for count
     const loadUserData = async () => {
       try {
         const token = localStorage.getItem('accessToken');
@@ -41,30 +56,10 @@ const Header = ({ onMenuClick }: HeaderProps) => {
           // Load nurseries first
           const { nurseryDashboardService } = await import('@/lib/api/nursery');
           const nurseriesResponse = await nurseryDashboardService.getMyNursery();
-          
+
           if (nurseriesResponse.success && nurseriesResponse.data) {
             const nurseries = Array.isArray(nurseriesResponse.data) ? nurseriesResponse.data : [nurseriesResponse.data];
             setNurseryCount(nurseries.length);
-            
-            // Sort nurseries by creation date (oldest first) to ensure consistent order
-            const sortedNurseries = [...nurseries].sort((a, b) => {
-              const dateA = new Date(a.createdAt || 0).getTime();
-              const dateB = new Date(b.createdAt || 0).getTime();
-              return dateA - dateB;
-            });
-            
-            // Use first (oldest) nursery name as the display name - this will be consistent
-            if (sortedNurseries.length > 0 && sortedNurseries[0].name) {
-              const nurseryName = sortedNurseries[0].name;
-              setOwnerName(nurseryName);
-              
-              // Generate initials from nursery name
-              const words = nurseryName.trim().split(/\s+/);
-              const nurseryInitials = words.length >= 2 
-                ? `${words[0].charAt(0)}${words[1].charAt(0)}`.toUpperCase()
-                : nurseryName.substring(0, 2).toUpperCase();
-              setInitials(nurseryInitials);
-            }
           }
         }
       } catch (error) {
@@ -236,7 +231,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
             <div className="p-2">
               <p className="font-medium">{ownerName}</p>
               <p className="text-sm text-muted-foreground">{nurseryEmail}</p>
-              <p className="text-xs text-gray-500 mt-1">{nurseryCount} {nurseryCount === 1 ? 'Nursery' : 'Nurseries'}</p>
+              <p className="text-xs text-gray-500 mt-1">{nurseryName}</p>
             </div>
 
             <Separator className="my-2" />

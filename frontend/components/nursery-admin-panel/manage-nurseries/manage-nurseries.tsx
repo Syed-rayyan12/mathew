@@ -27,11 +27,30 @@ export default function ManageNurseries() {
   const MIN_SEARCH_LENGTH = 10;
 
 
+  
+useEffect(() => {
+  const timer = setTimeout(() => {
+    setDebouncedSearch(searchQuery.trim());
+  }, 600);
+
+  return () => clearTimeout(timer);
+}, [searchQuery]);
+
+  useEffect(() => {
+    if (debouncedSearch === '') return;
+
+  // ❌ block 1–2 alphabets
+  if (debouncedSearch.length < MIN_SEARCH_LENGTH) return;
+
+
+    fetchNurseries();
+  }, [debouncedSearch, statusFilter, sortBy, sortOrder]);
+
   const fetchNurseries = async () => {
     try {
       setLoading(true);
       const response = await adminService.getAllNurseries({
-        searchQuery: debouncedSearch || '',
+        searchQuery: debouncedSearch ,
         sortBy,
         sortOrder,
         status: statusFilter,
@@ -48,23 +67,6 @@ export default function ManageNurseries() {
     }
   };
 
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchQuery);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
-
-
-  useEffect(() => {
-    if (debouncedSearch && debouncedSearch.length < MIN_SEARCH_LENGTH) {
-      return;
-    }
-    fetchNurseries();
-  }, [debouncedSearch, statusFilter, sortBy, sortOrder]);
 
   // Add Nursery
   const handleAddNursery = (newNursery: any) => {

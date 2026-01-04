@@ -77,79 +77,109 @@ export default function NurserySignupPage() {
     return ukPhoneRegex.test(cleaned);
   };
 
-  const getLocation = async () => {
-    setLocationLoading(true);
-    
-    if (!navigator.geolocation) {
-      toast.error('Geolocation is not supported by your browser');
-      setLocationLoading(false);
-      return;
-    }
+ const getLocation = async () => {
+  // Prevent double clicks
+  if (locationLoading) return;
 
-    toast.info('Requesting location access...');
+  setLocationLoading(true);
 
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        try {
-          const { latitude, longitude } = position.coords;
-          
-          // Use reverse geocoding to get address
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
-            {
-              headers: {
-                'User-Agent': 'MathewNursery/1.0'
-              }
-            }
-          );
-          
-          if (!response.ok) {
-            throw new Error('Failed to fetch address');
-          }
-          
-          const data = await response.json();
-          
-          if (data.display_name) {
-            setFormData(prev => ({ ...prev, address: data.display_name }));
-            toast.success('Location retrieved successfully!');
-          } else {
-            toast.warning('Could not retrieve address. Please enter manually.');
-          }
-        } catch (err) {
-          console.error('Geocoding error:', err);
-          toast.error('Failed to retrieve address. Please enter manually.');
-        } finally {
-          setLocationLoading(false);
-        }
-      },
-      (err) => {
-        console.error('Geolocation error:', err);
-        let errorMessage = 'Unable to access location. ';
-        
-        switch(err.code) {
-          case err.PERMISSION_DENIED:
-            errorMessage += 'Please allow location access in your browser settings.';
-            break;
-          case err.POSITION_UNAVAILABLE:
-            errorMessage += 'Location information is unavailable.';
-            break;
-          case err.TIMEOUT:
-            errorMessage += 'Location request timed out.';
-            break;
-          default:
-            errorMessage += 'Please enter address manually.';
-        }
-        
-        toast.error(errorMessage);
+  // Browser support check
+  if (!navigator.geolocation) {
+    toast.error('Geolocation is not supported by your browser');
+    setLocationLoading(false);
+    return;
+  }
+
+  // Permission pre-check (Chrome / Edge)
+  try {
+    if (navigator.permissions) {
+      const permission = await navigator.permissions.query({ name: 'geolocation' });
+
+      if (permission.state === 'denied') {
+        toast.error('Location permission is denied. Please enable it in browser settings.');
         setLocationLoading(false);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
+        return;
       }
-    );
-  };
+    }
+  } catch (err) {
+    // Safari fallback – ignore
+  }
+
+  toast.info('Fetching your current location...');
+
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      try {
+        const { latitude, longitude } = position.coords;
+
+        // Reverse geocoding (OpenStreetMap)
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
+          {
+            headers: {
+              'User-Agent': 'MathewNursery/1.0'
+            }
+          }
+        );
+
+        if (!response.ok) throw new Error('Reverse geocoding failed');
+
+        const data = await response.json();
+
+        // UK validation (optional but recommended)
+        if (data.address?.country_code !== 'gb') {
+          toast.error('Please select a UK location');
+          setLocationLoading(false);
+          return;
+        }
+
+        if (data.display_name) {
+          setFormData(prev => ({
+            ...prev,
+            address: data.display_name,
+            latitude,
+            longitude
+          }));
+
+          toast.success('Location fetched successfully!');
+        } else {
+          toast.warning('Address not found. Please enter manually.');
+        }
+      } catch (error) {
+        console.error('Location error:', error);
+        toast.error('Unable to fetch address. Please enter it manually.');
+      } finally {
+        setLocationLoading(false);
+      }
+    },
+    (error) => {
+      let message = 'Unable to access location. ';
+
+      switch (error.code) {
+        case error.PERMISSION_DENIED:
+          message += 'Please allow location access.';
+          break;
+        case error.POSITION_UNAVAILABLE:
+          message += 'Location unavailable.';
+          break;
+        case error.TIMEOUT:
+          message += 'Location request timed out.';
+          break;
+        default:
+          message += 'Please enter address manually.';
+      }
+
+      toast.error(message);
+      setLocationLoading(false);
+    },
+    {
+      enableHighAccuracy: false, // 🔥 IMPORTANT
+      timeout: 15000,
+      maximumAge: 30000
+    }
+  );
+};
+
 
   const validateForm = () => {
     const newErrors = {

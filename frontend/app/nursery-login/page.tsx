@@ -98,6 +98,7 @@ export default function NurseryLoginPage() {
       });
 
       const data = await response.json();
+      console.log("LOGIN RESPONSE 👉", data);
 
       if (response.ok && data.success) {
         // Store email, accessToken, and user details

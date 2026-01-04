@@ -152,9 +152,9 @@ const getLocation = async () => {
         // }
 
         if (data.display_name) {
+          parseAddress(data.address);
           setFormData(prev => ({
             ...prev,
-            address: data.display_name,
             latitude,
             longitude
           }));

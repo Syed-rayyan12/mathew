@@ -361,7 +361,7 @@ export default function NurserySignupPage() {
 
             {/* Nursery Name */}
             <div className="space-y-2">
-              <Label htmlFor="nurseryName">Nursery Name *</Label>
+              <Label htmlFor="nurseryName">Group Name *</Label>
               <Input
                 id="nurseryName"
                 name="nurseryName"
@@ -417,7 +417,7 @@ export default function NurserySignupPage() {
 
             {/* Address */}
             <div className="space-y-2">
-              <Label htmlFor="address">Nursery Address</Label>
+              <Label htmlFor="address">Group Address</Label>
               <div className="relative">
                 <Input
                   id="address"

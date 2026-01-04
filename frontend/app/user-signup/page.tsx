@@ -118,11 +118,11 @@ const getLocation = async () => {
         const data = await response.json();
 
         // UK validation (optional but recommended)
-        if (data.address?.country_code !== 'gb') {
-          toast.error('Please select a UK location');
-          setLocationLoading(false);
-          return;
-        }
+        // if (data.address?.country_code !== 'gb') {
+        //   toast.error('Please select a UK location');
+        //   setLocationLoading(false);
+        //   return;
+        // }
 
         if (data.display_name) {
           setFormData(prev => ({

@@ -50,7 +50,7 @@ const [debouncedSearch, setDebouncedSearch] = useState('');
   useEffect(() => {
   const timer = setTimeout(() => {
     setDebouncedSearch(searchQuery);
-  }, 500);
+  }, 1500);
 
   return () => clearTimeout(timer);
 }, [searchQuery]);

@@ -4,7 +4,7 @@ import Image from 'next/image';
 
 const AboutBanner = () => {
     return (
-        <section className="w-full h-[500px] relative flex justify-center"
+        <section className="relative w-full h-[500px] flex justify-center overflow-hidden"
 
         >
 

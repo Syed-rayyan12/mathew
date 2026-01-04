@@ -27,7 +27,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
 
   useEffect(() => {
     // Load nursery data from localStorage
-    const storedEmail = localStorage.getItem('email');
+    const storedEmail = localStorage.getItem('email', );
     
     if (storedEmail) {
       setNurseryEmail(storedEmail);

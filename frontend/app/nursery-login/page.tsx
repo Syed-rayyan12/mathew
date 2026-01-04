@@ -99,7 +99,7 @@ export default function NurseryLoginPage() {
 
       const data = await response.json();
 
-      if (response.ok) {
+      if (response.ok && data.success) {
         // Store email, accessToken, and user details
         localStorage.setItem("accessToken", data.data.accessToken);
         localStorage.setItem("email", data.data.email);

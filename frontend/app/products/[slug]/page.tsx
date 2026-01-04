@@ -381,8 +381,8 @@ export default function NurseryDetailsPage() {
                         const avatarInitials = `${review.firstName.charAt(0)}${review.lastName.charAt(0)}`.toUpperCase();
                         
                         return (
-                          <div key={review.id} className="border-b bg-[#F9F9F9] p-3 md:p-4 rounded-[6px]">
-                            <div className="flex flex-col md:flex-row justify-between gap-3 md:gap-4 items-start md:items-center mb-3 md:mb-4">
+                          <div key={review.id} className="border-b bg-[#F9F9F9]  p-3 md:p-4 rounded-[6px]">
+                            <div className="flex flex-col md:flex-row justify-between min-w-0 gap-3 md:gap-4 items-start md:items-center mb-3 md:mb-4">
                               <div className="flex gap-3 md:gap-4 items-center w-full md:w-auto">
                                 <div className="flex justify-center items-center bg-secondary rounded-full w-12 h-12 md:w-14 md:h-14 flex-shrink-0">
                                   <span className="text-lg md:text-xl text-white font-heading font-normal tracking-[2px]">

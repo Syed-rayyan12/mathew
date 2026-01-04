@@ -19,22 +19,24 @@ export default function ManageNurseries() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openViewModal, setOpenViewModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [selectedNursery, setSelectedNursery] = useState<any>(null);
+  const MIN_SEARCH_LENGTH = 10;
+
 
   const fetchNurseries = async () => {
     try {
       setLoading(true);
       const response = await adminService.getAllNurseries({
-        searchQuery: debouncedSearch,
+        searchQuery: debouncedSearch || '',
         sortBy,
         sortOrder,
         status: statusFilter,
       });
-      
+
       if (response.success && response.data) {
         setNurseries(Array.isArray(response.data) ? response.data : []);
       }
@@ -48,14 +50,19 @@ const [debouncedSearch, setDebouncedSearch] = useState('');
 
 
   useEffect(() => {
-  const timer = setTimeout(() => {
-    setDebouncedSearch(searchQuery);
-  }, 1500);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 500);
 
-  return () => clearTimeout(timer);
-}, [searchQuery]);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+
 
   useEffect(() => {
+    if (debouncedSearch && debouncedSearch.length < MIN_SEARCH_LENGTH) {
+      return;
+    }
     fetchNurseries();
   }, [debouncedSearch, statusFilter, sortBy, sortOrder]);
 
@@ -74,10 +81,10 @@ const [debouncedSearch, setDebouncedSearch] = useState('');
   // Delete Nursery
   const handleDeleteNursery = async () => {
     if (!selectedNursery) return;
-    
+
     try {
       const response = await adminService.deleteNursery(selectedNursery.id);
-      
+
       if (response.success) {
         toast.success('Nursery deleted successfully');
         setNurseries((prev) => prev.filter((n) => n.id !== selectedNursery.id));

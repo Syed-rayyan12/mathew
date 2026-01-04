@@ -288,8 +288,8 @@ export const adminService = {
   getAllArticles: async (params?: SearchParams) => {
     const queryString = params ? '?' + new URLSearchParams(params as any).toString() : '';
     return adminApiClient.get<{ success: boolean; data: AdminArticle[] }>(
-      `/articles${queryString}`,
-      false
+      `/admin/articles${queryString}`,
+      true
     );
   },
 

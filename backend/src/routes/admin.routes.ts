@@ -6,6 +6,7 @@ import {
   getAllUsers,
   getAllNurseryOwners,
   getAllReviews,
+  getAllArticles,
   getDashboardStats,
   deleteGroup,
   deleteNursery,
@@ -29,6 +30,7 @@ router.get('/nurseries', authenticate, getAllNurseriesAdmin);
 router.get('/users', authenticate, getAllUsers);  // Regular users only
 router.get('/nursery-owners', authenticate, getAllNurseryOwners);  // Nursery owners only
 router.get('/reviews', authenticate, getAllReviews);  // All reviews
+router.get('/articles', authenticate, getAllArticles);  // All articles
 router.get('/stats', authenticate, getDashboardStats);
 
 // Analytics routes

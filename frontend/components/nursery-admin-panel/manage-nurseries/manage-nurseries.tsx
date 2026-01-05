@@ -24,25 +24,16 @@ export default function ManageNurseries() {
   const [openViewModal, setOpenViewModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [selectedNursery, setSelectedNursery] = useState<any>(null);
-  const MIN_SEARCH_LENGTH = 10;
 
-
-  
-useEffect(() => {
-  const timer = setTimeout(() => {
-    setDebouncedSearch(searchQuery.trim());
-  }, 600);
-
-  return () => clearTimeout(timer);
-}, [searchQuery]);
+  // Debounce search input for better performance
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   useEffect(() => {
-    if (debouncedSearch === '') return;
-
-  // ❌ block 1–2 alphabets
-  if (debouncedSearch.length < MIN_SEARCH_LENGTH) return;
-
-
     fetchNurseries();
   }, [debouncedSearch, statusFilter, sortBy, sortOrder]);
 
@@ -142,7 +133,7 @@ useEffect(() => {
           <Input
             type="text"
             className="pl-10 rounded-sm"
-            placeholder="Search by nursery name, city, or owner..."
+            placeholder="Search by nursery name or group..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />

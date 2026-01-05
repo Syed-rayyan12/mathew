@@ -10,11 +10,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Bell, ClosedCaption, HatGlassesIcon, Search, X, Menu } from 'lucide-react';
+import { Bell, CheckCircle, X, Menu, Search } from 'lucide-react';
 import { Separator } from '@/components/ui/separator'; // ✅ correct import
 import { Button } from '@/components/ui/button';
 import { authService } from '@/lib/api/auth';
+import { notificationService, Notification } from '@/lib/api/notification';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -23,13 +25,80 @@ interface HeaderProps {
 const Header = ({ onMenuClick }: HeaderProps) => {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
 
   useEffect(() => {
     const userData = authService.getCurrentUser();
     if (userData) {
       setUser(userData);
+      fetchNotifications();
     }
   }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      setLoadingNotifications(true);
+      const response = await notificationService.getRecentNotifications(10);
+      if (response && response.notifications) {
+        setNotifications(response.notifications);
+        setUnreadCount(response.unreadCount || 0);
+      }
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    } finally {
+      setLoadingNotifications(false);
+    }
+  };
+
+  const handleMarkAsRead = async (notificationId: string) => {
+    try {
+      await notificationService.markAsRead(notificationId);
+      setNotifications(prev => prev.map(n => 
+        n.id === notificationId ? { ...n, isRead: true } : n
+      ));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await notificationService.markAllAsRead();
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+      toast.success('All notifications marked as read');
+    } catch (error) {
+      console.error('Failed to mark all as read:', error);
+      toast.error('Failed to mark notifications as read');
+    }
+  };
+
+  const handleDeleteNotification = async (notificationId: string) => {
+    try {
+      await notificationService.deleteNotification(notificationId);
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      toast.success('Notification removed');
+    } catch (error) {
+      console.error('Failed to delete notification:', error);
+      toast.error('Failed to remove notification');
+    }
+  };
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 60) return `${diffMins} min${diffMins !== 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hr${diffHours !== 1 ? 's' : ''} ago`;
+    return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+  };
 
   const getInitials = (firstName?: string, lastName?: string) => {
     if (!firstName && !lastName) return 'U';
@@ -118,91 +187,90 @@ const Header = ({ onMenuClick }: HeaderProps) => {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
-           
-             
-              className="relative rounded-full w-12 h-12  bg-white shadow-sm hover:bg-gray-100"
+              className="relative rounded-full w-12 h-12 bg-white shadow-sm hover:bg-gray-100"
             >
-              <Bell className="w-12 h-12 text-gray-700" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              <Bell className="w-5 h-5 text-gray-700" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center px-1">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-[300px]">
-
-            <div className="p-2 flex justify-between items-center border-b border-gray-200">
-              <span className="font-medium">NOTIFICATIONS</span>
-              <div className="mt-1 ">
-                <button className="text-sm text-white w-full bg-secondary rounded-md px-3 py-2">Mark all as Read</button>
-
-              </div>
+          <DropdownMenuContent align="end" className="w-[350px] max-h-[500px] overflow-y-auto">
+            <div className="p-3 flex justify-between items-center border-b border-gray-200 sticky top-0 bg-white z-10">
+              <span className="font-semibold text-base">Notifications</span>
+              {unreadCount > 0 && (
+                <Button 
+                  onClick={handleMarkAllAsRead}
+                  className="text-xs text-white bg-secondary rounded-md px-3 py-1.5 h-auto hover:bg-secondary/90"
+                >
+                  Mark all as read
+                </Button>
+              )}
             </div>
-            <div className='py-3'>
-              <div className='flex gap-1 px-3 items-center justify-between border-b border-dotted border-black'>
-                <div className='flex items-center'>
-                  <div className='bg-gray-300 rounded-full p-2 flex justify-center items-center'>
-                    <HatGlassesIcon className='w-4 h-4 text-blue-500 ' />
-                  </div>
-                  <div className='flex flex-col p-2 '>
-                    <span className='text-[15px]'>Review Approved</span>
-                    <span className='text-gray-400 text-sm'>2 hrs ago</span>
-                  </div>
+            
+            <div className="py-2">
+              {loadingNotifications ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-secondary"></div>
                 </div>
-                <X className='size-4' />
-              </div>
-              <div className='flex gap-1 px-3 items-center justify-between border-b border-dotted border-black'>
-                <div className='flex items-center'>
-                  <div className='bg-gray-300 rounded-full p-2 flex justify-center items-center'>
-                    <HatGlassesIcon className='w-4 h-4 text-blue-500 ' />
-                  </div>
-                  <div className='flex flex-col p-2 '>
-                    <span className='text-[15px]'>Review Approved</span>
-                    <span className='text-gray-400 text-sm'>2 hrs ago</span>
-                  </div>
+              ) : notifications.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Bell className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                  <p>No notifications yet</p>
                 </div>
-                <X className='size-4' />
-              </div>
-              <div className='flex gap-1 px-3 items-center justify-between border-b border-dotted border-black'>
-                <div className='flex items-center'>
-                  <div className='bg-gray-300 rounded-full p-2 flex justify-center items-center'>
-                    <HatGlassesIcon className='w-4 h-4 text-blue-500 ' />
+              ) : (
+                notifications.map((notification) => (
+                  <div
+                    key={notification.id}
+                    className={`flex gap-2 px-3 py-3 items-start justify-between border-b border-dotted border-gray-200 hover:bg-gray-50 transition-colors ${
+                      !notification.isRead ? 'bg-blue-50' : ''
+                    }`}
+                  >
+                    <div className="flex items-start gap-2 flex-1">
+                      <div className={`rounded-full p-2 flex justify-center items-center ${
+                        notification.entity === 'review' ? 'bg-green-100' : 'bg-blue-100'
+                      }`}>
+                        <CheckCircle className={`w-4 h-4 ${
+                          notification.entity === 'review' ? 'text-green-600' : 'text-blue-600'
+                        }`} />
+                      </div>
+                      <div className="flex flex-col flex-1 min-w-0">
+                        <span className={`text-sm ${!notification.isRead ? 'font-semibold' : ''}`}>
+                          {notification.title}
+                        </span>
+                        <span className="text-xs text-gray-600 line-clamp-2">
+                          {notification.message}
+                        </span>
+                        <span className="text-xs text-gray-400 mt-1">
+                          {formatTimeAgo(notification.createdAt)}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteNotification(notification.id);
+                      }}
+                      className="p-1 hover:bg-gray-200 rounded transition-colors flex-shrink-0"
+                    >
+                      <X className="w-4 h-4 text-gray-500" />
+                    </button>
                   </div>
-                  <div className='flex flex-col p-2 '>
-                    <span className='text-[15px]'>Review Approved</span>
-                    <span className='text-gray-400 text-sm'>2 hrs ago</span>
-                  </div>
-                </div>
-                <X className='size-4'/>
-              </div>
-              <div className='flex gap-1 px-3 items-center justify-between border-b border-dotted border-black'>
-                <div className='flex items-center'>
-                  <div className='bg-gray-300 rounded-full p-2 flex justify-center items-center'>
-                    <HatGlassesIcon className='w-4 h-4 text-blue-500 ' />
-                  </div>
-                  <div className='flex flex-col p-2 '>
-                    <span className='text-[15px]'>Review Approved</span>
-                    <span className='text-gray-400 text-sm'>2 hrs ago</span>
-                  </div>
-                </div>
-                <X className='size-4' />
-              </div>
-              <div className='flex gap-1 px-3 items-center justify-between'>
-                <div className='flex items-center'>
-                  <div className='bg-gray-300 rounded-full p-2 flex justify-center items-center'>
-                    <HatGlassesIcon className='w-4 h-4 text-blue-500 ' />
-                  </div>
-                  <div className='flex flex-col p-2 '>
-                    <span className='text-[15px]'>Review Approved</span>
-                    <span className='text-gray-400 text-sm'>2 hrs ago</span>
-                  </div>
-                </div>
-                <X className='size-4' />
-              </div>
-           
-            <div className="mt-2">
-              <Button className='bg-secondary px-3 py-3 px-2 mx-3'>
-                View All Notifications
-              </Button>
+                ))
+              )}
             </div>
-             </div>
+
+            {notifications.length > 0 && (
+              <div className="p-3 border-t border-gray-200 sticky bottom-0 bg-white">
+                <Link href="/parent-dashboard/notifications">
+                  <Button className="bg-secondary w-full hover:bg-secondary/90">
+                    View All Notifications
+                  </Button>
+                </Link>
+              </div>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
 

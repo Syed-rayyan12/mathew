@@ -20,17 +20,29 @@ export default function ManageGroups() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openViewModal, setOpenViewModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<any>(null);
+  
+  // Debounce search input for better performance
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+  
+  useEffect(() => {
+    fetchGroups();
+  }, [debouncedSearch, statusFilter, sortBy, sortOrder]);
 
   const fetchGroups = async () => {
     try {
       setLoading(true);
       const response = await adminService.getAllGroups({
-        searchQuery,
+        searchQuery : debouncedSearch ,
         sortBy,
         sortOrder,
         status: statusFilter,

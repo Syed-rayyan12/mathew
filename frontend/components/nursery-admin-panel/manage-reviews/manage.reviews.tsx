@@ -24,13 +24,22 @@ export default function ManageReviews() {
     const [statusFilter, setStatusFilter] = useState("all");
     const [sortBy, setSortBy] = useState("createdAt");
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [openViewModal, setOpenViewModal] = useState(false);
     const [openDeleteModal, setOpenDeleteModal] = useState(false);
     const [selectedReview, setSelectedReview] = useState<AdminReview | null>(null);
 
+    // Debounce search input for better performance
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchQuery.trim());
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
     useEffect(() => {
         fetchReviews();
-    }, [searchQuery, statusFilter, sortBy, sortOrder]);
+    }, [debouncedSearch, statusFilter, sortBy, sortOrder]);
 
     // Debug: Log reviews when they change
     useEffect(() => {
@@ -49,7 +58,7 @@ export default function ManageReviews() {
         try {
             setLoading(true);
             const response = await adminService.getAllReviews({
-                searchQuery,
+                searchQuery: debouncedSearch,
                 status: statusFilter,
                 sortBy,
                 sortOrder,
@@ -66,10 +75,13 @@ export default function ManageReviews() {
                 }
                 
                 setReviews(uniqueReviews);
+            } else {
+                setReviews([]);
             }
         } catch (error) {
             console.error("Failed to fetch reviews:", error);
             toast.error("Failed to load reviews");
+            setReviews([]);
         } finally {
             setLoading(false);
         }

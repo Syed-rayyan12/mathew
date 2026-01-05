@@ -20,18 +20,27 @@ export default function ManageUsers() {
   const [roleFilter, setRoleFilter] = useState("all");
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [debouncedSearch, setDebouncedSearch] = useState('');
 
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openViewModal, setOpenViewModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
 
+  // Debounce search input for better performance
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const fetchUsers = async () => {
     try {
       setLoading(true);
       console.log('Fetching users with token:', localStorage.getItem('accessToken')?.substring(0, 20) + '...')
       const response = await adminService.getAllUsers({
-        searchQuery,
+        searchQuery: debouncedSearch,
         sortBy,
         sortOrder,
         status: statusFilter,
@@ -60,7 +69,7 @@ export default function ManageUsers() {
 
   useEffect(() => {
     fetchUsers();
-  }, [searchQuery, statusFilter, roleFilter, sortBy, sortOrder]);
+  }, [debouncedSearch, statusFilter, roleFilter, sortBy, sortOrder]);
 
   // Add User
   const handleAddUser = (newUser: any) => {

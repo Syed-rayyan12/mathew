@@ -121,15 +121,6 @@ export default function ManageArticles() {
             </h2>
             <p className="text-gray-600">View, edit, and manage all platform articles</p>
           </div>
-
-          <Button
-            variant="ghost"
-            className="bg-secondary flex items-center gap-2 cursor-pointer w-full md:w-auto"
-            onClick={() => setOpenAddModal(true)}
-          >
-            <Plus/>
-            Create Article
-          </Button>
         </div>
       </div>
 

@@ -14,6 +14,7 @@ interface NurseryCardData {
     reviewCount: number;
     description?: string;
     groupId?: string | null;
+    city?: string;
     group?: {
         name: string;
         slug: string;
@@ -35,9 +36,9 @@ const NurseryCardsSection = () => {
             setError(null);
             const response = await nurseryService.getAll({ limit: 12 });
             
-            if (response.success && response.data) {
+            if (response.success && Array.isArray(response.data)) {
                 // Get first 3 nurseries or all available
-                const displayNurseries = response.data.data.slice(0, 3).map(nursery => ({
+                const displayNurseries = response.data.slice(0, 3).map(nursery => ({
                     id: nursery.id,
                     name: nursery.name,
                     slug: nursery.slug,
@@ -45,9 +46,12 @@ const NurseryCardsSection = () => {
                     reviewCount: nursery.reviewCount || 0,
                     description: nursery.description,
                     groupId: nursery.groupId,
+                    city: nursery.city || 'Location not specified',
                     group: nursery.group,
                 }));
                 setNurseries(displayNurseries);
+            } else {
+                console.warn('No nurseries found or invalid response:', response);
             }
         } catch (err) {
             console.error('Error fetching nurseries:', err);
@@ -138,6 +142,7 @@ const NurseryCardsSection = () => {
                                     />
                                     <div className="absolute top-60 left-0 right-0 px-4 py-6 mx-4 shadow-lg bg-white rounded-lg">
                                         <h3 className="font-heading text-[24px] font-medium text-[#044A55]">{nursery.name}</h3>
+                                        <p className="font-ubuntu text-[14px] text-muted-foreground mb-2">{nursery.city}</p>
                                         <div className="flex items-center gap-1 mb-2 mt-1">
                                             {renderStars(5)}
                                             <span className="text-sm ml-2 text-foreground">

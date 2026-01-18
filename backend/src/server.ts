@@ -38,8 +38,8 @@ async function startServer() {
     await prisma.$connect();
     console.log('✅ Database connected successfully');
 
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📚 Environment: ${config.nodeEnv}`);
     });
   } catch (error) {

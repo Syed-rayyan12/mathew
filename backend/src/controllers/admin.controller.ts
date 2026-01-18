@@ -5,8 +5,8 @@ import { AuthRequest } from '../middleware';
 import { createNotification } from './notification.controller';
 
 // Fixed admin credentials
-const ADMIN_EMAIL = 'admin@mathewnursery.com';
-const ADMIN_PASSWORD = 'Admin@123';
+const ADMIN_EMAIL = 'admin@mathew.com';
+const ADMIN_PASSWORD = 'Admin@123456';
 
 // Admin Signin
 export const adminSignin = async (
@@ -843,7 +843,7 @@ export const getMonthlyUserStats = async (
     }
 
     // Count users per month
-    users.forEach((user) => {
+    users.forEach((user: any) => {
       const monthKey = new Date(user.createdAt).toLocaleDateString('en-US', { 
         year: 'numeric', 
         month: 'short' 
@@ -871,6 +871,68 @@ export const getMonthlyUserStats = async (
   }
 };
 
+// Get all articles (admin view - includes all articles regardless of publish status)
+export const getAllArticles = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    // Check if user is admin
+    if (req.user?.role !== 'ADMIN') {
+      throw new UnauthorizedError('Admin access required');
+    }
+
+    const {
+      searchQuery = '',
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      category = 'all',
+      page = 1,
+      limit = 20,
+    } = req.query;
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    // Build where clause
+    const whereClause: any = {};
+
+    // Search by article name or card heading
+    if (searchQuery) {
+      whereClause.OR = [
+        { name: { contains: searchQuery as string, mode: 'insensitive' } },
+        { cardHeading: { contains: searchQuery as string, mode: 'insensitive' } },
+      ];
+    }
+
+    // Category filter
+    if (category !== 'all') {
+      whereClause.category = category;
+    }
+
+    // Build orderBy
+    const orderBy: any = {};
+    orderBy[sortBy as string] = sortOrder as string;
+
+    const [articles, totalCount] = await Promise.all([
+      prisma.article.findMany({
+        where: whereClause,
+        orderBy,
+        skip,
+        take: Number(limit),
+      }),
+      prisma.article.count({ where: whereClause }),
+    ]);
+
+    res.json({
+      success: true,
+      data: articles,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Get monthly review submission data
 export const getMonthlyReviewStats = async (
   req: AuthRequest,
@@ -883,7 +945,7 @@ export const getMonthlyReviewStats = async (
 
     // Get current date
     const now = new Date();
-    
+
     // Get reviews from last N months
     const startDate = new Date(now.getFullYear(), now.getMonth() - monthsCount + 1, 1);
 
@@ -900,27 +962,27 @@ export const getMonthlyReviewStats = async (
     });
 
     // Group by month
-    const monthlyData: { 
-      [key: string]: { 
-        total: number; 
-        approved: number; 
-      } 
+    const monthlyData: {
+      [key: string]: {
+        total: number;
+        approved: number;
+      }
     } = {};
-    
+
     for (let i = monthsCount - 1; i >= 0; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthKey = date.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short' 
+      const monthKey = date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short'
       });
       monthlyData[monthKey] = { total: 0, approved: 0 };
     }
 
     // Count reviews per month
-    reviews.forEach((review) => {
-      const monthKey = new Date(review.createdAt).toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short' 
+    reviews.forEach((review: any) => {
+      const monthKey = new Date(review.createdAt).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short'
       });
       if (monthlyData[monthKey] !== undefined) {
         monthlyData[monthKey].total++;
@@ -943,7 +1005,7 @@ export const getMonthlyReviewStats = async (
       data: {
         monthlyReviews: chartData,
         totalReviews: reviews.length,
-        totalApproved: reviews.filter(r => r.isApproved).length,
+        totalApproved: reviews.filter((r: any) => r.isApproved).length,
       },
     });
   } catch (error) {

@@ -13,6 +13,7 @@ interface NurseryCardData {
     cardImage?: string;
     reviewCount: number;
     description?: string;
+    city?: string;
     groupId?: string | null;
     group?: {
         name: string;
@@ -44,6 +45,7 @@ const NurseryCardsSection = () => {
                     cardImage: nursery.cardImage || '/images/nursery-placeholder.png',
                     reviewCount: nursery.reviewCount || 0,
                     description: nursery.description,
+                    city: nursery.city,
                     groupId: nursery.groupId,
                     group: nursery.group,
                 }));
@@ -68,6 +70,7 @@ const NurseryCardsSection = () => {
             cardImage: '/images/nursery-1.png',
             reviewCount: 45,
             description: 'Award-winning early years centre helping children grow with confidence.',
+            city: 'London',
             group: { name: 'Bright Horizons', slug: 'bright-horizons' },
         },
         {
@@ -77,6 +80,7 @@ const NurseryCardsSection = () => {
             cardImage: '/images/nursery-2.png',
             reviewCount: 38,
             description: 'A warm, nurturing nursery offering early learning and creative play.',
+            city: 'Manchester',
             group: { name: 'Little Steps', slug: 'little-steps' },
         },
         {
@@ -86,6 +90,7 @@ const NurseryCardsSection = () => {
             cardImage: '/images/nursery-3.png',
             reviewCount: 52,
             description: 'Safe, stimulating and family-focused childcare loved by parents.',
+            city: 'Birmingham',
             group: { name: 'Happy Tots', slug: 'happy-tots' },
         },
     ];
@@ -137,8 +142,15 @@ const NurseryCardsSection = () => {
                                         }}
                                     />
                                     <div className="absolute top-60 left-0 right-0 px-4 py-6 mx-4 shadow-lg bg-white rounded-lg">
-                                        <h3 className="font-heading text-[24px] font-medium text-[#044A55]">{nursery.name}</h3>
-                                        <div className="flex items-center gap-1 mb-2 mt-1">
+                                        <div className="flex items-center justify-between gap-2 mb-2">
+                                            <h3 className="font-heading text-[24px] font-medium text-[#044A55]">{nursery.name}</h3>
+                                            {nursery.city && (
+                                                <span className="text-sm font-ubuntu text-muted-foreground whitespace-nowrap">
+                                                    {nursery.city}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-1 mb-2">
                                             {renderStars(5)}
                                             <span className="text-sm ml-2 text-foreground">
                                                 {nursery.reviewCount || 0} reviews

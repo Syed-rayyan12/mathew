@@ -41,9 +41,9 @@ const Header = ({ onMenuClick }: HeaderProps) => {
     try {
       setLoadingNotifications(true);
       const response = await notificationService.getRecentNotifications(10);
-      if (response && response.notifications) {
-        setNotifications(response.notifications);
-        setUnreadCount(response.unreadCount || 0);
+      if (response && response.data) {
+        setNotifications(response.data.notifications || []);
+        setUnreadCount(response.data.unreadCount || 0);
       }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);

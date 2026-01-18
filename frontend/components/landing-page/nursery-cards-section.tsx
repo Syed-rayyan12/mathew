@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Star } from 'lucide-react';
+import { ArrowRight, LocationEditIcon, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { nurseryService } from '@/lib/api/nursery';
 
@@ -145,7 +145,8 @@ const NurseryCardsSection = () => {
                                         <div className="flex items-center justify-between gap-2 mb-2">
                                             <h3 className="font-heading text-[24px] font-medium text-[#044A55]">{nursery.name}</h3>
                                             {nursery.city && (
-                                                <span className="text-sm font-ubuntu text-muted-foreground whitespace-nowrap">
+                                                <span className="text-sm font-ubuntu text-foreground whitespace-nowrap">
+                                                   <LocationEditIcon/>
                                                     {nursery.city}
                                                 </span>
                                             )}

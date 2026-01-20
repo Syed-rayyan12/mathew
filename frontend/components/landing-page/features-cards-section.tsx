@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
-
+import React, { useRef } from 'react';
 import { Star } from 'lucide-react';
+import { motion, useInView } from 'framer-motion';
 
 const features = [
     {
@@ -26,22 +26,34 @@ const features = [
 ];
 
 const FeaturesCardsSection = () => {
+    const ref = useRef(null);
+    const isInView = useInView(ref, { once: true, amount: 0.2 });
+
     return (
-        <div className="py-16 px-24 max-lg:px-0 relative bg-white">
+        <div className="py-16 px-24 max-lg:px-0 relative bg-white" ref={ref}>
             <div>
-                <div className='text-center'>
+                <motion.div 
+                    className='text-center'
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+                    transition={{ duration: 0.8 }}
+                >
                     <p className="text-primary font-medium font-heading text-2xl">Reviews & Awards</p>
                     <h2 className="text-4xl md:text-5xl font-heading font-medium mb-2 text-foreground leading-tight">
                        Nursery Reviews & <span className="text-secondary">Awards</span>
                     </h2>
                     <p className='text-[16px] font-ubuntu mb-9 px-12'>At My Nursery, we celebrate excellence in early years care.</p>
-                </div>
+                </motion.div>
                 <div className='mx-auto px-32 max-2xl:px-6 max-sm:px-8 max-lg:px-36'>
                     <div className="grid grid-cols-3 max-lg:grid-cols-1 max-lg:gap-10 max-sm:gap-10 gap-6">
                         {features.map((feature, index) => (
-                            <div
+                            <motion.div
                                 key={index}
                                 className="bg-white border border-black/50 rounded-md  transition-shadow duration-300 overflow-hidden p-6"
+                                initial={{ opacity: 0, y: 50 }}
+                                animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
+                                transition={{ duration: 0.6, delay: 0.2 + index * 0.2 }}
+                                whileHover={{ y: -5, boxShadow: "0 10px 30px rgba(0,0,0,0.1)" }}
                             >
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="font-heading text-[24px]  font-medium text-foreground" dangerouslySetInnerHTML={{ __html: feature.title }} />
@@ -54,7 +66,7 @@ const FeaturesCardsSection = () => {
                                     <span className="text-sm ml-2 text-foreground">{feature.rating}/5</span>
                                 </div>
                                 <p className="font-ubuntu text-[14px] text-muted-foreground">{feature.description}</p>
-                            </div>
+                            </motion.div>
                         ))}
                     </div>
                 </div>

@@ -3,7 +3,8 @@
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel"
 import { Star, Quote } from "lucide-react"
 import Image from "next/image"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
+import { motion, useInView } from "framer-motion"
 
 const testimonials = [
   {
@@ -65,6 +66,8 @@ const testimonials = [
 export default function TestimonialSlider() {
   const [api, setApi] = useState<CarouselApi>()
   const [current, setCurrent] = useState(0)
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, amount: 0.2 });
 
   useEffect(() => {
     if (!api) return
@@ -77,15 +80,25 @@ export default function TestimonialSlider() {
   }, [api])
 
   return (
-    <section className="py-16 bg-white">
+    <section className="py-16 bg-white" ref={ref}>
       <div className="container mx-auto px-4">
-        <div className='text-center'>
+        <motion.div 
+          className='text-center'
+          initial={{ opacity: 0, y: 30 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+          transition={{ duration: 0.8 }}
+        >
           <p className="text-primary font-medium font-heading text-2xl">Testimonials</p>
           <h2 className="text-4xl md:text-5xl font-heading font-medium mb-2 text-foreground leading-tight">
             Our Recent <span className="text-secondary">Reviews</span>
           </h2>
           <p className='text-[16px] font-ubuntu  mb-9'>See what parents and families say about us </p>
-        </div>
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.95 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+        >
         <Carousel setApi={setApi} className="w-full max-w-4xl mx-auto">
           <CarouselContent>
             {testimonials.map((testimonial) => (
@@ -130,6 +143,7 @@ export default function TestimonialSlider() {
             ))}
           </CarouselContent>
         </Carousel>
+        </motion.div>
         <div className="flex justify-center mt-4 space-x-2">
           {testimonials.map((_, index) => (
             <button

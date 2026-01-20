@@ -1,24 +1,41 @@
+'use client';
 
 import {  Phone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
+import { motion } from 'framer-motion'
+import { useInView } from 'framer-motion'
+import { useRef } from 'react'
 
 const AboutUsSection = () => {
+    const ref = useRef(null)
+    const isInView = useInView(ref, { once: true, amount: 0.3 })
+
     return (
-        <section className="w-full py-16 px-24 max-sm:px-10 lg:px-10 xl:px-24 bg-white">
+        <section className="w-full py-16 px-24 max-sm:px-10 lg:px-10 xl:px-24 bg-white" ref={ref}>
             <div className="max-w-7xl mx-auto">
                 <div className="flex max-lg:flex-col gap-12 items-center">
                     {/* Left side - Image */}
-                    <div className="flex-1">
+                    <motion.div 
+                        className="flex-1"
+                        initial={{ opacity: 0, x: -50 }}
+                        animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -50 }}
+                        transition={{ duration: 0.8 }}
+                    >
                         <img
                             src="/images/about.png"
                             alt="About Us"
                             className="w-full h-full object-cover rounded-md"
                         />
-                    </div>
+                    </motion.div>
 
                     {/* Right side - Content */}
-                    <div className="flex-1 space-y-6">
+                    <motion.div 
+                        className="flex-1 space-y-6"
+                        initial={{ opacity: 0, x: 50 }}
+                        animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: 50 }}
+                        transition={{ duration: 0.8, delay: 0.2 }}
+                    >
                         {/* Sub tag */}
                         <p className="text-primary font-medium font-heading text-2xl">ABOUT US</p>
 
@@ -50,7 +67,7 @@ Whether you’re a parent ready to find the right fit, or a nursery looking to g
                                 <span className="text-foreground font-medium text-[18px]  font-sans  font-normal">077700 900123</span>
                             </div>
                         </div>
-                    </div>
+                    </motion.div>
                 </div>
             </div>
         </section>

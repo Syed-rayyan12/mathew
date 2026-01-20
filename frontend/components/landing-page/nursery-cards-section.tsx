@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ArrowRight, LocationEditIcon, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { nurseryService } from '@/lib/api/nursery';
+import { motion, useInView } from 'framer-motion';
 
 interface NurseryCardData {
     id: string;
@@ -25,6 +26,8 @@ const NurseryCardsSection = () => {
     const [nurseries, setNurseries] = useState<NurseryCardData[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const ref = useRef(null);
+    const isInView = useInView(ref, { once: true, amount: 0.2 });
 
     useEffect(() => {
         fetchNurseries();
@@ -104,15 +107,20 @@ const NurseryCardsSection = () => {
     };
 
     return (
-        <div className="py-16 relative bg-white">
+        <div className="py-16 relative bg-white" ref={ref}>
             <div>
-                <div className='text-center'>
+                <motion.div 
+                    className='text-center'
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+                    transition={{ duration: 0.8 }}
+                >
                     <p className="text-primary font-medium font-heading text-2xl">Featured Nurseries</p>
                     <h2 className="text-4xl md:text-5xl font-heading font-medium mb-2 text-foreground leading-tight">
                         Join today and register as one of our top<span className="text-secondary px-4 max-w-7xl">nurseries</span>
                     </h2>
                     <p className='text-[16px] font-ubuntu mb-9'>Nurturing spaces where little ones grow and glow</p>
-                </div>
+                </motion.div>
 
                 <div className='mx-auto px-24 max-sm:px-10 max-lg:px-36'>
                     {loading ? (
@@ -128,10 +136,14 @@ const NurseryCardsSection = () => {
                         </div>
                     ) : displayNurseries.length > 0 ? (
                         <div className="grid grid-cols-3 max-lg:grid-cols-1 max-lg:gap-40 max-sm:gap-44 gap-6">
-                            {displayNurseries.map((nursery) => (
-                                <div
+                            {displayNurseries.map((nursery, index) => (
+                                <motion.div
                                     key={nursery.id}
                                     className="relative bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 h-80"
+                                    initial={{ opacity: 0, y: 50 }}
+                                    animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
+                                    transition={{ duration: 0.6, delay: 0.2 + index * 0.2 }}
+                                    whileHover={{ y: -10 }}
                                 >
                                     <img 
                                         src={nursery.cardImage || '/images/nursery-placeholder.png'} 
@@ -170,7 +182,7 @@ const NurseryCardsSection = () => {
                                             <ArrowRight className='text-secondary size-5' />
                                         </div>
                                     </div>
-                                </div>
+                                </motion.div>
                             ))}
                         </div>
                     ) : (

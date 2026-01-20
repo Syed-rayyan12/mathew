@@ -394,7 +394,7 @@ export default function NurserySignupPage() {
               </div>
             </div>
 
-            {/* Password */
+            {/* Password */}
             <div className="space-y-2">
               <Label htmlFor="password">Password *</Label>
               <div className="relative">

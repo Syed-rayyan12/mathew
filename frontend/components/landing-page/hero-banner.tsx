@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Search, Check, ChevronsUpDown, MapPin, Building2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
@@ -45,6 +45,19 @@ const heroBanner = () => {
     nurseries: [],
   });
   const [isLoading, setIsLoading] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // Click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Debounced autocomplete search
   useEffect(() => {
@@ -159,45 +172,45 @@ const heroBanner = () => {
                  <div className="h-8 w-px bg-gray-300"></div>
                  
                  {/* Search Input with Dropdown */}
-                 <Popover open={open} onOpenChange={setOpen}>
-                   <PopoverTrigger asChild>
-                     <div className="relative w-64 max-sm:w-full max-md:w-full">
-                       <input
-                         type="text"
-                         placeholder="Search city, group or nursery"
-                         value={searchQuery}
-                         onChange={(e) => {
-                           setSearchQuery(e.target.value);
-                           if (!open) setOpen(true);
-                         }}
-                         onFocus={() => setOpen(true)}
-                         className="w-full px-4 py-3 bg-transparent border-none outline-none text-gray-700 font-normal"
-                       />
-                     </div>
-                   </PopoverTrigger>
-                   <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                     <Command shouldFilter={false}>
-                       <CommandList>
-                         {isLoading ? (
-                           <div className="py-6 text-center text-sm text-gray-500">
-                             Loading...
-                           </div>
-                         ) : (
-                           <>
-                             {autocompleteResults.cities.length === 0 && 
-                              autocompleteResults.groups.length === 0 && 
-                              autocompleteResults.nurseries.length === 0 ? (
-                               <CommandEmpty>No results found.</CommandEmpty>
-                             ) : (
-                               <>
-                                 {/* Cities */}
-                                 {autocompleteResults.cities.length > 0 && (
-                                   <CommandGroup heading="Cities">
-                                     {autocompleteResults.cities.map((city) => (
-                                       <CommandItem
-                                         key={`city-${city}`}
-                                         value={city}
-                                         onSelect={() => handleSelectCity(city)}
+                 <div ref={searchContainerRef} className="relative w-64 max-sm:w-full max-md:w-full">
+                   <input
+                     type="text"
+                     placeholder="Search city, group or nursery"
+                     value={searchQuery}
+                     onChange={(e) => {
+                       setSearchQuery(e.target.value);
+                       setOpen(true);
+                     }}
+                     onFocus={() => setOpen(true)}
+                     className="w-full px-4 py-3 bg-transparent border-none outline-none text-gray-700 font-normal placeholder:text-gray-400"
+                   />
+                   
+                   {/* Dropdown Results */}
+                   {open && (searchQuery.length > 0 || autocompleteResults.cities.length > 0) && (
+                     <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                       <Command shouldFilter={false}>
+                         <CommandList>
+                           {isLoading ? (
+                             <div className="py-6 text-center text-sm text-gray-500">
+                               Loading...
+                             </div>
+                           ) : (
+                             <>
+                               {autocompleteResults.cities.length === 0 && 
+                                autocompleteResults.groups.length === 0 && 
+                                autocompleteResults.nurseries.length === 0 ? (
+                                 <CommandEmpty>No results found.</CommandEmpty>
+                               ) : (
+                                 <>
+                                   {/* Cities */}
+                                   {autocompleteResults.cities.length > 0 && (
+                                     <CommandGroup heading="Cities">
+                                       {autocompleteResults.cities.map((city) => (
+                                         <CommandItem
+                                           key={`city-${city}`}
+                                           value={city}
+                                           onSelect={() => handleSelectCity(city)}
+                                         >
                                        >
                                          <MapPin className="mr-2 h-4 w-4 text-secondary" />
                                          <span>{city}</span>
@@ -258,8 +271,9 @@ const heroBanner = () => {
                          )}
                        </CommandList>
                      </Command>
-                   </PopoverContent>
-                 </Popover>
+                   </div>
+                   )}
+                 </div>
                  
                  {/* Search Button */}
                  <button 

@@ -158,29 +158,25 @@ const heroBanner = () => {
                  {/* Divider */}
                  <div className="h-8 w-px bg-gray-300"></div>
                  
-                 {/* City Dropdown */}
+                 {/* Search Input with Dropdown */}
                  <Popover open={open} onOpenChange={setOpen}>
                    <PopoverTrigger asChild>
-                     <Button
-                       variant="ghost"
-                       role="combobox"
-                       aria-expanded={open}
-                       className={cn(
-                         "w-64 max-sm:w-full max-md:w-full justify-between px-4 py-3 h-auto hover:bg-transparent font-normal",
-                         !selectedCity && "text-gray-400"
-                       )}
-                     >
-                       {selectedCity || "Search city, group or nursery"}
-                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                     </Button>
+                     <div className="relative w-64 max-sm:w-full max-md:w-full">
+                       <input
+                         type="text"
+                         placeholder="Search city, group or nursery"
+                         value={searchQuery}
+                         onChange={(e) => {
+                           setSearchQuery(e.target.value);
+                           if (!open) setOpen(true);
+                         }}
+                         onFocus={() => setOpen(true)}
+                         className="w-full px-4 py-3 bg-transparent border-none outline-none text-gray-700 font-normal"
+                       />
+                     </div>
                    </PopoverTrigger>
                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                      <Command shouldFilter={false}>
-                       <CommandInput 
-                         placeholder="Search..." 
-                         value={searchQuery}
-                         onValueChange={setSearchQuery}
-                       />
                        <CommandList>
                          {isLoading ? (
                            <div className="py-6 text-center text-sm text-gray-500">

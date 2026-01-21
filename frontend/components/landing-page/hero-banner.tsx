@@ -85,7 +85,7 @@ const heroBanner = () => {
                  <div className="h-8 w-px bg-gray-300"></div>
                  
                  {/* City Dropdown */}
-                 <Popover open={open} onOpenChange={setOpen}>
+                 {/* <Popover open={open} onOpenChange={setOpen}>
                    <PopoverTrigger asChild>
                      <Button
                        variant="ghost"
@@ -128,7 +128,7 @@ const heroBanner = () => {
                        </CommandList>
                      </Command>
                    </PopoverContent>
-                 </Popover>
+                 </Popover> */}
                  
                  {/* Search Button */}
                  <button 

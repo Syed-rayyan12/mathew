@@ -117,34 +117,31 @@ export const nurseryService = {
 
   // Search by city for hero banner (returns 2 groups + 2 nurseries)
   searchByCity: async (city: string) => {
-    return apiClient.get<{ 
-      success: boolean; 
-      data: {
-        groups: Array<{
-          id: string;
+    return apiClient.get<{
+      groups: Array<{
+        id: string;
+        name: string;
+        slug: string;
+        city: string;
+        cardImage?: string;
+        logo?: string;
+        description?: string;
+        nurseryCount: number;
+      }>;
+      nurseries: Array<{
+        id: string;
+        name: string;
+        slug: string;
+        city: string;
+        cardImage?: string;
+        description?: string;
+        ageRange?: string;
+        facilities: string[];
+        group?: {
           name: string;
           slug: string;
-          city: string;
-          cardImage?: string;
-          logo?: string;
-          description?: string;
-          nurseryCount: number;
-        }>;
-        nurseries: Array<{
-          id: string;
-          name: string;
-          slug: string;
-          city: string;
-          cardImage?: string;
-          description?: string;
-          ageRange?: string;
-          facilities: string[];
-          group?: {
-            name: string;
-            slug: string;
-          };
-        }>;
-      }
+        };
+      }>;
     }>(`/user/nurseries/search-by-city?city=${encodeURIComponent(city)}`);
   },
 };

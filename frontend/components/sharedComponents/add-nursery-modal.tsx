@@ -13,10 +13,14 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "../ui/separator";
-import { Plus, X, Upload, Trash2, MapPin } from "lucide-react";
+import { Plus, X, Upload, Trash2, Check, ChevronsUpDown } from "lucide-react";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { nurseryDashboardService } from "@/lib/api/nursery";
 import { authService } from "@/lib/api/auth";
+import { UK_CITIES } from "@/lib/data/uk-cities";
 
 export default function AddNurseryModal({
   open,
@@ -28,7 +32,7 @@ export default function AddNurseryModal({
   onSuccess?: () => void;
 }) {
   const [loading, setLoading] = useState(false);
-  const [locationLoading, setLocationLoading] = useState(false);
+  const [open, setOpen] = useState(false);
   const [cardImagePreview, setCardImagePreview] = useState<string>('');
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [videoPreview, setVideoPreview] = useState<string>('');
@@ -38,9 +42,7 @@ export default function AddNurseryModal({
     ageGroup: "",
     email: "",
     phone: "",
-    address: "",
     city: "",
-    postcode: "",
     aboutUs: "",
     philosophy: "",
     videoUrl: "",
@@ -53,150 +55,6 @@ export default function AddNurseryModal({
     fees3to5Full: "",
     fees3to5Part: "",
   });
-
-  // Load user data and parse address on mount or when dialog opens
-  useEffect(() => {
-    if (open) {
-      const user = authService.getCurrentUser();
-      if (user?.address) {
-        parseAddress(user.address);
-      }
-    }
-  }, [open]);
-
-  // Parse address from nominatim API response object
-  const parseAddress = (addressData: any) => {
-    let address = '';
-    let city = '';
-    let postcode = '';
-
-    // Extract address (combination of house_number and road)
-    if (addressData.house_number && addressData.road) {
-      address = `${addressData.house_number} ${addressData.road}`;
-    } else if (addressData.road) {
-      address = addressData.road;
-    } else if (addressData.display_name) {
-      // Fallback to first part of display_name if no road data
-      const parts = addressData.display_name.split(',');
-      address = parts[0] || '';
-    }
-
-    // Extract city (try multiple field names used by nominatim)
-    city = addressData.city || addressData.town || addressData.suburb || '';
-
-    // Extract postcode
-    postcode = addressData.postcode || '';
-
-    setFormData(prev => ({
-      ...prev,
-      address: address || prev.address,
-      city: city || prev.city,
-      postcode: postcode || prev.postcode
-    }));
-  };
-
-const getLocation = async () => {
-  // Prevent double clicks
-  if (locationLoading) return;
-
-  setLocationLoading(true);
-
-  // Browser support check
-  if (!navigator.geolocation) {
-    toast.error('Geolocation is not supported by your browser');
-    setLocationLoading(false);
-    return;
-  }
-
-  // Permission pre-check (Chrome / Edge)
-  try {
-    if (navigator.permissions) {
-      const permission = await navigator.permissions.query({ name: 'geolocation' });
-
-      if (permission.state === 'denied') {
-        toast.error('Location permission is denied. Please enable it in browser settings.');
-        setLocationLoading(false);
-        return;
-      }
-    }
-  } catch (err) {
-    // Safari fallback – ignore
-  }
-
-  toast.info('Fetching your current location...');
-
-  navigator.geolocation.getCurrentPosition(
-    async (position) => {
-      try {
-        const { latitude, longitude } = position.coords;
-
-        // Reverse geocoding (OpenStreetMap)
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
-          {
-            headers: {
-              'User-Agent': 'MathewNursery/1.0'
-            }
-          }
-        );
-
-        if (!response.ok) throw new Error('Reverse geocoding failed');
-
-        const data = await response.json();
-
-        // UK validation (optional but recommended)
-        // if (data.address?.country_code !== 'gb') {
-        //   toast.error('Please select a UK location');
-        //   setLocationLoading(false);
-        //   return;
-        // }
-
-        if (data.display_name) {
-          parseAddress(data.address);
-          setFormData(prev => ({
-            ...prev,
-            latitude,
-            longitude
-          }));
-
-          toast.success('Location fetched successfully!');
-        } else {
-          toast.warning('Address not found. Please enter manually.');
-        }
-      } catch (error) {
-        console.error('Location error:', error);
-        toast.error('Unable to fetch address. Please enter it manually.');
-      } finally {
-        setLocationLoading(false);
-      }
-    },
-    (error) => {
-      let message = 'Unable to access location. ';
-
-      switch (error.code) {
-        case error.PERMISSION_DENIED:
-          message += 'Please allow location access.';
-          break;
-        case error.POSITION_UNAVAILABLE:
-          message += 'Location unavailable.';
-          break;
-        case error.TIMEOUT:
-          message += 'Location request timed out.';
-          break;
-        default:
-          message += 'Please enter address manually.';
-      }
-
-      toast.error(message);
-      setLocationLoading(false);
-    },
-    {
-      enableHighAccuracy: false, // 🔥 IMPORTANT
-      timeout: 15000,
-      maximumAge: 30000
-    }
-  );
-};
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -242,8 +100,8 @@ const getLocation = async () => {
   };
 
   const handleSubmit = async () => {
-    if (!formData.nurseryName || !formData.address || !formData.city || !formData.postcode) {
-      toast.error('Please fill in all required fields');
+    if (!formData.nurseryName || !formData.city) {
+      toast.error('Please fill in nursery name and city');
       return;
     }
 
@@ -274,9 +132,7 @@ const getLocation = async () => {
         ageRange: formData.ageGroup,
         email: formData.email,
         phone: formData.phone,
-        address: formData.address,
         city: formData.city,
-        postcode: formData.postcode,
         aboutUs: formData.aboutUs,
         philosophy: formData.philosophy,
         videoUrl: formData.videoUrl,
@@ -299,9 +155,7 @@ const getLocation = async () => {
           ageGroup: "",
           email: "",
           phone: "",
-          address: "",
           city: "",
-          postcode: "",
           aboutUs: "",
           philosophy: "",
           videoUrl: "",
@@ -396,52 +250,55 @@ const getLocation = async () => {
             </div>
           </div>
 
-          {/* Address */}
+          {/* City */}
           <div>
-            <h3 className="font-medium text-lg mb-4 flex items-center justify-between">
-              <span>Address</span>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={getLocation}
-                disabled={locationLoading}
-                className="text-xs"
-              >
-                <MapPin className={`h-4 w-4 mr-1 ${locationLoading ? 'animate-pulse' : ''}`} />
-                {locationLoading ? 'Getting Location...' : 'Use My Location'}
-              </Button>
-            </h3>
-            <div className="grid grid-cols-1 gap-4">
-              <div>
-                <Label className="block mb-2">Street Address *</Label>
-                <Input
-                  name="address"
-                  value={formData.address}
-                  onChange={handleChange}
-                  placeholder="123 High Street"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="block mb-2">City *</Label>
-                  <Input
-                    name="city"
-                    value={formData.city}
-                    onChange={handleChange}
-                    placeholder="London"
-                  />
-                </div>
-                <div>
-                  <Label className="block mb-2">Postcode *</Label>
-                  <Input
-                    name="postcode"
-                    value={formData.postcode}
-                    onChange={handleChange}
-                    placeholder="SW1A 1AA"
-                  />
-                </div>
-              </div>
+            <h3 className="font-medium text-lg mb-4">City</h3>
+            <div>
+              <Label className="block mb-2">City *</Label>
+              <Popover open={open} onOpenChange={setOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={open}
+                    className={cn(
+                      "w-full justify-between",
+                      !formData.city && "text-muted-foreground"
+                    )}
+                  >
+                    {formData.city || "Select city..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                  <Command>
+                    <CommandInput placeholder="Search city..." />
+                    <CommandList>
+                      <CommandEmpty>No city found.</CommandEmpty>
+                      <CommandGroup>
+                        {UK_CITIES.map((city) => (
+                          <CommandItem
+                            key={city}
+                            value={city}
+                            onSelect={() => {
+                              setFormData({ ...formData, city: city });
+                              setOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                formData.city === city ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {city}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 

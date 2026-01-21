@@ -76,9 +76,7 @@ export const createNursery = async (
       description,
       phone,
       email,
-      address,
       city,
-      postcode,
       ageRange,
       facilities,
       fees,
@@ -91,10 +89,10 @@ export const createNursery = async (
       videoUrl,
     } = req.body;
 
-    if (!name) {
+    if (!name || !city) {
       return res.status(400).json({
         success: false,
-        message: 'Nursery name is required',
+        message: 'Nursery name and city are required',
       });
     }
 
@@ -139,9 +137,7 @@ export const createNursery = async (
         description: description || '',
         phone: phone || '',
         email: email || '',
-        address: address || '',
-        city: city || '',
-        postcode: postcode || '',
+        city: city,
         ageRange: ageRange || '',
         facilities: facilities || [],
         fees: fees || {},

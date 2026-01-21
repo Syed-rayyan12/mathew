@@ -264,7 +264,7 @@ export const nurserySignup = async (
   next: NextFunction
 ) => {
   try {
-    const { email, password, firstName, lastName, phone, nurseryName, address } = req.body;
+    const { email, password, firstName, lastName, phone, nurseryName, city } = req.body;
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -282,35 +282,6 @@ export const nurserySignup = async (
     const userId = await generateShortId('USR');
     const groupId = await generateShortId('GRP');
 
-    // Parse address for group
-    let groupAddress = '';
-    let groupCity = '';
-    let groupPostcode = '';
-    
-    if (address) {
-      const parts = address.split(',').map((p: string) => p.trim());
-      const postcodeRegex = /\b[A-Z]{1,2}\d{1,2}[A-Z]?\s?\d[A-Z]{2}\b/i;
-      const postcodeIndex = parts.findIndex((part: string) => postcodeRegex.test(part));
-      
-      if (postcodeIndex !== -1) {
-        const postcodeMatch = parts[postcodeIndex].match(postcodeRegex);
-        groupPostcode = postcodeMatch ? postcodeMatch[0] : '';
-        if (postcodeIndex > 0) groupCity = parts[postcodeIndex - 1];
-        if (postcodeIndex > 1) groupAddress = parts.slice(0, postcodeIndex - 1).join(', ');
-        else if (postcodeIndex === 1) groupAddress = parts[0];
-      } else {
-        if (parts.length >= 3) {
-          groupAddress = parts.slice(0, -2).join(', ');
-          groupCity = parts[parts.length - 2];
-        } else if (parts.length === 2) {
-          groupAddress = parts[0];
-          groupCity = parts[1];
-        } else {
-          groupAddress = address;
-        }
-      }
-    }
-
     // Create user and group in a transaction
     const result = await prisma.$transaction(async (tx: any) => {
       // Create user with NURSERY_OWNER role
@@ -322,7 +293,6 @@ export const nurserySignup = async (
           firstName,
           lastName,
           phone,
-          address,
           nurseryName,
           role: 'NURSERY_OWNER',
           isActive: false,
@@ -334,7 +304,6 @@ export const nurserySignup = async (
           firstName: true,
           lastName: true,
           phone: true,
-          address: true,
           nurseryName: true,
           role: true,
           createdAt: true,
@@ -351,9 +320,7 @@ export const nurserySignup = async (
           phone,
           firstName,
           lastName,
-          address: groupAddress,
-          city: groupCity,
-          postcode: groupPostcode,
+          city,
           ownerId: user.id,
         },
       });

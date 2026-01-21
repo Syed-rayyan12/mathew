@@ -225,7 +225,7 @@ const heroBanner = () => {
                                          value={group.name}
                                          onSelect={() => handleSelectGroup(group)}
                                        >
-                                         <Building2 className="mr-2 h-4 w-4 text-blue-600" />
+                                         <Building2 className="mr-2 h-4 w-4 text-secondary" />
                                          <div className="flex flex-col">
                                            <span className="font-medium">{group.name}</span>
                                            <span className="text-xs text-gray-500">{group.city}</span>
@@ -268,9 +268,9 @@ const heroBanner = () => {
                  {/* Search Button */}
                  <button 
                    onClick={handleSearch}
-                   className=" text-white rounded-full p-3 transition-colors"
+                   className="bg-secondary hover:bg-secondary/90 text-white rounded-full p-3 transition-colors"
                  >
-                   <Search className="w-5 h-5 bg-transparent  " />
+                   <Search className="w-5 h-5" />
                  </button>
                </motion.div>
              </div>

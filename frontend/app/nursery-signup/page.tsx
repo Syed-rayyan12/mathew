@@ -264,7 +264,7 @@ export default function NurserySignupPage() {
                   className={errors.lastName ? "border-red-500" : ""}
                 />
                 <div className={`overflow-hidden transition-all duration-500 ease-in-out ${errors.lastName ? 'max-h-10 opacity-100 translate-y-0' : 'max-h-0 opacity-0 -translate-y-2'}`}>
-                  <span className="text-red-500 text-sm block mt-1">{errors.lastName || ' '}</span>
+                  <span className="text-red-500 text-sm block mt-2">{errors.lastName || ' '}</span>
                 </div>
               </div>
             </div>

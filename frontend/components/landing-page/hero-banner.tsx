@@ -96,11 +96,8 @@ const heroBanner = () => {
 
   const handleSelectNursery = (nursery: { slug: string; group?: { slug: string } }) => {
     setOpen(false);
-    if (nursery.group?.slug) {
-      router.push(`/nursery-group/${nursery.group.slug}/${nursery.slug}`);
-    } else {
-      router.push(`/childcare/${nursery.slug}`);
-    }
+    // Navigate to nursery detail page at /products/[slug]
+    router.push(`/products/${nursery.slug}`);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

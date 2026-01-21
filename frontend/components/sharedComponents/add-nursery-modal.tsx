@@ -32,7 +32,7 @@ export default function AddNurseryModal({
   onSuccess?: () => void;
 }) {
   const [loading, setLoading] = useState(false);
-  const [open, setOpen] = useState(false);
+  const [cityPopoverOpen, setCityPopoverOpen] = useState(false);
   const [cardImagePreview, setCardImagePreview] = useState<string>('');
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [videoPreview, setVideoPreview] = useState<string>('');
@@ -255,12 +255,12 @@ export default function AddNurseryModal({
             <h3 className="font-medium text-lg mb-4">City</h3>
             <div>
               <Label className="block mb-2">City *</Label>
-              <Popover open={open} onOpenChange={setOpen}>
+              <Popover open={cityPopoverOpen} onOpenChange={setCityPopoverOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     role="combobox"
-                    aria-expanded={open}
+                    aria-expanded={cityPopoverOpen}
                     className={cn(
                       "w-full justify-between",
                       !formData.city && "text-muted-foreground"
@@ -282,7 +282,7 @@ export default function AddNurseryModal({
                             value={city}
                             onSelect={() => {
                               setFormData({ ...formData, city: city });
-                              setOpen(false);
+                              setCityPopoverOpen(false);
                             }}
                           >
                             <Check

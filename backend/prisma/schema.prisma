@@ -38,9 +38,7 @@ model Group {
   phone       String?
   firstName   String?
   lastName    String?
-  address     String      @default("")
   city        String      @default("")
-  postcode    String      @default("")
   aboutUs     String?
   description String?
   logo        String?
@@ -61,9 +59,7 @@ model Nursery {
   name         String
   slug         String        @unique
   description  String?
-  address      String
   city         String
-  postcode     String
   phone        String?
   email        String?
   website      String?

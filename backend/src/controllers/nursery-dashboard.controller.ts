@@ -197,9 +197,7 @@ export const updateNursery = async (
       description,
       phone,
       email,
-      address,
       city,
-      postcode,
       ageRange,
       facilities,
       fees,
@@ -250,9 +248,7 @@ export const updateNursery = async (
         ...(description !== undefined && { description }),
         ...(phone !== undefined && { phone }),
         ...(email !== undefined && { email }),
-        ...(address !== undefined && { address }),
         ...(city !== undefined && { city }),
-        ...(postcode !== undefined && { postcode }),
         ...(ageRange !== undefined && { ageRange }),
         ...(facilities !== undefined && { facilities }),
         ...(fees !== undefined && { fees }),
@@ -347,9 +343,7 @@ export const getMyGroup = async (
         images: true,
         aboutUs: true,
         description: true,
-        address: true,
         city: true,
-        postcode: true,
       },
     });
 
@@ -390,9 +384,7 @@ export const updateNurseryGroup = async (
       images,
       aboutUs,
       description,
-      address,
       city,
-      postcode,
     } = req.body;
 
     // Find existing group
@@ -439,9 +431,7 @@ export const updateNurseryGroup = async (
           images: images || [],
           aboutUs: aboutUs || '',
           description: description || '',
-          address: address || '',
           city: city || '',
-          postcode: postcode || '',
         },
       });
 
@@ -479,9 +469,7 @@ export const updateNurseryGroup = async (
         ...(images !== undefined && { images }),
         ...(aboutUs !== undefined && { aboutUs }),
         ...(description !== undefined && { description }),
-        ...(address !== undefined && { address }),
         ...(city !== undefined && { city }),
-        ...(postcode !== undefined && { postcode }),
       },
     });
 

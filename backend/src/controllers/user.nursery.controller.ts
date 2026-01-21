@@ -56,9 +56,7 @@ export const getGroupBySlug = async (
         name: true,
         slug: true,
         description: true,
-        address: true,
         city: true,
-        postcode: true,
         logo: true,
         cardImage: true,
         images: true,
@@ -101,18 +99,14 @@ export const searchNurseries = async (
         isApproved: true,
         OR: [
           { name: { contains: query, mode: 'insensitive' } },
-          { postcode: { contains: query, mode: 'insensitive' } },
           { city: { contains: query, mode: 'insensitive' } },
-          { address: { contains: query, mode: 'insensitive' } },
         ],
       },
       select: {
         id: true,
         name: true,
         slug: true,
-        address: true,
         city: true,
-        postcode: true,
       },
       take: 10,
     });
@@ -120,6 +114,98 @@ export const searchNurseries = async (
     res.json({
       success: true,
       data: nurseries,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Search by city for hero banner (returns 2 groups + 2 nurseries)
+export const searchByCity = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { city } = req.query;
+
+    if (!city || typeof city !== 'string') {
+      return res.json({
+        success: true,
+        data: {
+          groups: [],
+          nurseries: [],
+        },
+      });
+    }
+
+    // Get 2 groups in the city
+    const groups = await prisma.group.findMany({
+      where: {
+        isActive: true,
+        city: { equals: city, mode: 'insensitive' },
+      },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        city: true,
+        cardImage: true,
+        logo: true,
+        description: true,
+        _count: {
+          select: {
+            nurseries: {
+              where: {
+                isApproved: true
+              }
+            }
+          }
+        }
+      },
+      take: 2,
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    // Get 2 nurseries in the city
+    const nurseries = await prisma.nursery.findMany({
+      where: {
+        isApproved: true,
+        city: { equals: city, mode: 'insensitive' },
+      },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        city: true,
+        cardImage: true,
+        description: true,
+        ageRange: true,
+        facilities: true,
+        group: {
+          select: {
+            name: true,
+            slug: true,
+          },
+        },
+      },
+      take: 2,
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    res.json({
+      success: true,
+      data: {
+        groups: groups.map(group => ({
+          ...group,
+          nurseryCount: group._count.nurseries
+        })),
+        nurseries,
+      },
     });
   } catch (error) {
     next(error);

@@ -144,6 +144,31 @@ export const nurseryService = {
       }>;
     }>(`/user/nurseries/search-by-city?city=${encodeURIComponent(city)}`);
   },
+
+  // Autocomplete search for hero banner dropdown
+  autocomplete: async (query: string) => {
+    return apiClient.get<{
+      cities: string[];
+      groups: Array<{
+        id: string;
+        name: string;
+        slug: string;
+        city: string;
+        cardImage?: string;
+      }>;
+      nurseries: Array<{
+        id: string;
+        name: string;
+        slug: string;
+        city: string;
+        cardImage?: string;
+        group?: {
+          name: string;
+          slug: string;
+        };
+      }>;
+    }>(`/user/nurseries/autocomplete?query=${encodeURIComponent(query)}`);
+  },
 };
 
 // Review service

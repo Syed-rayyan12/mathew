@@ -131,7 +131,7 @@ const heroBanner = () => {
            />
            
            {/* Content Overlay */}
-          <div className="absolute inset-0 flex  pt-30 max-sm:px-8 max-md:px-14  xl:px-24  max-xl:px-16">
+          <div className="absolute inset-0 flex pt-30 max-sm:px-8 max-md:px-14  xl:px-24  max-xl:px-16">
              <div className="">
                {/* Heading */}
                <motion.h1 

@@ -349,7 +349,7 @@ export default function NurserySignupPage() {
                     className={cn(
                       "w-full justify-between",
                       !formData.city && "text-muted-foreground",
-                      errors.city && "border-red-500"
+                      errors.city && "border-red-400"
                     )}
                     disabled={isLoading}
                   >

@@ -39,20 +39,22 @@ const NurseryCardsSection = () => {
             setError(null);
             const response = await nurseryService.getAll({ limit: 12 });
             
-            if (response.success && response.data) {
+            if (response.success && Array.isArray(response.data)) {
                 // Get first 3 nurseries or all available
-                const displayNurseries = (Array.isArray(response.data) ? response.data : []).slice(0, 3).map(nursery => ({
+                const displayNurseries = response.data.slice(0, 3).map(nursery => ({
                     id: nursery.id,
                     name: nursery.name,
                     slug: nursery.slug,
                     cardImage: nursery.cardImage || '/images/nursery-placeholder.png',
                     reviewCount: nursery.reviewCount || 0,
                     description: nursery.description,
-                    city: nursery.city,
+                    city: nursery.city || 'Location not specified',
                     groupId: nursery.groupId,
                     group: nursery.group,
                 }));
                 setNurseries(displayNurseries);
+            } else {
+                console.warn('No nurseries found or invalid response:', response);
             }
         } catch (err) {
             console.error('Error fetching nurseries:', err);

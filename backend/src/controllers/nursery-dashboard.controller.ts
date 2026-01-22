@@ -133,52 +133,57 @@ export const createNursery = async (
     console.log('Creating nursery with ID:', nurseryId);
 
     // Create nursery
-    const newNursery = await prisma.nursery.create({
-      data: {
-        id: nurseryId,
-        name,
-        slug: uniqueSlug,
-        description: description || '',
-        phone: phone || '',
-        email: email || '',
-        city: city,
-        ageRange: ageRange || '',
-        facilities: facilities || [],
-        fees: fees || {},
-        openingHours: {
-          openingTime: openingTime || '',
-          closingTime: closingTime || '',
-        },
-        aboutUs: aboutUs || '',
-        philosophy: philosophy || '',
-        cardImage: cardImage || '',
-        images: images || [],
-        videoUrl: videoUrl || '',
-        ownerId: userId,
-        groupId: parentGroup.id, // Link to parent group
-        isApproved: true,
-      },
-    });
-
-    console.log('Nursery created successfully:', newNursery.id);
-
-    // Create notification for new nursery creation
     try {
-      await createNotification(
-        'New Nursery Created',
-        `New nursery "${name}" has been created by a nursery owner`,
-        'NURSERY',
-        newNursery.id
-      );
-    } catch (notificationError) {
-      console.error('Failed to create notification:', notificationError);
-    }
+      const newNursery = await prisma.nursery.create({
+        data: {
+          id: nurseryId,
+          name,
+          slug: uniqueSlug,
+          description: description || null,
+          phone: phone || null,
+          email: email || null,
+          city: city,
+          ageRange: ageRange || null,
+          facilities: Array.isArray(facilities) ? facilities : [],
+          fees: fees && Object.keys(fees).length > 0 ? fees : null,
+          openingHours: (openingTime || closingTime) ? {
+            openingTime: openingTime || '',
+            closingTime: closingTime || '',
+          } : null,
+          aboutUs: aboutUs || null,
+          philosophy: philosophy || null,
+          cardImage: cardImage || null,
+          images: Array.isArray(images) ? images : [],
+          videoUrl: videoUrl || null,
+          ownerId: userId,
+          groupId: parentGroup.id,
+          isApproved: true,
+        },
+      });
 
-    res.status(201).json({
-      success: true,
-      message: 'Nursery created successfully',
-      data: newNursery,
-    });
+      console.log('Nursery created successfully:', newNursery.id);
+
+      // Create notification for new nursery creation
+      try {
+        await createNotification(
+          'New Nursery Created',
+          `New nursery "${name}" has been created by a nursery owner`,
+          'NURSERY',
+          newNursery.id
+        );
+      } catch (notificationError) {
+        console.error('Failed to create notification:', notificationError);
+      }
+
+      res.status(201).json({
+        success: true,
+        message: 'Nursery created successfully',
+        data: newNursery,
+      });
+    } catch (createError: any) {
+      console.error('Error creating nursery:', createError);
+      throw new Error(`Failed to create nursery: ${createError.message}`);
+    }
   } catch (error) {
     next(error);
   }
@@ -246,30 +251,34 @@ export const updateNursery = async (
     }
 
     // Update nursery
+    const updateData: any = {};
+    
+    if (name) updateData.name = name;
+    if (slug) updateData.slug = slug;
+    if (description !== undefined) updateData.description = description;
+    if (phone !== undefined) updateData.phone = phone;
+    if (email !== undefined) updateData.email = email;
+    if (city !== undefined) updateData.city = city;
+    if (ageRange !== undefined) updateData.ageRange = ageRange;
+    if (facilities !== undefined) updateData.facilities = facilities;
+    if (fees !== undefined) updateData.fees = fees || null;
+    if (aboutUs !== undefined) updateData.aboutUs = aboutUs;
+    if (philosophy !== undefined) updateData.philosophy = philosophy;
+    if (cardImage !== undefined) updateData.cardImage = cardImage;
+    if (images !== undefined) updateData.images = images;
+    if (videoUrl !== undefined) updateData.videoUrl = videoUrl;
+    
+    if (openingTime !== undefined || closingTime !== undefined) {
+      const currentHours = nursery.openingHours as any;
+      updateData.openingHours = {
+        openingTime: openingTime !== undefined ? openingTime : currentHours?.openingTime || '',
+        closingTime: closingTime !== undefined ? closingTime : currentHours?.closingTime || '',
+      };
+    }
+
     const updatedNursery = await prisma.nursery.update({
       where: { id: nursery.id },
-      data: {
-        ...(name && { name }),
-        ...(slug && { slug }),
-        ...(description !== undefined && { description }),
-        ...(phone !== undefined && { phone }),
-        ...(email !== undefined && { email }),
-        ...(city !== undefined && { city }),
-        ...(ageRange !== undefined && { ageRange }),
-        ...(facilities !== undefined && { facilities }),
-        ...(fees !== undefined && { fees }),
-        ...(openingTime !== undefined || closingTime !== undefined ? {
-          openingHours: {
-            openingTime: openingTime !== undefined ? openingTime : (nursery.openingHours as any)?.openingTime || '',
-            closingTime: closingTime !== undefined ? closingTime : (nursery.openingHours as any)?.closingTime || '',
-          }
-        } : {}),
-        ...(aboutUs !== undefined && { aboutUs }),
-        ...(philosophy !== undefined && { philosophy }),
-        ...(cardImage !== undefined && { cardImage }),
-        ...(images !== undefined && { images }),
-        ...(videoUrl !== undefined && { videoUrl }),
-      },
+      data: updateData,
     });
 
     res.json({
@@ -465,18 +474,20 @@ export const updateNurseryGroup = async (
       slug = uniqueSlug;
     }
 
+    const updateGroupData: any = {};
+    
+    if (name) updateGroupData.name = name;
+    if (slug) updateGroupData.slug = slug;
+    if (logo !== undefined) updateGroupData.logo = logo;
+    if (cardImage !== undefined) updateGroupData.cardImage = cardImage;
+    if (images !== undefined) updateGroupData.images = images;
+    if (aboutUs !== undefined) updateGroupData.aboutUs = aboutUs;
+    if (description !== undefined) updateGroupData.description = description;
+    if (city !== undefined) updateGroupData.city = city;
+
     const updatedGroup = await prisma.group.update({
       where: { id: group.id },
-      data: {
-        ...(name && { name }),
-        ...(slug && { slug }),
-        ...(logo !== undefined && { logo }),
-        ...(cardImage !== undefined && { cardImage }),
-        ...(images !== undefined && { images }),
-        ...(aboutUs !== undefined && { aboutUs }),
-        ...(description !== undefined && { description }),
-        ...(city !== undefined && { city }),
-      },
+      data: updateGroupData,
     });
 
     res.json({

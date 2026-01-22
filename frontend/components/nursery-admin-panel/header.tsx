@@ -71,7 +71,7 @@ const AdminHeader = ({ onMenuClick }: AdminHeaderProps) => {
       <Button
         variant="ghost"
         size="icon"
-        className="md:hidden mr-2"
+        className="md:hidden mr-3"
         onClick={onMenuClick}
       >
         <Menu className="w-5 h-5" />

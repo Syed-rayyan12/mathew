@@ -36,7 +36,7 @@ interface AutocompleteResults {
 
 const SLIDES = [
   '/images/hero-banner.png',
-  '/images/ep-nursery.png',
+  '/images/ep nursery.jpg',
   '/images/hero-slide-3.png'
 ];
 
@@ -136,7 +136,7 @@ const HeroBanner = () => {
   };
   return (
     <>
-        <section className="w-full h-[100vh] max-lg:h-[50vh] max-sm:h-[90vh] lg:h-[50vh] xl:h-[100%] relative flex justify-center overflow-hidden"> 
+        <section className="w-full h-[100vh] max-lg:h-[60vh] max-sm:h-[90vh] lg:h-[70vh] xl:h-[100vh] relative flex justify-center overflow-hidden"> 
            {/* Image Slider */}
            <AnimatePresence mode="wait">
              <motion.img 
@@ -169,7 +169,7 @@ const HeroBanner = () => {
            </div>
            
            {/* Content Overlay */}
-          <div className="absolute inset-0 flex pt-30 max-sm:px-8 max-md:px-14  xl:px-24  max-xl:px-16 z-10">
+          <div className="absolute inset-0 flex items-center pt-20 max-sm:px-8 max-md:px-14 xl:px-24 max-xl:px-16 z-10">
              <div className="">
                {/* Heading */}
                <motion.h1 

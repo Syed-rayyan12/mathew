@@ -76,9 +76,7 @@ export const createNursery = async (
       description,
       phone,
       email,
-      address,
       city,
-      postcode,
       ageRange,
       facilities,
       fees,
@@ -91,10 +89,10 @@ export const createNursery = async (
       videoUrl,
     } = req.body;
 
-    if (!name) {
+    if (!name || !city) {
       return res.status(400).json({
         success: false,
-        message: 'Nursery name is required',
+        message: 'Nursery name and city are required',
       });
     }
 
@@ -139,9 +137,7 @@ export const createNursery = async (
         description: description || '',
         phone: phone || '',
         email: email || '',
-        address: address || '',
-        city: city || '',
-        postcode: postcode || '',
+        city: city,
         ageRange: ageRange || '',
         facilities: facilities || [],
         fees: fees || {},
@@ -201,9 +197,7 @@ export const updateNursery = async (
       description,
       phone,
       email,
-      address,
       city,
-      postcode,
       ageRange,
       facilities,
       fees,
@@ -254,9 +248,7 @@ export const updateNursery = async (
         ...(description !== undefined && { description }),
         ...(phone !== undefined && { phone }),
         ...(email !== undefined && { email }),
-        ...(address !== undefined && { address }),
         ...(city !== undefined && { city }),
-        ...(postcode !== undefined && { postcode }),
         ...(ageRange !== undefined && { ageRange }),
         ...(facilities !== undefined && { facilities }),
         ...(fees !== undefined && { fees }),
@@ -351,9 +343,7 @@ export const getMyGroup = async (
         images: true,
         aboutUs: true,
         description: true,
-        address: true,
         city: true,
-        postcode: true,
       },
     });
 
@@ -394,9 +384,7 @@ export const updateNurseryGroup = async (
       images,
       aboutUs,
       description,
-      address,
       city,
-      postcode,
     } = req.body;
 
     // Find existing group
@@ -443,9 +431,7 @@ export const updateNurseryGroup = async (
           images: images || [],
           aboutUs: aboutUs || '',
           description: description || '',
-          address: address || '',
           city: city || '',
-          postcode: postcode || '',
         },
       });
 
@@ -483,9 +469,7 @@ export const updateNurseryGroup = async (
         ...(images !== undefined && { images }),
         ...(aboutUs !== undefined && { aboutUs }),
         ...(description !== undefined && { description }),
-        ...(address !== undefined && { address }),
         ...(city !== undefined && { city }),
-        ...(postcode !== undefined && { postcode }),
       },
     });
 

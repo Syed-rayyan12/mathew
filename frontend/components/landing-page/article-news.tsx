@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { apiClient } from '@/lib/api/client';
+import { motion, useInView } from 'framer-motion';
 
 interface Article {
     id: string;
@@ -22,6 +23,8 @@ const ArticleNews = () => {
     const [articles, setArticles] = useState<Article[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const ref = useRef(null);
+    const isInView = useInView(ref, { once: true, amount: 0.2 });
 
     // Fallback data if API fails
     const fallbackArticles: Article[] = [
@@ -80,16 +83,21 @@ const ArticleNews = () => {
     const displayArticles = articles.length > 0 ? articles : fallbackArticles;
 
     return (
-        <div className="py-16 px-24 max-sm:px-4 relative bg-white">
+        <div className="py-16 px-24 max-sm:px-4 relative bg-white" ref={ref}>
             <div>
-                <div className='text-center'>
+                <motion.div 
+                    className='text-center'
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+                    transition={{ duration: 0.8 }}
+                >
                     <p className="text-primary font-medium font-heading text-2xl">Articles & News</p>
                     <h2 className="text-4xl md:text-5xl font-heading font-medium mb-2 text-foreground leading-tight">
                         Latest Insights & <span className="text-secondary">Nursery</span> News
                     </h2>
                     <p className='text-[16px] font-ubuntu mb-9'> Fresh stories, helpful tips, and exciting news.
                     </p>
-                </div>
+                </motion.div>
                 
                 <div className='mx-auto px-36 max-2xl:px-6 max-sm:px-4'>
                     {loading ? (
@@ -105,10 +113,14 @@ const ArticleNews = () => {
                         </div>
                     ) : displayArticles.length > 0 ? (
                         <div className="grid grid-cols-3 max-lg:grid-cols-1 max-lg:gap-44 max-sm:gap-58 gap-6">
-                            {displayArticles.map((article) => (
-                                <div
+                            {displayArticles.map((article, index) => (
+                                <motion.div
                                     key={article.id}
                                     className="relative bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 h-80"
+                                    initial={{ opacity: 0, y: 50 }}
+                                    animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
+                                    transition={{ duration: 0.6, delay: 0.2 + index * 0.2 }}
+                                    whileHover={{ y: -10 }}
                                 >
                                     <img 
                                         src={article.cardImage || '/images/article-placeholder.png'} 
@@ -145,7 +157,7 @@ const ArticleNews = () => {
                                             <ArrowRight className='text-[#044A55] size-5' />
                                         </div>
                                     </div>
-                                </div>
+                                </motion.div>
                             ))}
                         </div>
                     ) : (

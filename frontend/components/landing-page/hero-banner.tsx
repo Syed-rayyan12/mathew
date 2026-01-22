@@ -1,27 +1,165 @@
-import React from 'react'
-import { Search } from 'lucide-react'
+'use client';
+
+import React, { useState, useEffect, useRef } from 'react'
+import { Search, Check, ChevronsUpDown, MapPin, Building2 } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { useRouter } from 'next/navigation'
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import { UK_CITIES } from '@/lib/data/uk-cities'
+import { toast } from 'sonner'
+import { nurseryService } from '@/lib/api/nursery'
+
+interface AutocompleteResults {
+  cities: string[];
+  groups: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    city: string;
+    cardImage?: string;
+  }>;
+  nurseries: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    city: string;
+    cardImage?: string;
+    group?: {
+      name: string;
+      slug: string;
+    };
+  }>;
+}
 
 const heroBanner = () => {
+  const router = useRouter();
+  const [selectedCity, setSelectedCity] = useState<string>('');
+  const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [autocompleteResults, setAutocompleteResults] = useState<AutocompleteResults>({
+    cities: [],
+    groups: [],
+    nurseries: [],
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // Click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Debounced autocomplete search
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (searchQuery.trim().length > 0) {
+        setIsLoading(true);
+        try {
+          const response = await nurseryService.autocomplete(searchQuery);
+          if (response.success && response.data) {
+            setAutocompleteResults(response.data);
+          }
+        } catch (error) {
+          console.error('Autocomplete error:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        // Show all UK cities when no search query
+        setAutocompleteResults({
+          cities: UK_CITIES,
+          groups: [],
+          nurseries: [],
+        });
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const handleSearch = () => {
+    if (!selectedCity) {
+      toast.error('Please select a city, group, or nursery');
+      return;
+    }
+
+    // Navigate to search page with city parameter
+    router.push(`/search?city=${encodeURIComponent(selectedCity)}`);
+  };
+
+  const handleSelectCity = (city: string) => {
+    setSelectedCity(city);
+    setOpen(false);
+  };
+
+  const handleSelectGroup = (group: { slug: string; city: string }) => {
+    setOpen(false);
+    router.push(`/nursery-group/${group.slug}`);
+  };
+
+  const handleSelectNursery = (nursery: { slug: string; group?: { slug: string } }) => {
+    setOpen(false);
+    // Navigate to nursery detail page at /products/[slug]
+    router.push(`/products/${nursery.slug}`);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
   return (
     <>
         <section className="w-full h-[100vh] max-lg:h-[50vh] max-sm:h-[90vh] lg:h-[50vh] xl:h-[100%] relative flex justify-center"> 
-           <img src="/images/hero-banner.png" alt="" className='w-full h-full object-cover background-center' />
+           <motion.img 
+             src="/images/hero-banner.png" 
+             alt="" 
+             className='w-full h-full object-cover background-center'
+             initial={{ opacity: 0, scale: 1.1 }}
+             animate={{ opacity: 1, scale: 1 }}
+             transition={{ duration: 1 }}
+           />
            
            {/* Content Overlay */}
-          <div className="absolute inset-0 flex  pt-30 max-sm:px-8 max-md:px-14  xl:px-24  max-xl:px-16">
+          <div className="absolute inset-0 flex pt-30 max-sm:px-8 max-md:px-14  xl:px-24  max-xl:px-16">
              <div className="">
                {/* Heading */}
-               <h1 className="text-5xl font-heading font-bold text-white leading-14 mb-4">
+               <motion.h1 
+                 className="text-5xl font-heading font-bold text-white leading-14 mb-4"
+                 initial={{ opacity: 0, y: 30 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 transition={{ duration: 0.8, delay: 0.3 }}
+               >
                  Find The Perfect <span className='text-[#044a55]'>Nursery</span> For<br/>  Your <span className='text-[#044a55]'>Little One</span>
-               </h1>
+               </motion.h1>
                
                {/* Description */}
-               <p className="text-lg md:text-xl text-white/90 mb-8">
+               <motion.p 
+                 className="text-lg md:text-xl text-white/90 mb-8"
+                 initial={{ opacity: 0, y: 20 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 transition={{ duration: 0.8, delay: 0.5 }}
+               >
                  Discover trusted nurseries in your area
-               </p>
+               </motion.p>
                
                {/* Search Box */}
-               <div className="bg-white rounded-full shadow-lg p-2 flex gap-2 w-fit">
+               <motion.div 
+                 className="bg-white rounded-full shadow-lg p-2 flex gap-2 w-fit"
+                 initial={{ opacity: 0, y: 20 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 transition={{ duration: 0.8, delay: 0.7 }}
+               >
                  {/* Select Dropdown */}
                  <select className="px-4 py-3 bg-transparent border-none outline-none text-gray-700 font-medium">
                    <option value="">Select Type</option>
@@ -33,18 +171,118 @@ const heroBanner = () => {
                  {/* Divider */}
                  <div className="h-8 w-px bg-gray-300"></div>
                  
-                 {/* Location Input */}
-                 <input 
-                   type="text" 
-                   placeholder="Enter your location" 
-                   className="px-4 py-3 bg-transparent border-none outline-none text-gray-700 placeholder:text-gray-400 w-64 max-sm:w-full max-md:w-full"
-                 />
+                 {/* Search Input with Dropdown */}
+                 <div ref={searchContainerRef} className="relative w-64 max-sm:w-full max-md:w-full">
+                   <input
+                     type="text"
+                     placeholder="Search city, group or nursery"
+                     value={searchQuery}
+                     onChange={(e) => {
+                       setSearchQuery(e.target.value);
+                       setOpen(true);
+                     }}
+                     onFocus={() => setOpen(true)}
+                     className="w-full px-4 py-3 bg-transparent border-none outline-none text-gray-700 font-normal placeholder:text-gray-400"
+                   />
+                   
+                   {/* Dropdown Results */}
+                   {open && (searchQuery.length > 0 || autocompleteResults.cities.length > 0) && (
+                     <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                       <Command shouldFilter={false}>
+                         <CommandList>
+                           {isLoading ? (
+                             <div className="py-6 text-center text-sm text-gray-500">
+                               Loading...
+                             </div>
+                           ) : (
+                             <>
+                               {autocompleteResults.cities.length === 0 && 
+                                autocompleteResults.groups.length === 0 && 
+                                autocompleteResults.nurseries.length === 0 ? (
+                                 <CommandEmpty>No results found.</CommandEmpty>
+                               ) : (
+                                 <>
+                                   {/* Cities */}
+                                   {autocompleteResults.cities.length > 0 && (
+                                     <CommandGroup heading="Cities">
+                                       {autocompleteResults.cities.map((city) => (
+                                         <CommandItem
+                                           key={`city-${city}`}
+                                           value={city}
+                                           onSelect={() => handleSelectCity(city)}
+                                         >
+                                       
+                                         <MapPin className="mr-2 h-4 w-4 text-secondary" />
+                                         <span>{city}</span>
+                                         <Check
+                                           className={cn(
+                                             "ml-auto h-4 w-4",
+                                             selectedCity === city ? "opacity-100" : "opacity-0"
+                                           )}
+                                         />
+                                       </CommandItem>
+                                     ))}
+                                   </CommandGroup>
+                                 )}
+
+                                 {/* Groups */}
+                                 {autocompleteResults.groups.length > 0 && (
+                                   <CommandGroup heading="Nursery Groups">
+                                     {autocompleteResults.groups.map((group) => (
+                                       <CommandItem
+                                         key={`group-${group.id}`}
+                                         value={group.name}
+                                         onSelect={() => handleSelectGroup(group)}
+                                       >
+                                         <Building2 className="mr-2 h-4 w-4 text-secondary" />
+                                         <div className="flex flex-col">
+                                           <span className="font-medium">{group.name}</span>
+                                           <span className="text-xs text-gray-500">{group.city}</span>
+                                         </div>
+                                       </CommandItem>
+                                     ))}
+                                   </CommandGroup>
+                                 )}
+
+                                 {/* Nurseries */}
+                                 {autocompleteResults.nurseries.length > 0 && (
+                                   <CommandGroup heading="Nurseries">
+                                     {autocompleteResults.nurseries.map((nursery) => (
+                                       <CommandItem
+                                         key={`nursery-${nursery.id}`}
+                                         value={nursery.name}
+                                         onSelect={() => handleSelectNursery(nursery)}
+                                       >
+                                         <Building2 className="mr-2 h-4 w-4 text-green-600" />
+                                         <div className="flex flex-col">
+                                           <span className="font-medium">{nursery.name}</span>
+                                           <span className="text-xs text-gray-500">
+                                             {nursery.city}
+                                             {nursery.group && ` • ${nursery.group.name}`}
+                                           </span>
+                                         </div>
+                                       </CommandItem>
+                                     ))}
+                                   </CommandGroup>
+                                 )}
+                               </>
+                             )}
+                           </>
+                         )}
+                       </CommandList>
+                     </Command>
+                   </div>
+                   )}
+                 </div>
                  
                  {/* Search Button */}
-                 <button className="bg-secondary hover:bg-secondary/90 text-white rounded-full p-3 transition-colors">
+                 <button 
+                   onClick={handleSearch}
+                   className="bg-secondary hover:bg-secondary/90 text-white rounded-full p-3 transition-colors"
+                 >
                    <Search className="w-5 h-5" />
                  </button>
-               </div>
+               </motion.div>
              </div>
            </div>
         </section>

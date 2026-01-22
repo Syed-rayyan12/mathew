@@ -56,9 +56,7 @@ export const getGroupBySlug = async (
         name: true,
         slug: true,
         description: true,
-        address: true,
         city: true,
-        postcode: true,
         logo: true,
         cardImage: true,
         images: true,
@@ -74,6 +72,106 @@ export const getGroupBySlug = async (
     res.json({
       success: true,
       data: group,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Autocomplete search for hero banner (search cities, groups, and nurseries)
+export const autocompleteSearch = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { query } = req.query;
+
+    if (!query || typeof query !== 'string' || query.trim().length === 0) {
+      return res.json({
+        success: true,
+        data: {
+          cities: [],
+          groups: [],
+          nurseries: [],
+        },
+      });
+    }
+
+    const searchTerm = query.trim();
+
+    // Search for matching groups
+    const groups = await prisma.group.findMany({
+      where: {
+        isActive: true,
+        OR: [
+          { name: { contains: searchTerm, mode: 'insensitive' } },
+          { city: { contains: searchTerm, mode: 'insensitive' } },
+        ],
+      },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        city: true,
+        cardImage: true,
+      },
+      take: 5,
+    });
+
+    // Search for matching nurseries
+    const nurseries = await prisma.nursery.findMany({
+      where: {
+        isApproved: true,
+        OR: [
+          { name: { contains: searchTerm, mode: 'insensitive' } },
+          { city: { contains: searchTerm, mode: 'insensitive' } },
+        ],
+      },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        city: true,
+        cardImage: true,
+        group: {
+          select: {
+            name: true,
+            slug: true,
+          },
+        },
+      },
+      take: 5,
+    });
+
+    // Get matching cities from UK_CITIES
+    const UK_CITIES = [
+      "Aberdeen", "Bath", "Belfast", "Birmingham", "Blackpool", "Bournemouth",
+      "Bradford", "Brighton", "Bristol", "Cambridge", "Canterbury", "Cardiff",
+      "Carlisle", "Chelmsford", "Chester", "Chichester", "Colchester", "Coventry",
+      "Derby", "Doncaster", "Dundee", "Durham", "Edinburgh", "Exeter",
+      "Glasgow", "Gloucester", "Hereford", "Inverness", "Kingston upon Hull",
+      "Lancaster", "Leeds", "Leicester", "Lichfield", "Lincoln", "Liverpool",
+      "London", "Londonderry", "Luton", "Manchester", "Middlesbrough", "Milton Keynes",
+      "Newcastle upon Tyne", "Newport", "Newry", "Northampton", "Norwich", "Nottingham",
+      "Oxford", "Perth", "Peterborough", "Plymouth", "Portsmouth", "Preston",
+      "Reading", "Ripon", "Salford", "Salisbury", "Sheffield", "Southampton",
+      "Southend-on-Sea", "St Albans", "St Asaph", "St Davids", "Stirling", "Stoke-on-Trent",
+      "Sunderland", "Swansea", "Swindon", "Truro", "Wakefield", "Wells",
+      "Westminster", "Winchester", "Wolverhampton", "Worcester", "York"
+    ];
+    
+    const cities = UK_CITIES.filter(city => 
+      city.toLowerCase().includes(searchTerm.toLowerCase())
+    ).slice(0, 5);
+
+    res.json({
+      success: true,
+      data: {
+        cities,
+        groups,
+        nurseries,
+      },
     });
   } catch (error) {
     next(error);
@@ -101,18 +199,14 @@ export const searchNurseries = async (
         isApproved: true,
         OR: [
           { name: { contains: query, mode: 'insensitive' } },
-          { postcode: { contains: query, mode: 'insensitive' } },
           { city: { contains: query, mode: 'insensitive' } },
-          { address: { contains: query, mode: 'insensitive' } },
         ],
       },
       select: {
         id: true,
         name: true,
         slug: true,
-        address: true,
         city: true,
-        postcode: true,
       },
       take: 10,
     });
@@ -120,6 +214,98 @@ export const searchNurseries = async (
     res.json({
       success: true,
       data: nurseries,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Search by city for hero banner (returns 2 groups + 2 nurseries)
+export const searchByCity = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { city } = req.query;
+
+    if (!city || typeof city !== 'string') {
+      return res.json({
+        success: true,
+        data: {
+          groups: [],
+          nurseries: [],
+        },
+      });
+    }
+
+    // Get 2 groups in the city
+    const groups = await prisma.group.findMany({
+      where: {
+        isActive: true,
+        city: { equals: city, mode: 'insensitive' },
+      },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        city: true,
+        cardImage: true,
+        logo: true,
+        description: true,
+        _count: {
+          select: {
+            nurseries: {
+              where: {
+                isApproved: true
+              }
+            }
+          }
+        }
+      },
+      take: 2,
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    // Get 2 nurseries in the city
+    const nurseries = await prisma.nursery.findMany({
+      where: {
+        isApproved: true,
+        city: { equals: city, mode: 'insensitive' },
+      },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        city: true,
+        cardImage: true,
+        description: true,
+        ageRange: true,
+        facilities: true,
+        group: {
+          select: {
+            name: true,
+            slug: true,
+          },
+        },
+      },
+      take: 2,
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    res.json({
+      success: true,
+      data: {
+        groups: groups.map(group => ({
+          ...group,
+          nurseryCount: group._count.nurseries
+        })),
+        nurseries,
+      },
     });
   } catch (error) {
     next(error);

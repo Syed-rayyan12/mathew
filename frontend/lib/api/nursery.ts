@@ -114,6 +114,61 @@ export const nurseryService = {
       postcode: string;
     }> }>(`/user/nurseries/search?query=${encodeURIComponent(query)}`);
   },
+
+  // Search by city for hero banner (returns 2 groups + 2 nurseries)
+  searchByCity: async (city: string) => {
+    return apiClient.get<{
+      groups: Array<{
+        id: string;
+        name: string;
+        slug: string;
+        city: string;
+        cardImage?: string;
+        logo?: string;
+        description?: string;
+        nurseryCount: number;
+      }>;
+      nurseries: Array<{
+        id: string;
+        name: string;
+        slug: string;
+        city: string;
+        cardImage?: string;
+        description?: string;
+        ageRange?: string;
+        facilities: string[];
+        group?: {
+          name: string;
+          slug: string;
+        };
+      }>;
+    }>(`/user/nurseries/search-by-city?city=${encodeURIComponent(city)}`);
+  },
+
+  // Autocomplete search for hero banner dropdown
+  autocomplete: async (query: string) => {
+    return apiClient.get<{
+      cities: string[];
+      groups: Array<{
+        id: string;
+        name: string;
+        slug: string;
+        city: string;
+        cardImage?: string;
+      }>;
+      nurseries: Array<{
+        id: string;
+        name: string;
+        slug: string;
+        city: string;
+        cardImage?: string;
+        group?: {
+          name: string;
+          slug: string;
+        };
+      }>;
+    }>(`/user/nurseries/autocomplete?query=${encodeURIComponent(query)}`);
+  },
 };
 
 // Review service

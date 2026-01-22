@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Star } from 'lucide-react';
+import { ArrowRight, LocationEditIcon, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { nurseryService } from '@/lib/api/nursery';
+import { motion, useInView } from 'framer-motion';
 
 interface NurseryCardData {
     id: string;
@@ -13,6 +14,7 @@ interface NurseryCardData {
     cardImage?: string;
     reviewCount: number;
     description?: string;
+    city?: string;
     groupId?: string | null;
     city?: string;
     group?: {
@@ -25,6 +27,8 @@ const NurseryCardsSection = () => {
     const [nurseries, setNurseries] = useState<NurseryCardData[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const ref = useRef(null);
+    const isInView = useInView(ref, { once: true, amount: 0.2 });
 
     useEffect(() => {
         fetchNurseries();
@@ -38,13 +42,18 @@ const NurseryCardsSection = () => {
             
             if (response.success && Array.isArray(response.data)) {
                 // Get first 3 nurseries or all available
+<<<<<<< HEAD
                 const displayNurseries = response.data.slice(0, 3).map(nursery => ({
+=======
+                const displayNurseries = (Array.isArray(response.data) ? response.data : []).slice(0, 3).map(nursery => ({
+>>>>>>> 9607ab13c1388487e257119c32edfcc6c8930ae7
                     id: nursery.id,
                     name: nursery.name,
                     slug: nursery.slug,
                     cardImage: nursery.cardImage || '/images/nursery-placeholder.png',
                     reviewCount: nursery.reviewCount || 0,
                     description: nursery.description,
+                    city: nursery.city,
                     groupId: nursery.groupId,
                     city: nursery.city || 'Location not specified',
                     group: nursery.group,
@@ -72,6 +81,7 @@ const NurseryCardsSection = () => {
             cardImage: '/images/nursery-1.png',
             reviewCount: 45,
             description: 'Award-winning early years centre helping children grow with confidence.',
+            city: 'London',
             group: { name: 'Bright Horizons', slug: 'bright-horizons' },
         },
         {
@@ -81,6 +91,7 @@ const NurseryCardsSection = () => {
             cardImage: '/images/nursery-2.png',
             reviewCount: 38,
             description: 'A warm, nurturing nursery offering early learning and creative play.',
+            city: 'Manchester',
             group: { name: 'Little Steps', slug: 'little-steps' },
         },
         {
@@ -90,6 +101,7 @@ const NurseryCardsSection = () => {
             cardImage: '/images/nursery-3.png',
             reviewCount: 52,
             description: 'Safe, stimulating and family-focused childcare loved by parents.',
+            city: 'Birmingham',
             group: { name: 'Happy Tots', slug: 'happy-tots' },
         },
     ];
@@ -103,15 +115,20 @@ const NurseryCardsSection = () => {
     };
 
     return (
-        <div className="py-16 relative bg-white">
+        <div className="py-16 relative bg-white" ref={ref}>
             <div>
-                <div className='text-center'>
+                <motion.div 
+                    className='text-center'
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+                    transition={{ duration: 0.8 }}
+                >
                     <p className="text-primary font-medium font-heading text-2xl">Featured Nurseries</p>
                     <h2 className="text-4xl md:text-5xl font-heading font-medium mb-2 text-foreground leading-tight">
                         Join today and register as one of our top<span className="text-secondary px-4 max-w-7xl">nurseries</span>
                     </h2>
                     <p className='text-[16px] font-ubuntu mb-9'>Nurturing spaces where little ones grow and glow</p>
-                </div>
+                </motion.div>
 
                 <div className='mx-auto px-24 max-sm:px-10 max-lg:px-36'>
                     {loading ? (
@@ -127,10 +144,14 @@ const NurseryCardsSection = () => {
                         </div>
                     ) : displayNurseries.length > 0 ? (
                         <div className="grid grid-cols-3 max-lg:grid-cols-1 max-lg:gap-40 max-sm:gap-44 gap-6">
-                            {displayNurseries.map((nursery) => (
-                                <div
+                            {displayNurseries.map((nursery, index) => (
+                                <motion.div
                                     key={nursery.id}
                                     className="relative bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 h-80"
+                                    initial={{ opacity: 0, y: 50 }}
+                                    animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
+                                    transition={{ duration: 0.6, delay: 0.2 + index * 0.2 }}
+                                    whileHover={{ y: -10 }}
                                 >
                                     <img 
                                         src={nursery.cardImage || '/images/nursery-placeholder.png'} 
@@ -141,9 +162,22 @@ const NurseryCardsSection = () => {
                                         }}
                                     />
                                     <div className="absolute top-60 left-0 right-0 px-4 py-6 mx-4 shadow-lg bg-white rounded-lg">
+<<<<<<< HEAD
                                         <h3 className="font-heading text-[24px] font-medium text-[#044A55]">{nursery.name}</h3>
                                         <p className="font-ubuntu text-[14px] text-muted-foreground mb-2">{nursery.city}</p>
                                         <div className="flex items-center gap-1 mb-2 mt-1">
+=======
+                                        <div className="flex items-center justify-between gap-2 mb-2">
+                                            <h3 className="font-heading text-[24px] font-medium text-[#044A55]">{nursery.name}</h3>
+                                            {nursery.city && (
+                                                <span className="text-sm font-ubuntu text-foreground whitespace-nowrap">
+                                                   <LocationEditIcon/>
+                                                    {nursery.city}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-1 mb-2">
+>>>>>>> 9607ab13c1388487e257119c32edfcc6c8930ae7
                                             {renderStars(5)}
                                             <span className="text-sm ml-2 text-foreground">
                                                 {nursery.reviewCount || 0} reviews
@@ -162,7 +196,7 @@ const NurseryCardsSection = () => {
                                             <ArrowRight className='text-secondary size-5' />
                                         </div>
                                     </div>
-                                </div>
+                                </motion.div>
                             ))}
                         </div>
                     ) : (

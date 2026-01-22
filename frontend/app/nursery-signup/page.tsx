@@ -7,13 +7,17 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import Link from "next/link";
-import { Eye, EyeOff, MapPin } from "lucide-react";
+import { Eye, EyeOff, Check, ChevronsUpDown } from "lucide-react";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { UK_CITIES } from "@/lib/data/uk-cities";
 
 export default function NurserySignupPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [locationLoading, setLocationLoading] = useState(false);
+  const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -21,7 +25,7 @@ export default function NurserySignupPage() {
     password: "",
     phone: "",
     nurseryName: "",
-    address: "",
+    city: "",
   });
   const [errors, setErrors] = useState({
     firstName: "",
@@ -30,7 +34,7 @@ export default function NurserySignupPage() {
     password: "",
     phone: "",
     nurseryName: "",
-    address: "",
+    city: "",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -77,109 +81,6 @@ export default function NurserySignupPage() {
     return ukPhoneRegex.test(cleaned);
   };
 
- const getLocation = async () => {
-  // Prevent double clicks
-  if (locationLoading) return;
-
-  setLocationLoading(true);
-
-  // Browser support check
-  if (!navigator.geolocation) {
-    toast.error('Geolocation is not supported by your browser');
-    setLocationLoading(false);
-    return;
-  }
-
-  // Permission pre-check (Chrome / Edge)
-  try {
-    if (navigator.permissions) {
-      const permission = await navigator.permissions.query({ name: 'geolocation' });
-
-      if (permission.state === 'denied') {
-        toast.error('Location permission is denied. Please enable it in browser settings.');
-        setLocationLoading(false);
-        return;
-      }
-    }
-  } catch (err) {
-    // Safari fallback – ignore
-  }
-
-  toast.info('Fetching your current location...');
-
-  navigator.geolocation.getCurrentPosition(
-    async (position) => {
-      try {
-        const { latitude, longitude } = position.coords;
-
-        // Reverse geocoding (OpenStreetMap)
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
-          {
-            headers: {
-              'User-Agent': 'MathewNursery/1.0'
-            }
-          }
-        );
-
-        if (!response.ok) throw new Error('Reverse geocoding failed');
-
-        const data = await response.json();
-
-        // UK validation (optional but recommended)
-        // if (data.address?.country_code !== 'gb') {
-        //   toast.error('Please select a UK location');
-        //   setLocationLoading(false);
-        //   return;
-        // }
-
-        if (data.display_name) {
-          setFormData(prev => ({
-            ...prev,
-            address: data.display_name,
-            latitude,
-            longitude
-          }));
-
-          toast.success('Location fetched successfully!');
-        } else {
-          toast.warning('Address not found. Please enter manually.');
-        }
-      } catch (error) {
-        console.error('Location error:', error);
-        toast.error('Unable to fetch address. Please enter it manually.');
-      } finally {
-        setLocationLoading(false);
-      }
-    },
-    (error) => {
-      let message = 'Unable to access location. ';
-
-      switch (error.code) {
-        case error.PERMISSION_DENIED:
-          message += 'Please allow location access.';
-          break;
-        case error.POSITION_UNAVAILABLE:
-          message += 'Location unavailable.';
-          break;
-        case error.TIMEOUT:
-          message += 'Location request timed out.';
-          break;
-        default:
-          message += 'Please enter address manually.';
-      }
-
-      toast.error(message);
-      setLocationLoading(false);
-    },
-    {
-      enableHighAccuracy: false, // 🔥 IMPORTANT
-      timeout: 15000,
-      maximumAge: 30000
-    }
-  );
-};
-
   const validateForm = () => {
     const newErrors = {
       firstName: "",
@@ -188,7 +89,7 @@ export default function NurserySignupPage() {
       password: "",
       phone: "",
       nurseryName: "",
-      address: "",
+      city: "",
     };
     let isValid = true;
 
@@ -252,6 +153,12 @@ export default function NurserySignupPage() {
       isValid = false;
     }
 
+    // City validation
+    if (!formData.city.trim()) {
+      newErrors.city = "City is required";
+      isValid = false;
+    }
+
     setErrors(newErrors);
     return isValid;
   };
@@ -282,6 +189,9 @@ export default function NurserySignupPage() {
       const data = await response.json();
 
       if (response.ok) {
+        // Save selected city to localStorage
+        localStorage.setItem("selectedCity", formData.city);
+        
         // Check if account needs approval
         if (data.pendingApproval) {
           toast.success("Nursery account created successfully! Your account is pending admin approval. You will be notified once approved.");
@@ -415,31 +325,61 @@ export default function NurserySignupPage() {
               <p className="text-xs text-gray-500">UK phone numbers only</p>
             </div>
 
-            {/* Address */}
+            {/* City */}
             <div className="space-y-2">
-              <Label htmlFor="address">Group Address</Label>
-              <div className="relative">
-                <Input
-                  id="address"
-                  name="address"
-                  type="text"
-                  placeholder="Enter nursery address or use location"
-                  value={formData.address}
-                  onChange={handleChange}
-                  disabled={isLoading}
-                  className={`pr-10 ${errors.address ? "border-red-500" : ""}`}
-                />
-                <button
-                  type="button"
-                  onClick={getLocation}
-                  disabled={locationLoading || isLoading}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-50"
-                  title="Get current location"
-                >
-                  <MapPin className={`h-5 w-5 text-secondary ${locationLoading ? 'animate-pulse' : ''}`} />
-                </button>
+              <Label htmlFor="city">City *</Label>
+              <Popover open={open} onOpenChange={setOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={open}
+                    className={cn(
+                      "w-full justify-between",
+                      !formData.city && "text-muted-foreground",
+                      errors.city && "border-red-400"
+                    )}
+                    disabled={isLoading}
+                  >
+                    {formData.city || "Select city..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                  <Command>
+                    <CommandInput placeholder="Search city..." />
+                    <CommandList>
+                      <CommandEmpty>No city found.</CommandEmpty>
+                      <CommandGroup>
+                        {UK_CITIES.map((city) => (
+                          <CommandItem
+                            key={city}
+                            value={city}
+                            onSelect={() => {
+                              setFormData({ ...formData, city: city });
+                              setOpen(false);
+                              if (errors.city) {
+                                setErrors({ ...errors, city: "" });
+                              }
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                formData.city === city ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {city}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              <div className={`overflow-hidden transition-all duration-500 ease-in-out ${errors.city ? 'max-h-10 opacity-100 translate-y-0' : 'max-h-0 opacity-0 -translate-y-2'}`}>
+                <span className="text-red-500 text-sm block mt-1">{errors.city || ' '}</span>
               </div>
-              <p className="text-xs text-gray-500">Click the location icon to auto-fill your address</p>
             </div>
 
             {/* Password */}

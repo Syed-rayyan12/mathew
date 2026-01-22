@@ -49,7 +49,7 @@ export default function ManageArticles() {
       article.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       article.cardHeading.toLowerCase().includes(searchQuery.toLowerCase());
     
-    const matchesCategory = categoryFilter === "all" || article.category === categoryFilter;
+    const matchesCategory  = categoryFilter === "all" || article.category === categoryFilter;
     
     return matchesSearch && matchesCategory;
   });

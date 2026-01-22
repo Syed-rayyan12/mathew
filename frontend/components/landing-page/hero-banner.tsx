@@ -40,7 +40,7 @@ const SLIDES = [
   '/images/hero-slide-3.png'
 ];
 
-const heroBanner = () => {
+const HeroBanner = () => {
   const router = useRouter();
   const [selectedCity, setSelectedCity] = useState<string>('');
   const [open, setOpen] = useState(false);
@@ -328,4 +328,4 @@ const heroBanner = () => {
   )
 }
 
-export default heroBanner;
+export default HeroBanner;

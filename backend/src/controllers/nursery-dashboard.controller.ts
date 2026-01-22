@@ -149,7 +149,7 @@ export const createNursery = async (
           openingHours: (openingTime || closingTime) ? {
             openingTime: openingTime || '',
             closingTime: closingTime || '',
-          } : null,
+          } : undefined,
           aboutUs: aboutUs || null,
           philosophy: philosophy || null,
           cardImage: cardImage || null,

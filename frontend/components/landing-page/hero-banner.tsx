@@ -36,9 +36,8 @@ interface AutocompleteResults {
 
 const SLIDES = [
   '/images/hero-banner.png',
-  '/images/slide-2.jpg',
-  '/images/ep nursery.jpg',
-  '/images/hero-slide-3.png'
+  '/images/two.jpg',
+  '/images/three.jpg'
 ];
 
 const HeroBanner = () => {

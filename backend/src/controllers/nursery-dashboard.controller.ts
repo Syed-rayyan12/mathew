@@ -89,6 +89,8 @@ export const createNursery = async (
       videoUrl,
     } = req.body;
 
+    console.log('Creating nursery with data:', { name, city, userId });
+
     if (!name || !city) {
       return res.status(400).json({
         success: false,
@@ -128,6 +130,8 @@ export const createNursery = async (
     // Generate custom short ID
     const nurseryId = await generateShortId('NUR');
 
+    console.log('Creating nursery with ID:', nurseryId);
+
     // Create nursery
     const newNursery = await prisma.nursery.create({
       data: {
@@ -155,6 +159,8 @@ export const createNursery = async (
         isApproved: true,
       },
     });
+
+    console.log('Nursery created successfully:', newNursery.id);
 
     // Create notification for new nursery creation
     try {

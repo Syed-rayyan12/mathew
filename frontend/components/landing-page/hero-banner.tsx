@@ -46,6 +46,22 @@ const heroBanner = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  
+  const slides = [
+    '/images/hero-banner.png',
+    '/images/slide-2.jpg',
+     '/images/slide-3.jpg'
+  ];
+
+  // Auto-advance slides
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 5000); // Change slide every 5 seconds
+
+    return () => clearInterval(timer);
+  }, []);
 
   // Click outside to close dropdown
   useEffect(() => {
@@ -121,14 +137,39 @@ const heroBanner = () => {
   return (
     <>
         <section className="w-full h-[100vh] max-lg:h-[50vh] max-sm:h-[90vh] lg:h-[50vh] xl:h-[100%] relative flex justify-center"> 
-           <motion.img 
-             src="/images/hero-banner.png" 
-             alt="" 
-             className='w-full h-full object-cover background-center'
-             initial={{ opacity: 0, scale: 1.1 }}
-             animate={{ opacity: 1, scale: 1 }}
-             transition={{ duration: 1 }}
-           />
+           {/* Slider Images */}
+           <div className="relative w-full h-full overflow-hidden">
+             {slides.map((slide, index) => (
+               <motion.img
+                 key={slide}
+                 src={slide}
+                 alt={`Slide ${index + 1}`}
+                 className='absolute w-full h-full object-cover background-center'
+                 initial={{ opacity: 0 }}
+                 animate={{ 
+                   opacity: currentSlide === index ? 1 : 0,
+                   scale: currentSlide === index ? 1 : 1.1
+                 }}
+                 transition={{ duration: 1 }}
+               />
+             ))}
+           </div>
+           
+           {/* Slider Indicators */}
+           <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-2 z-10">
+             {slides.map((_, index) => (
+               <button
+                 key={index}
+                 onClick={() => setCurrentSlide(index)}
+                 className={`w-2 h-2 rounded-full transition-all ${
+                   currentSlide === index 
+                     ? 'bg-white w-8' 
+                     : 'bg-white/50 hover:bg-white/75'
+                 }`}
+                 aria-label={`Go to slide ${index + 1}`}
+               />
+             ))}
+           </div>
            
            {/* Content Overlay */}
           <div className="absolute inset-0 flex pt-30 max-sm:px-8 max-md:px-14  xl:px-24  max-xl:px-16">

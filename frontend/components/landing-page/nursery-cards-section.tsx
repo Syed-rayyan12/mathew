@@ -16,7 +16,6 @@ interface NurseryCardData {
     description?: string;
     city?: string;
     groupId?: string | null;
-    city?: string;
     group?: {
         name: string;
         slug: string;
@@ -42,20 +41,15 @@ const NurseryCardsSection = () => {
             
             if (response.success && Array.isArray(response.data)) {
                 // Get first 3 nurseries or all available
-<<<<<<< HEAD
                 const displayNurseries = response.data.slice(0, 3).map(nursery => ({
-=======
-                const displayNurseries = (Array.isArray(response.data) ? response.data : []).slice(0, 3).map(nursery => ({
->>>>>>> 9607ab13c1388487e257119c32edfcc6c8930ae7
                     id: nursery.id,
                     name: nursery.name,
                     slug: nursery.slug,
                     cardImage: nursery.cardImage || '/images/nursery-placeholder.png',
                     reviewCount: nursery.reviewCount || 0,
                     description: nursery.description,
-                    city: nursery.city,
-                    groupId: nursery.groupId,
                     city: nursery.city || 'Location not specified',
+                    groupId: nursery.groupId,
                     group: nursery.group,
                 }));
                 setNurseries(displayNurseries);
@@ -162,11 +156,6 @@ const NurseryCardsSection = () => {
                                         }}
                                     />
                                     <div className="absolute top-60 left-0 right-0 px-4 py-6 mx-4 shadow-lg bg-white rounded-lg">
-<<<<<<< HEAD
-                                        <h3 className="font-heading text-[24px] font-medium text-[#044A55]">{nursery.name}</h3>
-                                        <p className="font-ubuntu text-[14px] text-muted-foreground mb-2">{nursery.city}</p>
-                                        <div className="flex items-center gap-1 mb-2 mt-1">
-=======
                                         <div className="flex items-center justify-between gap-2 mb-2">
                                             <h3 className="font-heading text-[24px] font-medium text-[#044A55]">{nursery.name}</h3>
                                             {nursery.city && (
@@ -177,7 +166,6 @@ const NurseryCardsSection = () => {
                                             )}
                                         </div>
                                         <div className="flex items-center gap-1 mb-2">
->>>>>>> 9607ab13c1388487e257119c32edfcc6c8930ae7
                                             {renderStars(5)}
                                             <span className="text-sm ml-2 text-foreground">
                                                 {nursery.reviewCount || 0} reviews

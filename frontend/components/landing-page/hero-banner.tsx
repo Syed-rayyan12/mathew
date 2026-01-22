@@ -36,8 +36,8 @@ interface AutocompleteResults {
 
 const SLIDES = [
   '/images/hero-banner.png',
-  '/images/two.webp',
-  '/images/three.jfif'
+  '/images/four.png',
+  '/images/five.png'
 ];
 
 const HeroBanner = () => {
@@ -58,7 +58,7 @@ const HeroBanner = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % SLIDES.length);
-    }, 5000); // Change slide every 5 seconds
+    }, 2000); // Change slide every 5 seconds
 
     return () => clearInterval(interval);
   }, []);
@@ -138,18 +138,22 @@ const HeroBanner = () => {
     <>
         <section className="w-full h-[100vh] max-lg:h-[60vh] max-sm:h-[90vh] lg:h-[70vh] xl:h-[100vh] relative flex justify-center overflow-hidden"> 
            {/* Image Slider */}
-           <AnimatePresence mode="wait">
-             <motion.img 
-               key={currentSlide}
-               src={SLIDES[currentSlide]}
-               alt={`Slide ${currentSlide + 1}`}
-               className='absolute inset-0 w-full h-full object-cover'
-               initial={{ opacity: 0 }}
-               animate={{ opacity: 1 }}
-               exit={{ opacity: 0 }}
-               transition={{ duration: 1 }}
-             />
-           </AnimatePresence>
+           <div className="relative w-full h-full">
+             {SLIDES.map((slide, index) => (
+               <motion.img 
+                 key={slide}
+                 src={slide}
+                 alt={`Slide ${index + 1}`}
+                 className='absolute inset-0 w-full h-full object-cover'
+                 initial={false}
+                 animate={{ 
+                   opacity: currentSlide === index ? 1 : 0,
+                   scale: currentSlide === index ? 1 : 1.05,
+                   transition: { duration: 1.5, ease: 'easeInOut' }
+                 }}
+               />
+             ))}
+           </div>
            
            {/* Slide Indicators */}
            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-2 z-10">
@@ -169,7 +173,7 @@ const HeroBanner = () => {
            </div>
            
            {/* Content Overlay */}
-          <div className="absolute inset-0 flex items-center pt-20 max-sm:px-8 max-md:px-14 xl:px-24 max-xl:px-16 z-10">
+          <div className="absolute inset-0 flex items-center  max-sm:px-8 max-md:px-14 xl:px-24 max-xl:px-16 z-10">
              <div className="">
                {/* Heading */}
                <motion.h1 

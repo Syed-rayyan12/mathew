@@ -12,7 +12,7 @@ const ArticleBanner = () => {
             }}
         >
             <div className="absolute inset-0 flex items-center justify-center">
-                <div className="relative w-full px-25 max-md:px-14 xl:px-24 max-xl:px-16 flex flex-col gap-4">
+                <div className="relative w-full px-24 max-md:px-14 xl:px-24 max-xl:px-16 flex flex-col gap-4">
                     {/* Tag Heading */}
 
                     <img src="/images/cloud.png" className=' h-16 object-cover absolute -top-18  left-180 max-lg:left-80 max-sm:left-60' alt="" />

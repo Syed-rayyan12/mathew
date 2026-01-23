@@ -116,6 +116,7 @@ const HeroBanner = () => {
 
   const handleSelectCity = (city: string) => {
     setSelectedCity(city);
+    setSearchQuery(city); // Display the selected city in the input
     setOpen(false);
   };
 

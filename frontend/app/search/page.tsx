@@ -36,6 +36,7 @@ interface Nursery {
 function SearchResults() {
   const searchParams = useSearchParams();
   const city = searchParams.get("city");
+  const type = searchParams.get("type") || "nursery"; // Default to nursery
   const [groups, setGroups] = useState<Group[]>([]);
   const [nurseries, setNurseries] = useState<Nursery[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,15 +82,18 @@ function SearchResults() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Nurseries in <span className="text-secondary">{city}</span>
+            {type === 'group' ? 'Nursery Groups' : 'Nurseries'} in <span className="text-secondary">{city}</span>
           </h1>
           <p className="text-gray-600">
-            Found {groups.length} nursery groups and {nurseries.length} nurseries
+            {type === 'group' 
+              ? `Found ${groups.length} nursery group${groups.length !== 1 ? 's' : ''}`
+              : `Found ${nurseries.length} nurser${nurseries.length !== 1 ? 'ies' : 'y'}`
+            }
           </p>
         </div>
 
         {/* Groups Section */}
-        {groups.length > 0 && (
+        {type === 'group' && groups.length > 0 && (
           <div className="mb-12">
             <div className="flex items-center gap-2 mb-6">
               <Building2 className="w-6 h-6 text-secondary" />
@@ -136,7 +140,7 @@ function SearchResults() {
         )}
 
         {/* Nurseries Section */}
-        {nurseries.length > 0 && (
+        {type === 'nursery' && nurseries.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-6">
               <Building2 className="w-6 h-6 text-secondary" />
@@ -144,7 +148,7 @@ function SearchResults() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {nurseries.map((nursery) => (
-                <Link key={nursery.id} href={`/childcare/${nursery.slug}`}>
+                <Link key={nursery.id} href={`/products/${nursery.slug}`}>
                   <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
                     <CardHeader>
                       {nursery.cardImage && (
@@ -206,21 +210,21 @@ function SearchResults() {
         )}
 
         {/* No Results */}
-        {groups.length === 0 && nurseries.length === 0 && (
+        {((type === 'group' && groups.length === 0) || (type === 'nursery' && nurseries.length === 0)) && (
           <Card className="text-center py-12">
             <CardContent>
               <Building2 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                No nurseries found in {city}
+                No {type === 'group' ? 'nursery groups' : 'nurseries'} found in {city}
               </h3>
               <p className="text-gray-600">
-                Try searching for a different city or browse all nurseries.
+                Try searching for a different city or browse all {type === 'group' ? 'nursery groups' : 'nurseries'}.
               </p>
               <Link
-                href="/childcare"
+                href={type === 'group' ? '/nursery-group' : '/products'}
                 className="inline-block mt-4 px-6 py-2 bg-secondary text-white rounded-lg hover:bg-secondary/90 transition-colors"
               >
-                Browse All Nurseries
+                Browse All {type === 'group' ? 'Groups' : 'Nurseries'}
               </Link>
             </CardContent>
           </Card>

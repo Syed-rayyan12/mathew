@@ -101,8 +101,12 @@ const SearchBox = ({
       return;
     }
 
-    // Navigate to search page with city and type parameters
-    router.push(`/search?city=${encodeURIComponent(selectedCity)}&type=${searchType}`);
+    // Navigate to appropriate page based on search type
+    if (searchType === 'group') {
+      router.push(`/nursery-group?city=${encodeURIComponent(selectedCity)}&search=${encodeURIComponent(searchQuery)}`);
+    } else {
+      router.push(`/products?city=${encodeURIComponent(selectedCity)}&search=${encodeURIComponent(searchQuery)}`);
+    }
   };
 
   const handleSelectCity = (city: string) => {

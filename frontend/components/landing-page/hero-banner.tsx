@@ -110,8 +110,12 @@ const HeroBanner = () => {
       return;
     }
 
-    // Navigate to search page with city and type parameters
-    router.push(`/search?city=${encodeURIComponent(selectedCity)}&type=${searchType}`);
+    // Navigate to appropriate page based on search type
+    if (searchType === 'group') {
+      router.push(`/nursery-group?city=${encodeURIComponent(selectedCity)}&search=${encodeURIComponent(searchQuery)}&type=group`);
+    } else {
+      router.push(`/products?city=${encodeURIComponent(selectedCity)}&search=${encodeURIComponent(searchQuery)}&type=nursery`);
+    }
   };
 
   const handleSelectCity = (city: string) => {

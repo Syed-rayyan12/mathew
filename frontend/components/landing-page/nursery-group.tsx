@@ -5,8 +5,11 @@ import React, { useState, useEffect } from 'react'
 import { Input } from '@/components/ui/input';
 import { nurseryGroupService, NurseryGroup } from '@/lib/api/nursery-group';
 import { toast } from 'sonner';
+import { useSearchParams } from 'next/navigation';
 
 const nurseryGroup = () => {
+    const searchParams = useSearchParams();
+    const cityFromUrl = searchParams.get('city') || '';
     const [searchQuery, setSearchQuery] = useState("");
     const [nurseryGroups, setNurseryGroups] = useState<NurseryGroup[]>([]);
     const [loading, setLoading] = useState(true);
@@ -14,7 +17,9 @@ const nurseryGroup = () => {
     useEffect(() => {
         const fetchNurseryGroups = async () => {
             try {
-                const response = await nurseryGroupService.getAllGroups();
+                const response = await nurseryGroupService.getAllGroups({
+                    city: cityFromUrl || undefined
+                });
                 if (response.success && Array.isArray(response.data)) {
                     setNurseryGroups(response.data);
                 }
@@ -27,7 +32,7 @@ const nurseryGroup = () => {
         };
 
         fetchNurseryGroups();
-    }, []);
+    }, [cityFromUrl]);
 
     const filteredGroups = nurseryGroups.filter(group =>
         group.name.toLowerCase().includes(searchQuery.toLowerCase())

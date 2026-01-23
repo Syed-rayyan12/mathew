@@ -28,8 +28,12 @@ export interface NurseryGroupUpdateData {
 
 export const nurseryGroupService = {
   // Get all nursery groups (for nursery-group page - public)
-  getAllGroups: async () => {
-    const response = await fetch(`${API_CONFIG.BASE_URL}/user/nurseries/groups`);
+  getAllGroups: async (params?: { city?: string }) => {
+    let url = `${API_CONFIG.BASE_URL}/user/nurseries/groups`;
+    if (params?.city) {
+      url += `?city=${encodeURIComponent(params.city)}`;
+    }
+    const response = await fetch(url);
     return response.json();
   },
 

@@ -8,6 +8,7 @@ import { Separator } from "../ui/separator";
 import Link from "next/link";
 import { nurseryService, Nursery } from "@/lib/api/nursery";
 import { toast } from "sonner";
+import { useSearchParams } from "next/navigation";
 import {
   Sheet,
   SheetContent,
@@ -18,6 +19,8 @@ import {
 } from "@/components/ui/sheet";
 
 export default function NurseriesPage() {
+  const searchParams = useSearchParams();
+  const cityFromUrl = searchParams.get('city') || '';
   const [searchQuery, setSearchQuery] = useState("");
   const [nurseries, setNurseries] = useState<Nursery[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,13 +32,14 @@ export default function NurseriesPage() {
 
   useEffect(() => {
     fetchNurseries();
-  }, [selectedAgeGroups, selectedFacilities]);
+  }, [selectedAgeGroups, selectedFacilities, cityFromUrl]);
 
   const fetchNurseries = async () => {
     setLoading(true);
     try {
       const response = await nurseryService.getAll({ 
         limit: 100,
+        city: cityFromUrl || undefined,
         ageRange: selectedAgeGroups,
         facilities: selectedFacilities,
       });

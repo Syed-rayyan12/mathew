@@ -1,5 +1,5 @@
 import React from 'react'
-import { Search } from 'lucide-react'
+import BannerSearch from '../sharedComponents/banner-search'
 
 const ArticleBanner = () => {
     return (
@@ -27,30 +27,7 @@ const ArticleBanner = () => {
                     </p>
 
 
-                    <div className="bg-white rounded-full shadow-lg p-2 flex gap-2 w-fit">
-                        {/* Select Dropdown */}
-                        <select className="px-4 py-3 bg-transparent border-none outline-none text-gray-700 font-medium">
-                            <option value="">Select Type</option>
-                            <option value="daycare">Daycare</option>
-                            <option value="preschool">Preschool</option>
-                            <option value="nursery">Nursery</option>
-                        </select>
-
-                        {/* Divider */}
-                        <div className="h-8 w-px bg-gray-300"></div>
-
-                        {/* Location Input */}
-                        <input
-                            type="text"
-                            placeholder="Enter your location"
-                            className="px-4 py-3 bg-transparent border-none outline-none text-gray-700 placeholder:text-gray-400 w-64 max-sm:w-full max-md:w-full"
-                        />
-
-                        {/* Search Button */}
-                        <button className="bg-secondary hover:bg-secondary/90 text-white rounded-full p-3 transition-colors">
-                            <Search className="w-5 h-5" />
-                        </button>
-                    </div>
+                    <BannerSearch />
                 </div>
             </div>
         </section>

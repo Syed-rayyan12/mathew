@@ -21,7 +21,14 @@ const nurseryGroup = () => {
                     city: cityFromUrl || undefined
                 });
                 if (response.success && Array.isArray(response.data)) {
-                    setNurseryGroups(response.data);
+                    // If city is searched, filter by exact city match
+                    let filteredData = response.data;
+                    if (cityFromUrl) {
+                        filteredData = response.data.filter((group: NurseryGroup) => 
+                            group.city?.toLowerCase() === cityFromUrl.toLowerCase()
+                        );
+                    }
+                    setNurseryGroups(filteredData);
                 }
             } catch (error) {
                 console.error('Error fetching nursery groups:', error);

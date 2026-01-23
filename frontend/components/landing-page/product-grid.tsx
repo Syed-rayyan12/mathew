@@ -45,7 +45,15 @@ export default function NurseriesPage() {
       });
       if (response.success && Array.isArray(response.data)) {
         // Only show child nurseries (not parent groups)
-        const childNurseries = response.data.filter(n => n.groupId !== null && n.groupId !== undefined);
+        let childNurseries = response.data.filter(n => n.groupId !== null && n.groupId !== undefined);
+        
+        // If city is searched, filter by exact city match
+        if (cityFromUrl) {
+          childNurseries = childNurseries.filter(n => 
+            n.city?.toLowerCase() === cityFromUrl.toLowerCase()
+          );
+        }
+        
         console.log('Filtered child nurseries:', childNurseries);
         setNurseries(childNurseries);
       }

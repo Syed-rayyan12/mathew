@@ -45,6 +45,7 @@ const HeroBanner = () => {
   const [selectedCity, setSelectedCity] = useState<string>('');
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchType, setSearchType] = useState<'nursery' | 'group'>('nursery');
   const [currentSlide, setCurrentSlide] = useState(0);
   const [autocompleteResults, setAutocompleteResults] = useState<AutocompleteResults>({
     cities: [],
@@ -109,8 +110,8 @@ const HeroBanner = () => {
       return;
     }
 
-    // Navigate to search page with city parameter
-    router.push(`/search?city=${encodeURIComponent(selectedCity)}`);
+    // Navigate to search page with city and type parameters
+    router.push(`/search?city=${encodeURIComponent(selectedCity)}&type=${searchType}`);
   };
 
   const handleSelectCity = (city: string) => {
@@ -202,12 +203,14 @@ const HeroBanner = () => {
                  animate={{ opacity: 1, y: 0 }}
                  transition={{ duration: 0.8, delay: 0.7 }}
                >
-                 {/* Select Dropdown */}
-                 <select className="px-4 py-3 bg-transparent border-none outline-none text-gray-700 font-medium">
-                   <option value="">Select Type</option>
-                   <option value="daycare">Daycare</option>
-                   <option value="preschool">Preschool</option>
+                 {/* Select Dropdown for Search Type */}
+                 <select 
+                   value={searchType}
+                   onChange={(e) => setSearchType(e.target.value as 'nursery' | 'group')}
+                   className="px-4 py-3 bg-transparent border-none outline-none text-gray-700 font-medium cursor-pointer"
+                 >
                    <option value="nursery">Nursery</option>
+                   <option value="group">Group</option>
                  </select>
                  
                  {/* Divider */}
@@ -267,8 +270,8 @@ const HeroBanner = () => {
                                    </CommandGroup>
                                  )}
 
-                                 {/* Groups */}
-                                 {autocompleteResults.groups.length > 0 && (
+                                 {/* Groups - Show only if searchType is 'group' */}
+                                 {searchType === 'group' && autocompleteResults.groups.length > 0 && (
                                    <CommandGroup heading="Nursery Groups">
                                      {autocompleteResults.groups.map((group) => (
                                        <CommandItem
@@ -286,8 +289,8 @@ const HeroBanner = () => {
                                    </CommandGroup>
                                  )}
 
-                                 {/* Nurseries */}
-                                 {autocompleteResults.nurseries.length > 0 && (
+                                 {/* Nurseries - Show only if searchType is 'nursery' */}
+                                 {searchType === 'nursery' && autocompleteResults.nurseries.length > 0 && (
                                    <CommandGroup heading="Nurseries">
                                      {autocompleteResults.nurseries.map((nursery) => (
                                        <CommandItem

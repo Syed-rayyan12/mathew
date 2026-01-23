@@ -159,8 +159,8 @@ const NurseryCardsSection = () => {
                                         <div className="flex items-center justify-between gap-2 mb-2">
                                             <h3 className="font-heading text-[24px] font-medium text-[#044A55]">{nursery.name}</h3>
                                             {nursery.city && (
-                                                <span className="text-sm font-ubuntu text-foreground whitespace-nowrap">
-                                                   <LocationEditIcon/>
+                                                <span className="text-sm font-ubuntu flex items-center text-foreground whitespace-nowrap">
+                                                   <LocationEditIcon className='text-secondary'/>
                                                     {nursery.city}
                                                 </span>
                                             )}

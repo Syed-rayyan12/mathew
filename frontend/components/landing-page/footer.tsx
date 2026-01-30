@@ -50,6 +50,7 @@ export default function Footer() {
              <li><Link href="/claim" className="text-white hover:text-gray-300 hover:underline">Claim 6-Month Free Listing </Link></li>
              <li><Link href="/pricing" className="text-white hover:text-gray-300 hover:underline">Pricing/Subscription Page</Link></li>
              <li><Link href="/review" className="text-white hover:text-gray-300 hover:underline">Review</Link></li>
+                          <li className='text-white hover:text-gray-300 hover:underline'>support@my-nursery.co.uk</li>
            </ul>
          </div>
         {/* Get in Touch */}

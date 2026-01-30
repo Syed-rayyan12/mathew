@@ -60,13 +60,13 @@ export default function Footer() {
           <ul className="space-y-1 md:space-y-2 leading-6 md:leading-8 text-sm md:text-base">
             <li className='flex items-start gap-2 text-white'>
               <Mail className="w-4 h-4 md:w-5 md:h-5 mt-0.5" />
-              <span className="break-all">info@mynursery.co.uk</span></li>
+              <span className="break-all">hello@my-nursery.co.uk</span></li>
             <li className='flex items-start gap-2 text-white'>
               <LocateIcon className="w-4 h-4 md:w-5 md:h-5 mt-0.5" />
               <span>123 Nursery Lane,UK</span></li>
             <li className='flex items-start gap-2 text-white'>
               <Phone className="w-4 h-4 md:w-5 md:h-5 mt-0.5" />
-              <span>077700 900123</span></li>
+              <span>01482 688508</span></li>
           </ul>
         </div>
 

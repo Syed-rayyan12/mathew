@@ -176,7 +176,7 @@ const NurseryCardsSection = () => {
                                         </p>
                                         <div className='mt-4 flex items-center gap-2 pt-2'>
                                             <Link 
-                                                href={`/products/${nursery.slug}`} 
+                                                href="/products"
                                                 className='text-secondary font-heading text-[20px] uppercase hover:underline'
                                             >
                                                 view all nurseries

@@ -132,7 +132,7 @@ const HeroBanner = () => {
   };
   return (
     <>
-        <section className="w-full h-[100vh] max-lg:h-[60vh] max-sm:h-[90vh] lg:h-[70vh] xl:h-[100vh] relative flex justify-center overflow-hidden"> 
+        <section className="w-full h-[100vh] max-lg:h-[60vh] max-sm:h-[90vh] lg:h-[70vh] xl:h-[95vh] relative flex justify-center overflow-hidden"> 
            {/* Background Image */}
            <div className="relative w-full h-full">
              <img 
@@ -143,7 +143,7 @@ const HeroBanner = () => {
            </div>
            
            {/* Content Overlay */}
-          <div className="absolute inset-0 flex items-center  max-sm:px-8 max-md:px-14 xl:px-24 max-xl:px-16 z-10">
+          <div className="absolute inset-0 flex items-center bottom-[80px]  max-sm:px-8 max-md:px-14 xl:px-24 max-xl:px-16 z-10">
              <div className="">
                {/* Heading */}
                <motion.h1 

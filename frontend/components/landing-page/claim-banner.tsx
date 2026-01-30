@@ -11,10 +11,10 @@ const ClaimBanner = () => {
                 backgroundRepeat: 'no-repeat'
             }}
         >
-            <div className="absolute inset-0 flex items-center justify-center">
+            <div className="absolute bottom-[70px] inset-0 flex items-center justify-center">
                 <div className=" w-full px-24 max-sm:px-8 max-md:px-14 xl:px-24 max-xl:px-16 flex flex-col gap-4">
                     {/* Heading */}
-                    <h2 className="text-4xl md:text-5xl max-sm:text-[45px] font-heading font-bold text-white leading-tight">
+                    <h2 className="text-[55px] md:text-5xl max-sm:text-[45px] font-heading font-bold text-white leading-tight">
                         Claim Your 6-Month Free Nursery Listing
                     </h2>
 

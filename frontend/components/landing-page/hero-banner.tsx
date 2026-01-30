@@ -46,7 +46,6 @@ const HeroBanner = () => {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchType, setSearchType] = useState<'nursery' | 'group'>('nursery');
-  const [currentSlide, setCurrentSlide] = useState(0);
   const [autocompleteResults, setAutocompleteResults] = useState<AutocompleteResults>({
     cities: [],
     groups: [],
@@ -54,15 +53,6 @@ const HeroBanner = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
-
-  // Auto slide change
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % SLIDES.length);
-    }, 2000); // Change slide every 5 seconds
-
-    return () => clearInterval(interval);
-  }, []);
 
   // Click outside to close dropdown
   useEffect(() => {
@@ -143,39 +133,13 @@ const HeroBanner = () => {
   return (
     <>
         <section className="w-full h-[100vh] max-lg:h-[60vh] max-sm:h-[90vh] lg:h-[70vh] xl:h-[100vh] relative flex justify-center overflow-hidden"> 
-           {/* Image Slider */}
+           {/* Background Image */}
            <div className="relative w-full h-full">
-             {SLIDES.map((slide, index) => (
-               <motion.img 
-                 key={slide}
-                 src={slide}
-                 alt={`Slide ${index + 1}`}
-                 className='absolute inset-0 w-full h-full object-cover'
-                 initial={false}
-                 animate={{ 
-                   opacity: currentSlide === index ? 1 : 0,
-                   scale: currentSlide === index ? 1 : 1.05,
-                   transition: { duration: 1.5, ease: 'easeInOut' }
-                 }}
-               />
-             ))}
-           </div>
-           
-           {/* Slide Indicators */}
-           <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-2 z-10">
-             {SLIDES.map((_, index) => (
-               <button
-                 key={index}
-                 onClick={() => setCurrentSlide(index)}
-                 className={cn(
-                   "w-3 h-3 rounded-full transition-all duration-300",
-                   currentSlide === index 
-                     ? "bg-white w-8" 
-                     : "bg-white/50 hover:bg-white/75"
-                 )}
-                 aria-label={`Go to slide ${index + 1}`}
-               />
-             ))}
+             <img 
+               src="/images/hero-banner.png"
+               alt="Hero Banner"
+               className='absolute inset-0 w-full h-full object-cover'
+             />
            </div>
            
            {/* Content Overlay */}

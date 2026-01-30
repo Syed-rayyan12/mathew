@@ -15,7 +15,7 @@ const TermsAndConditions = () => {
                 <div className="relative w-full px-24 max-sm:px-8 max-md:px-14 xl:px-24 max-xl:px-16 flex flex-col gap-4">
                     {/* Heading */}
                     <h2 className="text-[66px] font-heading font-medium text-white leading-tight">
-                        PRIVACY <span className="text-secondary">POLICY</span>
+                        PRIVACY POLICY
                     </h2>
 
                     {/* Paragraph */}

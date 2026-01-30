@@ -15,7 +15,7 @@ const ContactUs = () => {
                 <div className="relative w-full px-24  max-sm:px-8 max-md:px-14 xl:px-24 max-xl:px-16 flex flex-col gap-4">
                     {/* Heading */}
                     <h2 className="text-[66px] max-sm:text-[45px] font-heading font-medium text-white leading-tight">
-                        Get in Touch <span className="text-secondary">With Us</span>
+                        Get in Touch With Us
                     </h2>
 
                     {/* Paragraph */}

@@ -29,7 +29,7 @@ const AboutBanner = () => {
           {/* Heading */}
           <h2 className="text-[66px] max-sm:text-[39px] font-heading font-medium text-white leading-tight">
             Helping Families Find the <br />
-            Perfect <span className="text-secondary">Nursery</span>
+            Perfect Nursery
           </h2>
 
           {/* Paragraph */}

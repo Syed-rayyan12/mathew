@@ -10,7 +10,7 @@ const AboutBanner = () => {
       
       {/* Banner Image */}
       <Image
-        src="/images/about-banner.png"
+        src="/images/four.png"
         alt="About Banner"
         fill
         priority

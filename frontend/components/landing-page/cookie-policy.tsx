@@ -4,7 +4,7 @@ const CookiePolicy = () => {
     return (
         <section className="w-full h-[500px] relative flex justify-center"
             style={{
-                backgroundImage: "url('/images/about-banner.png')",
+                backgroundImage: "url('/images/four.png')",
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 backgroundRepeat: 'no-repeat'

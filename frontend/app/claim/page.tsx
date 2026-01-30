@@ -11,7 +11,7 @@ const page = () => {
        <MiniNav/>
         <Header/>
         <ClaimBanner/>
-        <ClaimCards/>
+        {/* <ClaimCards/> */}
         <Footer/>
 
     </>

@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { motion, useInView } from 'framer-motion';
 
 const stats = [
-    { percent: '65%', text: 'Nurseries Join Today', color: '#3CC1DC' },
-    { percent: '', text: 'Join Today', color: '#D0508C' },
+    { percent: '', text: 'Join Today', color: '#3CC1DC' },
+    { percent: '', text: 'Get first 6 months free', color: '#D0508C' },
     { percent: '', text: 'Multi-Year Discount', color: '#F15F25' },
 ];
 
@@ -23,11 +23,11 @@ const CTASection = () => {
                     animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
                     transition={{ duration: 0.8 }}
                 >
-                     <p className="text-primary font-medium font-heading text-2xl">Sign up today and grow</p>
+                     <p className="text-primary font-medium font-heading text-2xl">Limited Time Offer</p>
                     <h2 className="text-4xl md:text-5xl font-heading font-medium mb-2 text-foreground leading-tight">
                        Join My <span className="text-secondary">Nursery</span> Today
                     </h2>
-                    <p className='text-[16px] text-muted-foreground font-sans mb-6'>Connect with local families, build trust through verified reviews, and manage your profile — all from one simple dashboard.</p>
+                    <p className='text-[16px] text-muted-foreground font-sans mb-6'>Get your first 6 months completely FREE when you sign up.</p>
                     <Button className="bg-secondary hover:bg-secondary/80 text-white px-6 rounded-[6px] py-5">
                               Sign Up & Get Started — It's Free!
                     </Button>

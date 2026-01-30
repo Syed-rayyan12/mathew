@@ -25,7 +25,7 @@ const CTASection = () => {
                 >
                      <p className="text-primary font-medium font-heading text-2xl">Limited Time Offer</p>
                     <h2 className="text-4xl md:text-5xl font-heading font-medium mb-2 text-foreground leading-tight">
-                       Join My <span className="text-secondary">Nursery</span> Today
+                       Join Our Nursery<span className="text-secondary">Platform</span> Today
                     </h2>
                     <p className='text-[16px] text-muted-foreground font-sans mb-6'>Get your first 6 months completely FREE when you sign up.</p>
                     <Button className="bg-secondary hover:bg-secondary/80 text-white px-6 rounded-[6px] py-5">

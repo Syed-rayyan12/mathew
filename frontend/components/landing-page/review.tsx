@@ -3,9 +3,9 @@ import { Search } from 'lucide-react'
 
 const Review = () => {
     return (
-        <section className="w-full h-[500px] relative flex justify-center"
+        <section className="w-full h-[600px] relative flex justify-center"
             style={{
-                backgroundImage: "url('/images/four.png')",
+                backgroundImage: "url('/images/all-banners.png')",
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 backgroundRepeat: 'no-repeat'
@@ -13,9 +13,6 @@ const Review = () => {
         >
             <div className="absolute inset-0 flex items-center justify-center">
                 <div className=" w-full px-24 max-sm:px-4 max-md:px-14 xl:px-24 max-xl:px-16  flex flex-col gap-4">
-                    {/* Tag Heading */}
-
-
                     {/* Heading */}
                     <h2 className="text-4xl md:text-5xl max-sm:text-[45px] font-heading font-bold text-white leading-tight">
                         Real Reviews from Real <span className="text-secondary">Parents</span>

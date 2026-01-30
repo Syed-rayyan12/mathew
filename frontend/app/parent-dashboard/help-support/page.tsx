@@ -11,11 +11,11 @@ export default function SupportSection() {
 
   const faqs = [
     {
-      question: 'how can i contact support?',
+      question: 'how can I contact support?',
       answer: 'you can contact us through the support form on this page or email support@example.com.',
     },
     {
-      question: 'what is your refund policy?',
+      question: 'what Is your refund policy?',
       answer: 'we offer full refunds within 30 days of purchase if the product has not been used.',
     },
     {
@@ -23,11 +23,11 @@ export default function SupportSection() {
       answer: 'yes! we occasionally offer seasonal discounts and promotional offers.',
     },
     {
-      question: 'how can i update my profile?',
+      question: 'how can I update my profile?',
       answer: 'go to your account settings and click on “edit profile” to update your details.',
     },
     {
-      question: 'can i delete my account?',
+      question: 'can I delete my account?',
       answer: 'yes, please reach out to support for account deletion requests.',
     },
   ];

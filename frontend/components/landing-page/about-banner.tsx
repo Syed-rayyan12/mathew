@@ -6,11 +6,11 @@ import BannerSearch from '../sharedComponents/banner-search';
 
 const AboutBanner = () => {
   return (
-    <section className="relative w-full h-[500px] flex justify-center overflow-hidden">
+    <section className="relative w-full h-[600px] flex justify-center overflow-hidden">
       
       {/* Banner Image */}
       <Image
-        src="/images/four.png"
+        src="/images/all-banners.png"
         alt="About Banner"
         fill
         priority
@@ -21,17 +21,8 @@ const AboutBanner = () => {
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="relative w-full px-24 max-sm:px-8 max-md:px-14 xl:px-24 max-xl:px-16 flex flex-col gap-4">
 
-          {/* Cloud Image */}
-          <Image
-            src="/images/cloud.png"
-            alt="Cloud"
-            width={120}
-            height={64}
-            className="absolute -top-6 left-[150px]"
-          />
-
           {/* Tag Heading */}
-          <p className="text-primary font-medium font-heading text-2xl">
+          <p className="text-white font-medium font-heading text-2xl">
             ABOUT US
           </p>
 

@@ -138,7 +138,7 @@ const ArticleTabs = () => {
                 ) : filteredArticles.length === 0 ? (
                     <div className="flex items-center justify-center py-20">
                         <div className="text-center">
-                            <p className="text-xl text-muted-foreground mb-2">No articles found</p>
+                            <p className="text-xl text-secondary mb-2">Coming Soon</p>
                             <p className="text-sm text-gray-500">Check back later for new content</p>
                         </div>
                     </div>

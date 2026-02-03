@@ -121,6 +121,14 @@ export default function ManageArticles() {
             </h2>
             <p className="text-gray-600">View, edit, and manage all platform articles</p>
           </div>
+          
+          <Button
+            onClick={() => setOpenAddModal(true)}
+            className="bg-secondary hover:bg-secondary/90 text-white rounded-sm flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Add Article
+          </Button>
         </div>
       </div>
 

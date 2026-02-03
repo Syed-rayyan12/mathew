@@ -24,8 +24,8 @@ Connect with our team today</p>
                 <MapPin className="w-5 h-5 text-secondary" />
                 </div>
                 <div>
-                  <p className="text-gray-700">123 Nursery Lane, London, UK</p>
-                  <p className="text-gray-700">SW1A 1AA</p>
+                  <p className="text-gray-700">Address – Shawbriggs, Barrow Road, Goxhill, North Lincolnshire,</p>
+                  <p className="text-gray-700">DN19 7LN</p>
                 </div>
               </div>
 
@@ -35,7 +35,7 @@ Connect with our team today</p>
                 <Mail className="w-5 h-5 text-secondary" />
                  </div>
                 <a href="mailto:info@nursery.com" className="text-gray-700 hover:text-secondary">
-                  info@nursery.com
+                 hello@my-nursery.co.uk
                 </a>
               </div>
 
@@ -45,7 +45,7 @@ Connect with our team today</p>
                 <Phone className="w-5 h-5 text-secondary" />
                  </div>
                 <a href="tel:+441234567890" className="text-gray-700 hover:text-secondary">
-                  +44 (123) 456-7890
+                  01482 688508
                 </a>
               </div>
             </div>

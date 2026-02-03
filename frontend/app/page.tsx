@@ -31,7 +31,7 @@ const page = () => {
       <CreateNurseryHero />
       <TestimonialSlider />
       <ArticleNews />
-      <NewsletterSignup />
+      <NewsletterSignup  />
       <Footer />
 
 

@@ -1,4 +1,4 @@
-import { Facebook, Twitter, Youtube, Instagram, Mail, LocateIcon, Phone } from 'lucide-react';
+import { Facebook, Twitter, Youtube, Instagram, Mail, LocateIcon, Phone, LocationEdit } from 'lucide-react';
 import Link from 'next/link';
 
 export default function Footer() {
@@ -37,8 +37,8 @@ export default function Footer() {
           <ul className="space-y-1 md:space-y-2 leading-6 md:leading-8 text-sm md:text-base">
             <li><Link href="/" className="text-white hover:text-gray-300">Home</Link></li>
             <li><Link href="/about" className="text-white hover:text-gray-300">About</Link></li>
-            <li><Link href="/group" className="text-white hover:text-gray-300">Group</Link></li>
-            <li><Link href="/articles" className="text-white hover:text-gray-300">Articles</Link></li>
+            <li><Link href="/nursery-group" className="text-white hover:text-gray-300">Group</Link></li>
+            <li><Link href="/article" className="text-white hover:text-gray-300">Articles</Link></li>
             <li><Link href="/contact-us" className="text-white hover:text-gray-300">Contact Us</Link></li>
           </ul>
         </div>
@@ -59,13 +59,13 @@ export default function Footer() {
         <div>
           <h3 className="text-lg md:text-xl lg:text-[22px] font-medium font-heading font-semibold mb-3 md:mb-4 text-white">Get In Touch</h3>
           <ul className="space-y-1 md:space-y-2 leading-6 md:leading-8 text-sm md:text-base">
-            <li className='flex items-start gap-2 text-white'>
+            <li className='flex items-center gap-2 text-white'>
               <Mail className="w-4 h-4 md:w-5 md:h-5 mt-0.5" />
               <span className="break-all">hello@my-nursery.co.uk</span></li>
-            <li className='flex items-start gap-2 text-white'>
-              <LocateIcon className="w-4 h-4 md:w-5 md:h-5 mt-0.5" />
-              <span>123 Nursery Lane,UK</span></li>
-            <li className='flex items-start gap-2 text-white'>
+            <li className='flex items-center gap-2 text-white'>
+              <LocationEdit className="w-4 h-4 md:w-10 md:h-10 mt-0.5" />
+              <span className='text-[16px]'>Address – Shawbriggs, Barrow Road, Goxhill, North Lincolnshire, DN19 7LN</span></li>
+            <li className='flex items-center gap-2 text-white'>
               <Phone className="w-4 h-4 md:w-5 md:h-5 mt-0.5" />
               <span>01482 688508</span></li>
           </ul>

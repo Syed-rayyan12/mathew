@@ -3,6 +3,7 @@
 import React, { useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { motion, useInView } from 'framer-motion'
+import Link from 'next/link';
 
 const CreateNurseryHero = () => {
   const ref = useRef(null);
@@ -25,7 +26,7 @@ const CreateNurseryHero = () => {
                            Join hundreds of nurseries growing with <span className="text-secondary">My Nursery</span>.
                         </motion.h2>
         <motion.p 
-          className="mb-4 mt-4 text-white"
+          className="mb-8 mt-4 text-white"
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 0.8, delay: 0.4 }}
@@ -35,7 +36,7 @@ const CreateNurseryHero = () => {
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 0.8, delay: 0.6 }}
         >
-        <Button className='bg-secondary rounded-md py-5 px-6'>Create Your Nursery Profile</Button>
+        <Link href="/nursery-signup" className='bg-secondary rounded-md py-4 px-6 text-white mt-4'>Create Your Nursery Profile</Link>
         </motion.div>
       </motion.div>
     </section>

@@ -3,6 +3,7 @@
 import React, { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { motion, useInView } from 'framer-motion';
+import Link from 'next/link';
 
 const stats = [
     { percent: '', text: 'Join Today', color: '#3CC1DC' },
@@ -27,10 +28,10 @@ const CTASection = () => {
                     <h2 className="text-4xl md:text-5xl font-heading font-medium mb-2 text-foreground leading-tight">
                        Join Our Nursery<span className="text-secondary">Platform</span> Today
                     </h2>
-                    <p className='text-[16px] text-muted-foreground font-sans mb-6'>Get your first 6 months completely FREE when you sign up.</p>
-                    <Button className="bg-secondary hover:bg-secondary/80 text-white px-6 rounded-[6px] py-5">
+                    <p className='text-[16px] text-muted-foreground font-sans mb-8'>Get your first 6 months completely FREE when you sign up.</p>
+                    <Link href="/nursery-signup" className="bg-secondary hover:bg-secondary/80 text-white px-6 rounded-[6px] py-4">
                               Sign Up & Get Started — It's Free!
-                    </Button>
+                    </Link >
                 </motion.div>
                 <motion.div 
                     className="flex-1"

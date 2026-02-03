@@ -8,6 +8,11 @@ import { Button } from '@/components/ui/button';
 
 export default function SupportSection() {
   const [openIndex, setOpenIndex] = useState(null);
+  const [formData, setFormData] = useState({
+    email: '',
+    phone: '',
+    message: '',
+  });
 
   const faqs = [
     {
@@ -24,7 +29,7 @@ export default function SupportSection() {
     },
     {
       question: 'how can I update my profile?',
-      answer: 'go to your account settings and click on “edit profile” to update your details.',
+      answer: 'go to your account settings and click on "edit profile" to update your details.',
     },
     {
       question: 'can I delete my account?',
@@ -34,6 +39,54 @@ export default function SupportSection() {
 
   const toggleAccordion = (index: any) => {
     setOpenIndex(openIndex === index ? null : index);
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+    
+    // Format UK phone number
+    if (value.startsWith('44')) {
+      // International format +44
+      value = '+' + value;
+      if (value.length > 3) {
+        value = value.slice(0, 3) + ' ' + value.slice(3);
+      }
+      if (value.length > 8) {
+        value = value.slice(0, 8) + ' ' + value.slice(8);
+      }
+    } else if (value.startsWith('0')) {
+      // Local format
+      if (value.startsWith('07')) {
+        // Mobile: 07XXX XXXXXX
+        if (value.length > 5) {
+          value = value.slice(0, 5) + ' ' + value.slice(5, 11);
+        }
+      } else if (value.startsWith('02')) {
+        // London: 020 XXXX XXXX
+        if (value.length > 3) {
+          value = value.slice(0, 3) + ' ' + value.slice(3, 7) + ' ' + value.slice(7, 11);
+        }
+      } else {
+        // Other local: 01XXX XXXXXX
+        if (value.length > 5) {
+          value = value.slice(0, 5) + ' ' + value.slice(5, 11);
+        }
+      }
+    } else if (value.length > 0) {
+      // Assume UK mobile without leading 0
+      value = '0' + value;
+      if (value.length > 5) {
+        value = value.slice(0, 5) + ' ' + value.slice(5, 11);
+      }
+    }
+    
+    setFormData({ ...formData, phone: value });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Handle form submission
+    console.log('Form submitted:', formData);
   };
 
   return (
@@ -76,16 +129,39 @@ export default function SupportSection() {
       <div className="bg-white rounded-2xl shadow-md p-6 flex flex-col justify-between">
         <h2 className="text-2xl font-bold  text-gray-800 font-sans">Contact Support</h2>
 
-        <form className="space-y-4 mt-4">
+        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="flex flex-col space-y-2">
-            <label htmlFor="subject" className="text-sm font-medium text-[16px] text-foreground font-sans">
-              subject
+            <label htmlFor="email" className="text-sm font-medium text-[16px] text-foreground font-sans">
+              email address
             </label>
             <Input
-              id="subject"
-              placeholder="enter your subject"
+              id="email"
+              type="email"
+              placeholder="your.email@example.com"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               className="bg-gray-50 font-sans"
+              required
             />
+          </div>
+
+          <div className="flex flex-col space-y-2">
+            <label htmlFor="phone" className="text-sm font-medium text-[16px] text-foreground font-sans">
+              phone number
+            </label>
+            <Input
+              id="phone"
+              type="tel"
+              placeholder="07XXX XXXXXX or +44 7XXX XXXXXX"
+              value={formData.phone}
+              onChange={handlePhoneChange}
+              className="bg-gray-50 font-sans"
+              maxLength={17}
+              required
+            />
+            <p className="text-xs text-gray-500 font-sans">
+              UK format: Local (07XXX XXXXXX) or International (+44 7XXX XXXXXX)
+            </p>
           </div>
 
           <div className="flex flex-col space-y-2">
@@ -95,11 +171,14 @@ export default function SupportSection() {
             <Textarea
               id="message"
               placeholder="write your message here..."
+              value={formData.message}
+              onChange={(e) => setFormData({ ...formData, message: e.target.value })}
               className="bg-gray-50 min-h-[120px] font-sans"
+              required
             />
           </div>
           <div className="flex justify-start">
-            <Button className="w-full bg-blue-500 text-white hover:bg-blue-600 font-sans">
+            <Button type="submit" className="w-full bg-blue-500 text-white hover:bg-blue-600 font-sans">
               Send Message
             </Button>
           </div>

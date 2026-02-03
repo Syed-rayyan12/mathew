@@ -7,9 +7,9 @@ const OurStory = () => {
                 {/* Image */}
 
                 <img
-                    src="/images/our-story.png"
+                    src="/images/our-story.jpeg"
                     alt="Our Story"
-                    className="w-full max-lg:w-full h-auto"
+                    className="w-1/2 max-lg:w-full h-auto object-cover"
                 />
 
 

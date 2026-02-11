@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { nurseryDashboardService } from "@/lib/api/nursery";
 import { authService } from "@/lib/api/auth";
 import { UK_CITIES } from "@/lib/data/uk-cities";
+import { UK_TOWNS } from "@/lib/data/uk-towns";
 
 export default function AddNurseryModal({
   open,
@@ -101,7 +102,7 @@ export default function AddNurseryModal({
 
   const handleSubmit = async () => {
     if (!formData.nurseryName || !formData.city) {
-      toast.error('Please fill in nursery name and city');
+      toast.error('Please fill in nursery name and city/town');
       return;
     }
 
@@ -250,11 +251,11 @@ export default function AddNurseryModal({
             </div>
           </div>
 
-          {/* City */}
+          {/* City or Town */}
           <div>
-            <h3 className="font-medium text-lg mb-4">City</h3>
+            <h3 className="font-medium text-lg mb-4">Location</h3>
             <div>
-              <Label className="block mb-2">City *</Label>
+              <Label className="block mb-2">City / Town *</Label>
               <Popover open={cityPopoverOpen} onOpenChange={setCityPopoverOpen}>
                 <PopoverTrigger asChild>
                   <Button
@@ -266,35 +267,63 @@ export default function AddNurseryModal({
                       !formData.city && "text-muted-foreground"
                     )}
                   >
-                    {formData.city || "Select city..."}
+                    {formData.city || "Select city or town..."}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 max-h-[400px]">
                   <Command>
-                    <CommandInput placeholder="Search city..." />
+                    <CommandInput placeholder="Search city or town..." />
                     <CommandList>
-                      <CommandEmpty>No city found.</CommandEmpty>
-                      <CommandGroup>
-                        {UK_CITIES.map((city) => (
-                          <CommandItem
-                            key={city}
-                            value={city}
-                            onSelect={() => {
-                              setFormData({ ...formData, city: city });
-                              setCityPopoverOpen(false);
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                formData.city === city ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            {city}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
+                      <CommandEmpty>No city or town found.</CommandEmpty>
+                      <div className="grid grid-cols-2 gap-2 p-2">
+                        {/* Cities Column */}
+                        <div className="border-r pr-2">
+                          <CommandGroup heading="Cities">
+                            {UK_CITIES.map((city) => (
+                              <CommandItem
+                                key={`city-${city}`}
+                                value={city}
+                                onSelect={() => {
+                                  setFormData({ ...formData, city: city });
+                                  setCityPopoverOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    formData.city === city ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {city}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </div>
+                        {/* Towns Column */}
+                        <div>
+                          <CommandGroup heading="Towns">
+                            {UK_TOWNS.map((town) => (
+                              <CommandItem
+                                key={`town-${town}`}
+                                value={town}
+                                onSelect={() => {
+                                  setFormData({ ...formData, city: town });
+                                  setCityPopoverOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    formData.city === town ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {town}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </div>
+                      </div>
                     </CommandList>
                   </Command>
                 </PopoverContent>

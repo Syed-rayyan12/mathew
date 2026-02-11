@@ -273,11 +273,11 @@ export const autocompleteSearch = async (
     
     const cities = UK_CITIES.filter(city => 
       city.toLowerCase().includes(searchTerm.toLowerCase())
-    ).slice(0, 5);
+    ).slice(0, 10);
 
     const towns = UK_TOWNS.filter(town => 
       town.toLowerCase().includes(searchTerm.toLowerCase())
-    ).slice(0, 5);
+    ).slice(0, 10);
 
     res.json({
       success: true,

@@ -88,10 +88,10 @@ const HeroBanner = () => {
           setIsLoading(false);
         }
       } else {
-        // Show all UK cities and towns when no search query
+        // Show limited UK cities and towns when no search query
         setAutocompleteResults({
-          cities: UK_CITIES,
-          towns: UK_TOWNS,
+          cities: UK_CITIES.slice(0, 10),
+          towns: UK_TOWNS.slice(0, 10),
           groups: [],
           nurseries: [],
         });
@@ -224,49 +224,54 @@ const HeroBanner = () => {
                                  <CommandEmpty>No results found.</CommandEmpty>
                                ) : (
                                  <>
-                                   {/* Cities */}
-                                   {autocompleteResults.cities.length > 0 && (
-                                     <CommandGroup heading="Cities">
-                                       {autocompleteResults.cities.map((city) => (
-                                         <CommandItem
-                                           key={`city-${city}`}
-                                           value={city}
-                                           onSelect={() => handleSelectCity(city)}
-                                         >
-                                       
-                                         <MapPin className="mr-2 h-4 w-4 text-secondary" />
-                                         <span>{city}</span>
-                                         <Check
-                                           className={cn(
-                                             "ml-auto h-4 w-4",
-                                             selectedCity === city ? "opacity-100" : "opacity-0"
-                                           )}
-                                         />
-                                       </CommandItem>
-                                     ))}
-                                   </CommandGroup>
-                                 )}
+                                   {/* Cities and Towns in 2 columns */}
+                                   {(autocompleteResults.cities.length > 0 || autocompleteResults.towns.length > 0) && (
+                                     <div className="grid grid-cols-2 gap-2 p-2">
+                                       {/* Cities Column */}
+                                       <div className="border-r pr-2">
+                                         <CommandGroup heading="Cities">
+                                           {autocompleteResults.cities.map((city) => (
+                                             <CommandItem
+                                               key={`city-${city}`}
+                                               value={city}
+                                               onSelect={() => handleSelectCity(city)}
+                                             >
+                                           
+                                             <MapPin className="mr-2 h-4 w-4 text-secondary" />
+                                             <span>{city}</span>
+                                             <Check
+                                               className={cn(
+                                                 "ml-auto h-4 w-4",
+                                                 selectedCity === city ? "opacity-100" : "opacity-0"
+                                               )}
+                                             />
+                                           </CommandItem>
+                                         ))}
+                                       </CommandGroup>
+                                     </div>
 
-                                 {/* Towns */}
-                                 {autocompleteResults.towns.length > 0 && (
-                                   <CommandGroup heading="Towns">
-                                     {autocompleteResults.towns.map((town) => (
-                                       <CommandItem
-                                         key={`town-${town}`}
-                                         value={town}
-                                         onSelect={() => handleSelectCity(town)}
-                                       >
-                                         <MapPin className="mr-2 h-4 w-4 text-blue-600" />
-                                         <span>{town}</span>
-                                         <Check
-                                           className={cn(
-                                             "ml-auto h-4 w-4",
-                                             selectedCity === town ? "opacity-100" : "opacity-0"
-                                           )}
-                                         />
-                                       </CommandItem>
-                                     ))}
-                                   </CommandGroup>
+                                     {/* Towns Column */}
+                                     <div>
+                                       <CommandGroup heading="Towns">
+                                         {autocompleteResults.towns.map((town) => (
+                                           <CommandItem
+                                             key={`town-${town}`}
+                                             value={town}
+                                             onSelect={() => handleSelectCity(town)}
+                                           >
+                                             <MapPin className="mr-2 h-4 w-4 text-blue-600" />
+                                             <span>{town}</span>
+                                             <Check
+                                               className={cn(
+                                                 "ml-auto h-4 w-4",
+                                                 selectedCity === town ? "opacity-100" : "opacity-0"
+                                               )}
+                                             />
+                                           </CommandItem>
+                                         ))}
+                                       </CommandGroup>
+                                     </div>
+                                   </div>
                                  )}
 
                                  {/* Groups - Show only if searchType is 'group' */}

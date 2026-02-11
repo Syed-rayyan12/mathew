@@ -12,6 +12,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { UK_CITIES } from "@/lib/data/uk-cities";
+import { UK_TOWNS } from "@/lib/data/uk-towns";
 
 export default function NurserySignupPage() {
   const router = useRouter();
@@ -153,9 +154,9 @@ export default function NurserySignupPage() {
       isValid = false;
     }
 
-    // City validation
+    // City/Town validation
     if (!formData.city.trim()) {
-      newErrors.city = "City is required";
+      newErrors.city = "City or Town is required";
       isValid = false;
     }
 
@@ -189,7 +190,7 @@ export default function NurserySignupPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // Save selected city to localStorage
+        // Save selected city/town to localStorage
         localStorage.setItem("selectedCity", formData.city);
         
         // Check if account needs approval
@@ -325,9 +326,9 @@ export default function NurserySignupPage() {
               <p className="text-xs text-gray-500">UK phone numbers only</p>
             </div>
 
-            {/* City */}
+            {/* City or Town */}
             <div className="space-y-2">
-              <Label htmlFor="city">City *</Label>
+              <Label htmlFor="city">City / Town *</Label>
               <Popover open={open} onOpenChange={setOpen}>
                 <PopoverTrigger asChild>
                   <Button
@@ -341,38 +342,69 @@ export default function NurserySignupPage() {
                     )}
                     disabled={isLoading}
                   >
-                    {formData.city || "Select city..."}
+                    {formData.city || "Select city or town..."}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 max-h-[400px]">
                   <Command>
-                    <CommandInput placeholder="Search city..." />
+                    <CommandInput placeholder="Search city or town..." />
                     <CommandList>
-                      <CommandEmpty>No city found.</CommandEmpty>
-                      <CommandGroup>
-                        {UK_CITIES.map((city) => (
-                          <CommandItem
-                            key={city}
-                            value={city}
-                            onSelect={() => {
-                              setFormData({ ...formData, city: city });
-                              setOpen(false);
-                              if (errors.city) {
-                                setErrors({ ...errors, city: "" });
-                              }
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                formData.city === city ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            {city}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
+                      <CommandEmpty>No city or town found.</CommandEmpty>
+                      <div className="grid grid-cols-2 gap-2 p-2">
+                        {/* Cities Column */}
+                        <div className="border-r pr-2">
+                          <CommandGroup heading="Cities">
+                            {UK_CITIES.map((city) => (
+                              <CommandItem
+                                key={`city-${city}`}
+                                value={city}
+                                onSelect={() => {
+                                  setFormData({ ...formData, city: city });
+                                  setOpen(false);
+                                  if (errors.city) {
+                                    setErrors({ ...errors, city: "" });
+                                  }
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    formData.city === city ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {city}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </div>
+                        {/* Towns Column */}
+                        <div>
+                          <CommandGroup heading="Towns">
+                            {UK_TOWNS.map((town) => (
+                              <CommandItem
+                                key={`town-${town}`}
+                                value={town}
+                                onSelect={() => {
+                                  setFormData({ ...formData, city: town });
+                                  setOpen(false);
+                                  if (errors.city) {
+                                    setErrors({ ...errors, city: "" });
+                                  }
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    formData.city === town ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {town}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </div>
+                      </div>
                     </CommandList>
                   </Command>
                 </PopoverContent>

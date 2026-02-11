@@ -425,12 +425,13 @@ export const getDashboardStats = async (
       throw new UnauthorizedError('Admin access required');
     }
 
-    const [totalNurseries, totalGroups, totalUsers, totalReviews, rejectedReviews] = await Promise.all([
+    const [totalNurseries, totalGroups, totalUsers, totalReviews, rejectedReviews, pendingApprovals] = await Promise.all([
       prisma.nursery.count(),
       prisma.group.count(),
       prisma.user.count(),
       prisma.review.count(),
       prisma.review.count({ where: { isRejected: true } }),
+      prisma.user.count({ where: { isActive: false } }),
     ]);
 
     res.json({
@@ -441,6 +442,7 @@ export const getDashboardStats = async (
         totalUsers,
         totalReviews,
         rejectedReviews,
+        pendingApprovals,
       },
     });
   } catch (error) {

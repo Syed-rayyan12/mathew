@@ -6,6 +6,7 @@ export interface AdminStats {
   totalUsers: number;
   totalReviews: number;
   rejectedReviews: number;
+  pendingApprovals: number;
 }
 
 export interface AdminGroup {

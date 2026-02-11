@@ -94,6 +94,7 @@ export default function NurserySignupPage() {
       phone: "",
       nurseryName: "",
       city: "",
+      town: "",
     };
     let isValid = true;
 

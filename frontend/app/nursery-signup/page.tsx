@@ -18,7 +18,8 @@ export default function NurserySignupPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [open, setOpen] = useState(false);
+  const [cityOpen, setCityOpen] = useState(false);
+  const [townOpen, setTownOpen] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -27,6 +28,7 @@ export default function NurserySignupPage() {
     phone: "",
     nurseryName: "",
     city: "",
+    town: "",
   });
   const [errors, setErrors] = useState({
     firstName: "",
@@ -36,6 +38,7 @@ export default function NurserySignupPage() {
     phone: "",
     nurseryName: "",
     city: "",
+    town: "",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -154,11 +157,18 @@ export default function NurserySignupPage() {
       isValid = false;
     }
 
-    // City/Town validation
+    // City validation
     if (!formData.city.trim()) {
-      newErrors.city = "City or Town is required";
+      newErrors.city = "City is required";
       isValid = false;
     }
+
+    // Town validation (optional)
+    // You can make it required by uncommenting below
+    // if (!formData.town.trim()) {
+    //   newErrors.town = "Town is required";
+    //   isValid = false;
+    // }
 
     setErrors(newErrors);
     return isValid;
@@ -190,8 +200,11 @@ export default function NurserySignupPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // Save selected city/town to localStorage
+        // Save selected city and town to localStorage
         localStorage.setItem("selectedCity", formData.city);
+        if (formData.town) {
+          localStorage.setItem("selectedTown", formData.town);
+        }
         
         // Check if account needs approval
         if (data.pendingApproval) {
@@ -326,15 +339,15 @@ export default function NurserySignupPage() {
               <p className="text-xs text-gray-500">UK phone numbers only</p>
             </div>
 
-            {/* City or Town */}
+            {/* City */}
             <div className="space-y-2">
-              <Label htmlFor="city">City / Town *</Label>
-              <Popover open={open} onOpenChange={setOpen}>
+              <Label htmlFor="city">City *</Label>
+              <Popover open={cityOpen} onOpenChange={setCityOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     role="combobox"
-                    aria-expanded={open}
+                    aria-expanded={cityOpen}
                     className={cn(
                       "w-full justify-between",
                       !formData.city && "text-muted-foreground",
@@ -342,69 +355,38 @@ export default function NurserySignupPage() {
                     )}
                     disabled={isLoading}
                   >
-                    {formData.city || "Select city or town..."}
+                    {formData.city || "Select city..."}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-[--radix-popover-trigger-width] p-0 max-h-[400px]">
                   <Command>
-                    <CommandInput placeholder="Search city or town..." />
+                    <CommandInput placeholder="Search city..." />
                     <CommandList>
-                      <CommandEmpty>No city or town found.</CommandEmpty>
-                      <div className="grid grid-cols-2 gap-2 p-2">
-                        {/* Cities Column */}
-                        <div className="border-r pr-2">
-                          <CommandGroup heading="Cities">
-                            {UK_CITIES.map((city) => (
-                              <CommandItem
-                                key={`city-${city}`}
-                                value={city}
-                                onSelect={() => {
-                                  setFormData({ ...formData, city: city });
-                                  setOpen(false);
-                                  if (errors.city) {
-                                    setErrors({ ...errors, city: "" });
-                                  }
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    formData.city === city ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                                {city}
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </div>
-                        {/* Towns Column */}
-                        <div>
-                          <CommandGroup heading="Towns">
-                            {UK_TOWNS.map((town) => (
-                              <CommandItem
-                                key={`town-${town}`}
-                                value={town}
-                                onSelect={() => {
-                                  setFormData({ ...formData, city: town });
-                                  setOpen(false);
-                                  if (errors.city) {
-                                    setErrors({ ...errors, city: "" });
-                                  }
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    formData.city === town ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                                {town}
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </div>
-                      </div>
+                      <CommandEmpty>No city found.</CommandEmpty>
+                      <CommandGroup>
+                        {UK_CITIES.map((city) => (
+                          <CommandItem
+                            key={`city-${city}`}
+                            value={city}
+                            onSelect={() => {
+                              setFormData({ ...formData, city: city });
+                              setCityOpen(false);
+                              if (errors.city) {
+                                setErrors({ ...errors, city: "" });
+                              }
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                formData.city === city ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {city}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
                     </CommandList>
                   </Command>
                 </PopoverContent>
@@ -412,6 +394,64 @@ export default function NurserySignupPage() {
               <div className={`overflow-hidden transition-all duration-500 ease-in-out ${errors.city ? 'max-h-10 opacity-100 translate-y-0' : 'max-h-0 opacity-0 -translate-y-2'}`}>
                 <span className="text-red-500 text-sm block mt-1">{errors.city || ' '}</span>
               </div>
+            </div>
+
+            {/* Town */}
+            <div className="space-y-2">
+              <Label htmlFor="town">Town (Optional)</Label>
+              <Popover open={townOpen} onOpenChange={setTownOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={townOpen}
+                    className={cn(
+                      "w-full justify-between",
+                      !formData.town && "text-muted-foreground",
+                      errors.town && "border-red-400"
+                    )}
+                    disabled={isLoading}
+                  >
+                    {formData.town || "Select town..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 max-h-[400px]">
+                  <Command>
+                    <CommandInput placeholder="Search town..." />
+                    <CommandList>
+                      <CommandEmpty>No town found.</CommandEmpty>
+                      <CommandGroup>
+                        {UK_TOWNS.map((town) => (
+                          <CommandItem
+                            key={`town-${town}`}
+                            value={town}
+                            onSelect={() => {
+                              setFormData({ ...formData, town: town });
+                              setTownOpen(false);
+                              if (errors.town) {
+                                setErrors({ ...errors, town: "" });
+                              }
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                formData.town === town ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {town}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              <div className={`overflow-hidden transition-all duration-500 ease-in-out ${errors.town ? 'max-h-10 opacity-100 translate-y-0' : 'max-h-0 opacity-0 -translate-y-2'}`}>
+                <span className="text-red-500 text-sm block mt-1">{errors.town || ' '}</span>
+              </div>
+              <p className="text-xs text-gray-500">Select a specific town within your city</p>
             </div>
 
             {/* Password */}

@@ -264,7 +264,7 @@ export const nurserySignup = async (
   next: NextFunction
 ) => {
   try {
-    const { email, password, firstName, lastName, phone, nurseryName, city } = req.body;
+    const { email, password, firstName, lastName, phone, nurseryName, city, town } = req.body;
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -321,6 +321,7 @@ export const nurserySignup = async (
           firstName,
           lastName,
           city,
+          town: town || null,
           ownerId: user.id,
         },
       });

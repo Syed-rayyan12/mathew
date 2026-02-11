@@ -39,6 +39,7 @@ model Group {
   firstName   String?
   lastName    String?
   city        String      @default("")
+  town        String?
   aboutUs     String?
   description String?
   logo        String?

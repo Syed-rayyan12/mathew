@@ -241,7 +241,7 @@ export default function NurserySignupPage() {
 
            <img src="/images/logo.png" className="w-60 object-cover" alt="Nursery Logo" />
           </div>
-          <CardDescription className="text-base mb-4">
+          <CardDescription className="text-base mb-5">
             Join our platform and grow your nursery business
           </CardDescription>
         </CardHeader>

@@ -150,7 +150,7 @@ const HeroBanner = () => {
            </div>
            
            {/* Content Overlay */}
-          <div className="absolute inset-0 flex items-center bottom-[190px]  max-sm:px-8 max-md:px-14 xl:px-24 max-xl:px-16 z-10">
+          <div className="absolute inset-0 flex items-center bottom-[190px]  max-sm:px-8 max-md:px-14 xl:px-24 max-xl:px-16 z-10 max-w-[1300px]">
              <div className="">
                {/* Heading */}
                <motion.h1 
@@ -208,7 +208,7 @@ const HeroBanner = () => {
                    
                    {/* Dropdown Results */}
                    {open && (searchQuery.length > 0 || autocompleteResults.cities.length > 0) && (
-                     <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                     <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 w-[400px] overflow-y-auto z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                        <Command shouldFilter={false}>
                          <CommandList>
                            {isLoading ? (

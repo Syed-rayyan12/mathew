@@ -5,7 +5,7 @@ const ProductBanner = () => {
     return (
         <section className="w-full h-[600px] relative flex justify-center"
             style={{
-                backgroundImage: "url('/images/find-nursery.jpeg')",
+                backgroundImage: "url('/images/My-Nursery-Header.jpeg')",
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 backgroundRepeat: 'no-repeat'

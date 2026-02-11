@@ -119,7 +119,7 @@ const NurseryCardsSection = () => {
                 >
                     <p className="text-primary font-medium font-heading text-2xl">Featured Nurseries</p>
                     <h2 className="text-4xl md:text-5xl font-heading font-medium mb-2 text-foreground leading-tight">
-                        Join today and register as one of our top<span className="text-secondary px-4 max-w-7xl">nurseries</span>
+                        Join today and register as one of our top <span className="text-secondary max-w-7xl">nurseries</span>
                     </h2>
                     <p className='text-[16px] font-ubuntu mb-9'>Nurturing spaces where little ones grow and glow</p>
                 </motion.div>

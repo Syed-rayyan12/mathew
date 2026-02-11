@@ -25,7 +25,7 @@ const page = () => {
       {/* <FeaturesSection /> */}
       <AboutUsSection />
       <NurseryCardsSection />
-      <CircleGridSection />
+      {/* <CircleGridSection /> */}
       <FeaturesCardsSection />
       <CTASection />
       <CreateNurseryHero />

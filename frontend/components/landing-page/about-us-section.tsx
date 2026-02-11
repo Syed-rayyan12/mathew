@@ -64,7 +64,7 @@ Whether you’re a parent ready to find the right fit, or a nursery looking to g
                             {/* Phone section */}
                             <div className="flex items-center gap-3 ">
                                     <Phone className="w-6 h-6 text-[]" />
-                                <span className="text-foreground font-medium text-[18px]  font-sans  font-normal">077700 900123</span>
+                                <span className="text-foreground font-medium text-[18px]  font-sans  font-normal">01482 688508</span>
                             </div>
                         </div>
                     </motion.div>

@@ -143,7 +143,7 @@ const HeroBanner = () => {
            </div>
            
            {/* Content Overlay */}
-          <div className="absolute inset-0 flex items-center bottom-[80px]  max-sm:px-8 max-md:px-14 xl:px-24 max-xl:px-16 z-10">
+          <div className="absolute inset-0 flex items-center bottom-[190px]  max-sm:px-8 max-md:px-14 xl:px-24 max-xl:px-16 z-10">
              <div className="">
                {/* Heading */}
                <motion.h1 
@@ -152,7 +152,7 @@ const HeroBanner = () => {
                  animate={{ opacity: 1, y: 0 }}
                  transition={{ duration: 0.8, delay: 0.3 }}
                >
-                 Find The Perfect <span className='text-[#044a55]'>Nursery</span> For<br/>  Your <span className='text-[#044a55]'>Little One</span>
+                 Find The Perfect <span className='text-[#044a55]'>Nursery</span> For<br/> Your <span className='text-[#044a55]'>Little One</span>
                </motion.h1>
                
                {/* Description */}

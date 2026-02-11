@@ -15,13 +15,13 @@ const ContactSection = () => {
           {/* Reach Out to Us */}
           <div className=''>
             <h2 className="text-4xl font-heading font-bold max-sm:font-medium">Reach Out to Us</h2>
-             <p className='text-[16px] font-medium font-sans mb-6'>We’re here to assist with any questions, 
-Connect with our team today</p>
+            <p className='text-[16px] font-medium font-sans mb-6'>We’re here to assist with any questions,
+              Connect with our team today</p>
             <div className="space-y-4">
               {/* Location */}
               <div className="flex items-start gap-3">
                 <div className='flex justify-center  items-center w-10 h-10 border border-gray-400 rounded-full '>
-                <MapPin className="w-5 h-5 text-secondary" />
+                  <MapPin className="w-5 h-5 text-secondary" />
                 </div>
                 <div>
                   <p className="text-gray-700">Address – Shawbriggs, Barrow Road, Goxhill, North Lincolnshire,</p>
@@ -31,26 +31,26 @@ Connect with our team today</p>
 
               {/* Email */}
               <div className="flex items-center gap-3">
-                 <div className='flex justify-center  items-center w-10 h-10 border border-gray-400 rounded-full '>
-                <Mail className="w-5 h-5 text-secondary" />
-                 </div>
+                <div className='flex justify-center  items-center w-10 h-10 border border-gray-400 rounded-full '>
+                  <Mail className="w-5 h-5 text-secondary" />
+                </div>
                 <a href="mailto:info@nursery.com" className="text-gray-700 hover:text-secondary">
-                 hello@my-nursery.co.uk
+                  hello@my-nursery.co.uk
                 </a>
               </div>
 
               {/* Phone */}
               <div className="flex items-center gap-3">
-                 <div className='flex justify-center  items-center w-10 h-10 border border-gray-400 rounded-full '>
-                <Phone className="w-5 h-5 text-secondary" />
-                 </div>
+                <div className='flex justify-center  items-center w-10 h-10 border border-gray-400 rounded-full '>
+                  <Phone className="w-5 h-5 text-secondary" />
+                </div>
                 <a href="tel:+441234567890" className="text-gray-700 hover:text-secondary">
                   01482 688508
                 </a>
               </div>
             </div>
           </div>
-      
+
           <div>
             <h3 className="text-2xl font-heading font-bold max-sm:font-medium mb-4">Follow Us</h3>
             <div className="flex gap-4">

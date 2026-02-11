@@ -47,6 +47,8 @@ const HeroBanner = () => {
   const [selectedCity, setSelectedCity] = useState<string>('');
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [citySearchQuery, setCitySearchQuery] = useState('');
+  const [townSearchQuery, setTownSearchQuery] = useState('');
   const [searchType, setSearchType] = useState<'nursery' | 'group'>('nursery');
   const [autocompleteResults, setAutocompleteResults] = useState<AutocompleteResults>({
     cities: [],
@@ -224,52 +226,80 @@ const HeroBanner = () => {
                                  <CommandEmpty>No results found.</CommandEmpty>
                                ) : (
                                  <>
-                                   {/* Cities and Towns in 2 columns */}
+                                   {/* Cities and Towns in 2 columns with separate search */}
                                    {(autocompleteResults.cities.length > 0 || autocompleteResults.towns.length > 0) && (
                                      <div className="grid grid-cols-2 gap-2 p-2">
                                        {/* Cities Column */}
                                        <div className="border-r pr-2">
-                                         <CommandGroup heading="Cities">
-                                           {autocompleteResults.cities.map((city) => (
-                                             <CommandItem
-                                               key={`city-${city}`}
-                                               value={city}
-                                               onSelect={() => handleSelectCity(city)}
-                                             >
-                                           
-                                             <MapPin className="mr-2 h-4 w-4 text-secondary" />
-                                             <span>{city}</span>
-                                             <Check
-                                               className={cn(
-                                                 "ml-auto h-4 w-4",
-                                                 selectedCity === city ? "opacity-100" : "opacity-0"
-                                               )}
-                                             />
-                                           </CommandItem>
-                                         ))}
-                                       </CommandGroup>
+                                         <div className="px-2 pb-2">
+                                           <input
+                                             type="text"
+                                             placeholder="Search cities..."
+                                             value={citySearchQuery}
+                                             onChange={(e) => setCitySearchQuery(e.target.value)}
+                                             className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-md outline-none focus:border-secondary"
+                                             onClick={(e) => e.stopPropagation()}
+                                           />
+                                         </div>
+                                         <div className="max-h-64 overflow-y-auto">
+                                           <CommandGroup heading="Cities">
+                                             {autocompleteResults.cities
+                                               .filter(city => city.toLowerCase().includes(citySearchQuery.toLowerCase()))
+                                               .map((city) => (
+                                               <CommandItem
+                                                 key={`city-${city}`}
+                                                 value={city}
+                                                 onSelect={() => handleSelectCity(city)}
+                                               >
+                                             
+                                               <MapPin className="mr-2 h-4 w-4 text-secondary" />
+                                               <span>{city}</span>
+                                               <Check
+                                                 className={cn(
+                                                   "ml-auto h-4 w-4",
+                                                   selectedCity === city ? "opacity-100" : "opacity-0"
+                                                 )}
+                                               />
+                                             </CommandItem>
+                                           ))}
+                                         </CommandGroup>
+                                       </div>
                                      </div>
 
                                      {/* Towns Column */}
                                      <div>
-                                       <CommandGroup heading="Towns">
-                                         {autocompleteResults.towns.map((town) => (
-                                           <CommandItem
-                                             key={`town-${town}`}
-                                             value={town}
-                                             onSelect={() => handleSelectCity(town)}
-                                           >
-                                             <MapPin className="mr-2 h-4 w-4 text-blue-600" />
-                                             <span>{town}</span>
-                                             <Check
-                                               className={cn(
-                                                 "ml-auto h-4 w-4",
-                                                 selectedCity === town ? "opacity-100" : "opacity-0"
-                                               )}
-                                             />
-                                           </CommandItem>
-                                         ))}
-                                       </CommandGroup>
+                                       <div className="px-2 pb-2">
+                                         <input
+                                           type="text"
+                                           placeholder="Search towns..."
+                                           value={townSearchQuery}
+                                           onChange={(e) => setTownSearchQuery(e.target.value)}
+                                           className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-md outline-none focus:border-blue-600"
+                                           onClick={(e) => e.stopPropagation()}
+                                         />
+                                       </div>
+                                       <div className="max-h-64 overflow-y-auto">
+                                         <CommandGroup heading="Towns">
+                                           {autocompleteResults.towns
+                                             .filter(town => town.toLowerCase().includes(townSearchQuery.toLowerCase()))
+                                             .map((town) => (
+                                             <CommandItem
+                                               key={`town-${town}`}
+                                               value={town}
+                                               onSelect={() => handleSelectCity(town)}
+                                             >
+                                               <MapPin className="mr-2 h-4 w-4 text-blue-600" />
+                                               <span>{town}</span>
+                                               <Check
+                                                 className={cn(
+                                                   "ml-auto h-4 w-4",
+                                                   selectedCity === town ? "opacity-100" : "opacity-0"
+                                                 )}
+                                               />
+                                             </CommandItem>
+                                           ))}
+                                         </CommandGroup>
+                                       </div>
                                      </div>
                                    </div>
                                  )}

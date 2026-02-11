@@ -48,7 +48,7 @@ model Group {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   ownerId     String      @db.VarChar(15)
-  owner       User        @relation("GroupOwner", fields: [ownerId], references: [id])
+  owner       User        @relation("GroupOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   nurseries   Nursery[]   @relation("GroupNurseries")
   
   @@map("groups")
@@ -83,7 +83,7 @@ model Nursery {
   philosophy   String?
   videoUrl     String?
   group        Group?        @relation("GroupNurseries", fields: [groupId], references: [id], onDelete: SetNull)
-  owner        User          @relation("NurseryOwner", fields: [ownerId], references: [id])
+  owner        User          @relation("NurseryOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   reviews      Review[]
   shortlists   Shortlist[]
 

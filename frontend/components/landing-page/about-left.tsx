@@ -23,7 +23,12 @@ const AboutLeft = () => {
 
           {/* Paragraph */}
           <p className="text-foreground font-sans text-[18px] max-sm:text-base leading-relaxed mb-8 max-sm:mb-6">
-            We aim to simplify the childcare discovery process by providing clear information, trusted reviews, and verified profiles — helping parents make confident decisions about early years education.
+            Choosing the right nursery is one of the biggest decisions a family / parent will ever make yet for years, parents have had to sift through scattered information, outdated listings, and reviews they couldn’t rely on. We knew there had to be a better way.
+            Launched in February 2026, our platform has been built with a clear mission: to bring trust, transparency, and clarity to childcare discovery and to become the link between families and the childcare providers who support them.
+            What started as a simple idea to help local parents has grown into a nationwide directory. Today, we connect families with nurseries across the UK through verified reviews, detailed profiles, and tools that make the search process calmer, quicker, and more informed.
+            And as we grow, we’re using our 25 years of software delivery experience to help bridge the gap between childcare providers and families creating a trusted, modern platform that works for both sides.
+            Our aim is bold but simple: to become the UK’s leading child nursery directory, giving parents confidence in their choices and giving nurseries a place to showcase the quality of care they provide.
+            At the heart of everything we build is one belief: every child deserves the best start, and every parent deserves a platform they can trust to help them find it.
           </p>
 
           {/* Two Divs with Spans */}

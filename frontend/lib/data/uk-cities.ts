@@ -1,12 +1,14 @@
 export const UK_CITIES = [
-  "London", "Birmingham", "Manchester", "Leeds", "Glasgow", "Liverpool", "Newcastle upon Tyne",
-  "Sheffield", "Bristol", "Edinburgh", "Leicester", "Nottingham", "Coventry", "Bradford",
-  "Cardiff", "Belfast", "Stoke-on-Trent", "Wolverhampton", "Plymouth", "Southampton",
-  "Reading", "Derby", "Dundee", "Aberdeen", "Northampton", "Portsmouth", "Luton",
-  "Preston", "Milton Keynes", "Sunderland", "Norwich", "Walsall", "Bournemouth", "Swindon",
-  "Swansea", "Oxford", "Warrington", "Slough", "Cambridge", "Ipswich", "York", "Gloucester",
-  "Watford", "Newport", "Exeter", "Bath", "Cheltenham", "Basildon", "Colchester", "Crawley",
-  "Gillingham", "Solihull", "Rochdale", "Rotherham", "Birkenhead", "Worcester", "Eastbourne",
-  "Oldham", "St Helens", "Hastings", "Blackpool", "Chester", "Lincoln", "Durham", "Carlisle",
-  "Perth", "Inverness", "Stirling", "Canterbury", "Lancaster", "Salisbury", "Chichester"
+  "Aberdeen", "Armagh", "Bangor", "Bath", "Belfast", "Birmingham", "Bradford", 
+  "Brighton and Hove", "Bristol", "Cambridge", "Canterbury", "Cardiff", "Carlisle", 
+  "Chelmsford", "Chester", "Chichester", "Colchester", "Coventry", "Derby", "Doncaster", 
+  "Dundee", "Dunfermline", "Durham", "Edinburgh", "Ely", "Exeter", "Glasgow", 
+  "Gloucester", "Hereford", "Inverness", "Kingston upon Hull", "Lancaster", "Leeds", 
+  "Leicester", "Lichfield", "Lincoln", "Lisburn", "Liverpool", "London", "Londonderry", 
+  "Manchester", "Milton Keynes", "Newcastle upon Tyne", "Newport", "Newry", "Norwich", 
+  "Nottingham", "Oxford", "Perth", "Peterborough", "Plymouth", "Portsmouth", "Preston", 
+  "Ripon", "Salford", "Salisbury", "Sheffield", "Southampton", "Southend-on-Sea", 
+  "St Albans", "St Asaph (Llanelwy)", "St Davids", "Stirling", "Stoke-on-Trent", 
+  "Sunderland", "Swansea", "Truro", "Wakefield", "Wells", "Westminster", "Winchester", 
+  "Wolverhampton", "Worcester", "Wrexham", "York"
 ].sort();

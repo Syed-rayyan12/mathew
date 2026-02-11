@@ -6,11 +6,13 @@ import { useRouter } from 'next/navigation';
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { UK_CITIES } from '@/lib/data/uk-cities';
+import { UK_TOWNS } from '@/lib/data/uk-towns';
 import { toast } from 'sonner';
 import { nurseryService } from '@/lib/api/nursery';
 
 interface AutocompleteResults {
   cities: string[];
+  towns: string[];
   groups: Array<{
     id: string;
     name: string;
@@ -49,6 +51,7 @@ const SearchBox = ({
   const [searchType, setSearchType] = useState<'nursery' | 'group'>('nursery');
   const [autocompleteResults, setAutocompleteResults] = useState<AutocompleteResults>({
     cities: [],
+    towns: [],
     groups: [],
     nurseries: [],
   });
@@ -75,7 +78,10 @@ const SearchBox = ({
         try {
           const response = await nurseryService.autocomplete(searchQuery);
           if (response.success && response.data) {
-            setAutocompleteResults(response.data);
+            setAutocompleteResults({
+              ...response.data,
+              towns: response.data.towns || [],
+            });
           }
         } catch (error) {
           console.error('Autocomplete error:', error);
@@ -83,9 +89,10 @@ const SearchBox = ({
           setIsLoading(false);
         }
       } else {
-        // Show all UK cities when no search query
+        // Show all UK cities and towns when no search query
         setAutocompleteResults({
           cities: UK_CITIES,
+          towns: UK_TOWNS,
           groups: [],
           nurseries: [],
         });
@@ -178,6 +185,7 @@ const SearchBox = ({
                 ) : (
                   <>
                     {autocompleteResults.cities.length === 0 && 
+                     autocompleteResults.towns.length === 0 && 
                      autocompleteResults.groups.length === 0 && 
                      autocompleteResults.nurseries.length === 0 ? (
                       <CommandEmpty>No results found.</CommandEmpty>
@@ -198,6 +206,28 @@ const SearchBox = ({
                                   className={cn(
                                     "ml-auto h-4 w-4",
                                     selectedCity === city ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        )}
+
+                        {/* Towns */}
+                        {autocompleteResults.towns.length > 0 && (
+                          <CommandGroup heading="Towns">
+                            {autocompleteResults.towns.map((town) => (
+                              <CommandItem
+                                key={`town-${town}`}
+                                value={town}
+                                onSelect={() => handleSelectCity(town)}
+                              >
+                                <MapPin className="mr-2 h-4 w-4 text-blue-600" />
+                                <span>{town}</span>
+                                <Check
+                                  className={cn(
+                                    "ml-auto h-4 w-4",
+                                    selectedCity === town ? "opacity-100" : "opacity-0"
                                   )}
                                 />
                               </CommandItem>

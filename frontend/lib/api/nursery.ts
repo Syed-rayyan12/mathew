@@ -149,6 +149,7 @@ export const nurseryService = {
   autocomplete: async (query: string) => {
     return apiClient.get<{
       cities: string[];
+      towns: string[];
       groups: Array<{
         id: string;
         name: string;

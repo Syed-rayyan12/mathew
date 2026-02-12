@@ -47,10 +47,11 @@ export default function NurseriesPage() {
         // Only show child nurseries (not parent groups)
         let childNurseries = response.data.filter(n => n.groupId !== null && n.groupId !== undefined);
         
-        // If city is searched, filter by exact city match
+        // If city/town is searched, filter by exact city or town match
         if (cityFromUrl) {
           childNurseries = childNurseries.filter(n => 
-            n.city?.toLowerCase() === cityFromUrl.toLowerCase()
+            n.city?.toLowerCase() === cityFromUrl.toLowerCase() ||
+            n.town?.toLowerCase() === cityFromUrl.toLowerCase()
           );
         }
         

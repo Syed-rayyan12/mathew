@@ -21,11 +21,12 @@ const nurseryGroup = () => {
                     city: cityFromUrl || undefined
                 });
                 if (response.success && Array.isArray(response.data)) {
-                    // If city is searched, filter by exact city match
+                    // If city/town is searched, filter by exact city or town match
                     let filteredData = response.data;
                     if (cityFromUrl) {
                         filteredData = response.data.filter((group: NurseryGroup) => 
-                            group.city?.toLowerCase() === cityFromUrl.toLowerCase()
+                            group.city?.toLowerCase() === cityFromUrl.toLowerCase() ||
+                            group.town?.toLowerCase() === cityFromUrl.toLowerCase()
                         );
                     }
                     setNurseryGroups(filteredData);

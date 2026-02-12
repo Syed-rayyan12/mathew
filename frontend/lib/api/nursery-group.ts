@@ -7,6 +7,7 @@ export interface NurseryGroup {
   name: string;
   slug: string;
   city?: string;
+  town?: string;
   cardImage?: string;
   logo?: string;
   images?: string[];

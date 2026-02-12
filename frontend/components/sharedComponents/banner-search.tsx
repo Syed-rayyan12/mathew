@@ -39,6 +39,8 @@ const BannerSearch = () => {
   const [selectedCity, setSelectedCity] = useState<string>('');
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [citySearchQuery, setCitySearchQuery] = useState('');
+  const [townSearchQuery, setTownSearchQuery] = useState('');
   const [searchType, setSearchType] = useState<'nursery' | 'group'>('nursery');
   const [autocompleteResults, setAutocompleteResults] = useState<AutocompleteResults>({
     cities: [],
@@ -182,8 +184,22 @@ const BannerSearch = () => {
                           <div className="grid grid-cols-2 gap-2 p-2">
                             {/* Cities Column */}
                             <div className="border-r pr-2">
-                              <CommandGroup heading="Cities">
-                                {autocompleteResults.cities.map((city) => (
+                              <div className="px-2 pb-2">
+                                <input
+                                  type="text"
+                                  placeholder="Search cities..."
+                                  value={citySearchQuery}
+                                  onChange={(e) => setCitySearchQuery(e.target.value)}
+                                  className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-md outline-none focus:border-secondary"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              </div>
+                              <div className="max-h-64 overflow-y-auto">
+                                <CommandGroup heading="Cities">
+                                  {(citySearchQuery ? UK_CITIES : autocompleteResults.cities)
+                                    .filter(city => city.toLowerCase().includes(citySearchQuery.toLowerCase()))
+                                    .slice(0, 50)
+                                    .map((city) => (
                                   <CommandItem
                                     key={`city-${city}`}
                                     value={city}
@@ -200,12 +216,27 @@ const BannerSearch = () => {
                                   </CommandItem>
                                 ))}
                               </CommandGroup>
+                              </div>
                             </div>
 
                             {/* Towns Column */}
                             <div>
-                              <CommandGroup heading="Towns">
-                                {autocompleteResults.towns.map((town) => (
+                              <div className="px-2 pb-2">
+                                <input
+                                  type="text"
+                                  placeholder="Search towns..."
+                                  value={townSearchQuery}
+                                  onChange={(e) => setTownSearchQuery(e.target.value)}
+                                  className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-md outline-none focus:border-blue-600"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              </div>
+                              <div className="max-h-64 overflow-y-auto">
+                                <CommandGroup heading="Towns">
+                                  {(townSearchQuery ? UK_TOWNS : autocompleteResults.towns)
+                                    .filter(town => town.toLowerCase().includes(townSearchQuery.toLowerCase()))
+                                    .slice(0, 50)
+                                    .map((town) => (
                                   <CommandItem
                                     key={`town-${town}`}
                                     value={town}
@@ -222,6 +253,7 @@ const BannerSearch = () => {
                                   </CommandItem>
                                 ))}
                               </CommandGroup>
+                              </div>
                             </div>
                           </div>
                         )}

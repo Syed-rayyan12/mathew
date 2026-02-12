@@ -244,8 +244,9 @@ const HeroBanner = () => {
                                          </div>
                                          <div className="max-h-64 overflow-y-auto">
                                            <CommandGroup heading="Cities">
-                                             {autocompleteResults.cities
+                                             {(citySearchQuery ? UK_CITIES : autocompleteResults.cities)
                                                .filter(city => city.toLowerCase().includes(citySearchQuery.toLowerCase()))
+                                               .slice(0, 50)
                                                .map((city) => (
                                                <CommandItem
                                                  key={`city-${city}`}
@@ -281,8 +282,9 @@ const HeroBanner = () => {
                                        </div>
                                        <div className="max-h-64 overflow-y-auto">
                                          <CommandGroup heading="Towns">
-                                           {autocompleteResults.towns
+                                           {(townSearchQuery ? UK_TOWNS : autocompleteResults.towns)
                                              .filter(town => town.toLowerCase().includes(townSearchQuery.toLowerCase()))
+                                             .slice(0, 50)
                                              .map((town) => (
                                              <CommandItem
                                                key={`town-${town}`}

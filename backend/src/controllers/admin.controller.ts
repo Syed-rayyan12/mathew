@@ -504,6 +504,90 @@ export const deleteNursery = async (
   }
 };
 
+// Toggle group active status
+export const toggleGroupStatus = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (req.user?.role !== 'ADMIN') {
+      throw new UnauthorizedError('Admin access required');
+    }
+
+    const { id } = req.params;
+
+    // Get current group status
+    const group = await prisma.group.findUnique({
+      where: { id },
+      select: { isActive: true, name: true },
+    });
+
+    if (!group) {
+      return res.status(404).json({
+        success: false,
+        message: 'Group not found',
+      });
+    }
+
+    // Toggle the status
+    const updatedGroup = await prisma.group.update({
+      where: { id },
+      data: { isActive: !group.isActive },
+    });
+
+    res.json({
+      success: true,
+      message: `Group ${updatedGroup.isActive ? 'activated' : 'deactivated'} successfully`,
+      data: updatedGroup,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Toggle nursery approved status (acts as active/deactive)
+export const toggleNurseryStatus = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (req.user?.role !== 'ADMIN') {
+      throw new UnauthorizedError('Admin access required');
+    }
+
+    const { id } = req.params;
+
+    // Get current nursery status
+    const nursery = await prisma.nursery.findUnique({
+      where: { id },
+      select: { isApproved: true, name: true },
+    });
+
+    if (!nursery) {
+      return res.status(404).json({
+        success: false,
+        message: 'Nursery not found',
+      });
+    }
+
+    // Toggle the status
+    const updatedNursery = await prisma.nursery.update({
+      where: { id },
+      data: { isApproved: !nursery.isApproved },
+    });
+
+    res.json({
+      success: true,
+      message: `Nursery ${updatedNursery.isApproved ? 'activated' : 'deactivated'} successfully`,
+      data: updatedNursery,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Delete a user
 export const deleteUser = async (
   req: AuthRequest,

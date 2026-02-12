@@ -11,6 +11,8 @@ import {
   deleteGroup,
   deleteNursery,
   deleteUser,
+  toggleGroupStatus,
+  toggleNurseryStatus,
   getUsersPendingApproval,
   approveUser,
   rejectUser,
@@ -41,6 +43,10 @@ router.get('/analytics/monthly-reviews', authenticate, getMonthlyReviewStats);
 router.delete('/groups/:id', authenticate, deleteGroup);
 router.delete('/nurseries/:id', authenticate, deleteNursery);
 router.delete('/users/:id', authenticate, deleteUser);
+
+// Toggle active status routes
+router.patch('/groups/:id/toggle-status', authenticate, toggleGroupStatus);
+router.patch('/nurseries/:id/toggle-status', authenticate, toggleNurseryStatus);
 
 // User approval routes
 router.get('/approvals/pending', authenticate, getUsersPendingApproval);

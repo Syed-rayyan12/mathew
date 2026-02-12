@@ -99,6 +99,20 @@ export default function ManageGroups() {
     setOpenDeleteModal(true);
   };
 
+  // Toggle group active status
+  const handleToggleStatus = async (group: any) => {
+    try {
+      const response = await adminService.toggleGroupStatus(group.id);
+      if (response.success) {
+        toast.success(response.message);
+        fetchGroups(); // Refresh the list
+      }
+    } catch (error: any) {
+      console.error('Failed to toggle group status:', error);
+      toast.error(error?.message || 'Failed to update group status');
+    }
+  };
+
   return (
     <div className="w-full">
 
@@ -177,6 +191,7 @@ export default function ManageGroups() {
             groups={groups}
             onView={handleView}
             onDelete={handleDelete}
+            onToggleStatus={handleToggleStatus}
           />
         )}
       </div>

@@ -259,6 +259,24 @@ export const adminService = {
     );
   },
 
+  // Toggle group active status
+  toggleGroupStatus: async (id: string) => {
+    return adminApiClient.patch<{ success: boolean; message: string; data: any }>(
+      `/admin/groups/${id}/toggle-status`,
+      {},
+      true
+    );
+  },
+
+  // Toggle nursery active status
+  toggleNurseryStatus: async (id: string) => {
+    return adminApiClient.patch<{ success: boolean; message: string; data: any }>(
+      `/admin/nurseries/${id}/toggle-status`,
+      {},
+      true
+    );
+  },
+
   // Get users pending approval
   getPendingApprovals: async (params?: SearchParams) => {
     const queryString = params ? '?' + new URLSearchParams(params as any).toString() : '';

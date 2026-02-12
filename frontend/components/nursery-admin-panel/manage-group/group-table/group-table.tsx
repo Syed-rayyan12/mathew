@@ -1,9 +1,16 @@
 "use client";
 
 import React from "react";
-import { Eye, Trash2 } from "lucide-react";
+import { Eye, Trash2, MoreVertical, CheckCircle, XCircle } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
-export default function GroupsTable({ groups = [], onView, onDelete }: any) {
+export default function GroupsTable({ groups = [], onView, onDelete, onToggleStatus }: any) {
   return (
     <div className="w-full mt-4 overflow-x-auto">
       <table className="w-full min-w-[700px]">
@@ -14,7 +21,8 @@ export default function GroupsTable({ groups = [], onView, onDelete }: any) {
             <th className="p-3 text-left">Email</th>
             <th className="p-3 text-left">City</th>
             <th className="p-3 text-left">Nurseries</th>
-            <th className="p-3 text-left">Status</th>
+            <th className="p-3 text-left">Owner Status</th>
+            <th className="p-3 text-left">Group Status</th>
             <th className="p-3 text-left">Action</th>
           </tr>
         </thead>
@@ -22,7 +30,7 @@ export default function GroupsTable({ groups = [], onView, onDelete }: any) {
         <tbody>
           {groups.length === 0 ? (
             <tr>
-              <td colSpan={7}>
+              <td colSpan={8}>
                 <div className="flex justify-center py-10 text-gray-500">
                   No Groups Found
                 </div>
@@ -49,14 +57,51 @@ export default function GroupsTable({ groups = [], onView, onDelete }: any) {
                     {group.ownerIsOnline ? 'Online' : 'Offline'}
                   </span>
                 </td>
+                <td className="py-6 px-3">
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      group.isActive
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
+                  >
+                    {group.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                </td>
                 <td className="py-6 px-3 flex items-center gap-3">
-                  <button onClick={() => onView?.(group)} title="View Details">
-                    <Eye className="w-4 h-4 text-foreground" />
-                  </button>
-
-                  <button onClick={() => onDelete(group)} title="Delete Group">
-                    <Trash2 className="w-4 h-4 text-red-500" />
-                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => onView?.(group)}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        View Details
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onToggleStatus?.(group)}>
+                        {group.isActive ? (
+                          <>
+                            <XCircle className="mr-2 h-4 w-4 text-orange-500" />
+                            <span>Deactivate</span>
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
+                            <span>Activate</span>
+                          </>
+                        )}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => onDelete(group)}
+                        className="text-red-600 focus:text-red-600"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </td>
               </tr>
             ))

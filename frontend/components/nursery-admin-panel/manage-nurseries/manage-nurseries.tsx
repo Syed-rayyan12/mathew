@@ -98,6 +98,20 @@ export default function ManageNurseries() {
     setOpenDeleteModal(true);
   };
 
+  // Toggle nursery active status
+  const handleToggleStatus = async (nursery: any) => {
+    try {
+      const response = await adminService.toggleNurseryStatus(nursery.id);
+      if (response.success) {
+        toast.success(response.message);
+        fetchNurseries(); // Refresh the list
+      }
+    } catch (error: any) {
+      console.error('Failed to toggle nursery status:', error);
+      toast.error(error?.message || 'Failed to update nursery status');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -174,7 +188,7 @@ export default function ManageNurseries() {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-secondary"></div>
           </div>
         ) : (
-          <NurseriesTable nurseries={nurseries} onView={handleView} onDelete={handleDelete} />
+          <NurseriesTable nurseries={nurseries} onView={handleView} onDelete={handleDelete} onToggleStatus={handleToggleStatus} />
         )}
       </div>
 

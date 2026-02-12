@@ -132,7 +132,9 @@ export default function NurseryDetailsPage() {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-medium uppercase">{nursery?.name || 'Nursery Name'}</h1>
-            <p className="text-gray-700 mb-2">{nursery?.address || ''}, {nursery?.city || ''}</p>
+            <p className="text-gray-700 mb-2">
+              {[nursery?.address, nursery?.town, nursery?.city].filter(Boolean).join(', ')}
+            </p>
             <div className="flex mb-4">
               <Star className="text-yellow-500 fill-yellow-500" size={16} />
               <span className="text-gray-600 ml-2">({nursery.reviewCount || 0} reviews)</span>
@@ -436,7 +438,7 @@ export default function NurseryDetailsPage() {
             <div className="flex items-start gap-3 md:gap-4 mb-4 md:mb-6">
               <LocationEdit className="text-secondary flex-shrink-0 w-5 h-5" />
               <p className="text-sm md:text-[15px] font-medium font-sans text-muted-foreground">
-                {nursery.address}, {nursery.city}, {nursery.postcode}
+                {[nursery.address, nursery.town, nursery.city, nursery.postcode].filter(Boolean).join(', ')}
               </p>
             </div>
             {nursery.openingHours && typeof nursery.openingHours === 'object' && (

@@ -315,6 +315,7 @@ export const searchNurseries = async (
         OR: [
           { name: { contains: query, mode: 'insensitive' } },
           { city: { contains: query, mode: 'insensitive' } },
+          { town: { contains: query, mode: 'insensitive' } },
         ],
       },
       select: {
@@ -322,6 +323,7 @@ export const searchNurseries = async (
         name: true,
         slug: true,
         city: true,
+        town: true,
       },
       take: 10,
     });
@@ -365,6 +367,7 @@ export const searchByCity = async (
         name: true,
         slug: true,
         city: true,
+        town: true,
         cardImage: true,
         logo: true,
         description: true,
@@ -395,6 +398,7 @@ export const searchByCity = async (
         name: true,
         slug: true,
         city: true,
+        town: true,
         cardImage: true,
         description: true,
         ageRange: true,

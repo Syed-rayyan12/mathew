@@ -25,6 +25,7 @@ interface AutocompleteResults {
     name: string;
     slug: string;
     city: string;
+    town?: string;
     cardImage?: string;
     group?: {
       name: string;
@@ -302,7 +303,7 @@ const SearchBox = ({
                                 <div className="flex flex-col">
                                   <span className="font-medium">{nursery.name}</span>
                                   <span className="text-xs text-gray-500">
-                                    {nursery.city}
+                                    {[nursery.town, nursery.city].filter(Boolean).join(', ')}
                                     {nursery.group && ` • ${nursery.group.name}`}
                                   </span>
                                 </div>

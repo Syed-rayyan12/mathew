@@ -28,6 +28,7 @@ interface AutocompleteResults {
     name: string;
     slug: string;
     city: string;
+    town?: string;
     cardImage?: string;
     group?: {
       name: string;
@@ -210,7 +211,7 @@ const HeroBanner = () => {
                    
                    {/* Dropdown Results */}
                    {open && (searchQuery.length > 0 || autocompleteResults.cities.length > 0) && (
-                     <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 w-[400px]  z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                     <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg  w-[400px]  z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                        <Command shouldFilter={false}>
                          <CommandList>
                            {isLoading ? (
@@ -336,7 +337,7 @@ const HeroBanner = () => {
                                          <div className="flex flex-col">
                                            <span className="font-medium">{nursery.name}</span>
                                            <span className="text-xs text-gray-500">
-                                             {nursery.city}
+                                             {[nursery.town, nursery.city].filter(Boolean).join(', ')}
                                              {nursery.group && ` • ${nursery.group.name}`}
                                            </span>
                                          </div>

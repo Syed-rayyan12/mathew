@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Star, Filter, ChevronDown, ArrowRight, Search, X } from "lucide-react";
+import { Star, Filter, ChevronDown, ArrowRight, Search, X, LocateIcon } from "lucide-react";
 import { Separator } from "../ui/separator";
 import Link from "next/link";
 import { nurseryService, Nursery } from "@/lib/api/nursery";
@@ -254,7 +254,15 @@ export default function NurseriesPage() {
                   />
                 </Link>
                 <div className="absolute top-52 md:top-60 left-0 right-0 px-3 md:px-4 py-4 md:py-6 mx-3 md:mx-4 shadow-lg bg-white rounded-lg">
-                  <h3 className="font-heading text-lg md:text-[24px] font-medium text-[#044A55]">{nursery.name}</h3>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <h3 className="font-heading text-lg md:text-[24px] font-medium text-[#044A55]">{nursery.name}</h3>
+                    {(nursery.city || nursery.town) && (
+                      <span className="text-xs md:text-sm font-ubuntu flex items-center gap-1 text-foreground whitespace-nowrap">
+                        <LocateIcon className='text-secondary' size={16}/>
+                        {[nursery.town, nursery.city].filter(Boolean).join(', ')}
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1 mb-2 mt-1">
                     {Array.from({ length: 5 }, (_, i) => (
                       <Star 

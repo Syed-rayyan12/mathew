@@ -8,6 +8,7 @@ export interface Nursery {
   description?: string;
   address: string;
   city: string;
+  town?: string;
   postcode: string;
   phone?: string;
   email?: string;

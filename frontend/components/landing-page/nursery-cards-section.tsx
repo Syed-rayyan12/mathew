@@ -15,6 +15,7 @@ interface NurseryCardData {
     reviewCount: number;
     description?: string;
     city?: string;
+    town?: string;
     groupId?: string | null;
     group?: {
         name: string;
@@ -49,6 +50,7 @@ const NurseryCardsSection = () => {
                     reviewCount: nursery.reviewCount || 0,
                     description: nursery.description,
                     city: nursery.city || 'Location not specified',
+                    town: nursery.town,
                     groupId: nursery.groupId,
                     group: nursery.group,
                 }));
@@ -158,10 +160,10 @@ const NurseryCardsSection = () => {
                                     <div className="absolute top-60 left-0 right-0 px-4 py-6 mx-4 shadow-lg bg-white rounded-lg">
                                         <div className="flex items-center justify-between gap-2 mb-2">
                                             <h3 className="font-heading text-[24px] font-medium text-[#044A55]">{nursery.name}</h3>
-                                            {nursery.city && (
+                                            {(nursery.city || nursery.town) && (
                                                 <span className="text-sm font-ubuntu flex items-center text-foreground whitespace-nowrap">
                                                    <LocationEditIcon className='text-secondary'/>
-                                                    {nursery.city}
+                                                    {[nursery.town, nursery.city].filter(Boolean).join(', ')}
                                                 </span>
                                             )}
                                         </div>

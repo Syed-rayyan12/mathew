@@ -107,6 +107,7 @@ export const autocompleteSearch = async (
         OR: [
           { name: { contains: searchTerm, mode: 'insensitive' } },
           { city: { contains: searchTerm, mode: 'insensitive' } },
+          { town: { contains: searchTerm, mode: 'insensitive' } },
         ],
       },
       select: {
@@ -126,6 +127,7 @@ export const autocompleteSearch = async (
         OR: [
           { name: { contains: searchTerm, mode: 'insensitive' } },
           { city: { contains: searchTerm, mode: 'insensitive' } },
+          { town: { contains: searchTerm, mode: 'insensitive' } },
         ],
       },
       select: {
@@ -133,6 +135,7 @@ export const autocompleteSearch = async (
         name: true,
         slug: true,
         city: true,
+        town: true,
         cardImage: true,
         group: {
           select: {

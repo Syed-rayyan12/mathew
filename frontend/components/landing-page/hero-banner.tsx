@@ -288,7 +288,7 @@ const HeroBanner = () => {
                                                value={town}
                                                onSelect={() => handleSelectCity(town)}
                                              >
-                                               <MapPin className="mr-2 h-4 w-4 text-blue-600" />
+                                               <MapPin className="mr-2 h-4 w-4 text-secondary" />
                                                <span>{town}</span>
                                                <Check
                                                  className={cn(

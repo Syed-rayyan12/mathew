@@ -305,17 +305,25 @@ export const searchNurseries = async (
     if (!query || typeof query !== 'string') {
       return res.json({
         success: true,
-        data: [],
+        data: {
+          nurseries: [],
+          groups: [],
+          cities: [],
+          towns: [],
+        },
       });
     }
 
+    const searchTerm = query.toLowerCase().trim();
+
+    // Search nurseries
     const nurseries = await prisma.nursery.findMany({
       where: {
         isApproved: true,
         OR: [
-          { name: { contains: query, mode: 'insensitive' } },
-          { city: { contains: query, mode: 'insensitive' } },
-          { town: { contains: query, mode: 'insensitive' } },
+          { name: { contains: searchTerm, mode: 'insensitive' } },
+          { city: { contains: searchTerm, mode: 'insensitive' } },
+          { town: { contains: searchTerm, mode: 'insensitive' } },
         ],
       },
       select: {
@@ -324,13 +332,57 @@ export const searchNurseries = async (
         slug: true,
         city: true,
         town: true,
+        cardImage: true,
+        group: {
+          select: {
+            name: true,
+            slug: true,
+          },
+        },
       },
       take: 10,
     });
 
+    // Search groups 
+    const groups = await prisma.group.findMany({
+      where: {
+        isActive: true,
+        OR: [
+          { name: { contains: searchTerm, mode: 'insensitive' } },
+          { city: { contains: searchTerm, mode: 'insensitive' } },
+          { town: { contains: searchTerm, mode: 'insensitive' } },
+        ],
+      },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        city: true,
+        cardImage: true,
+      },
+      take: 10,
+    });
+
+    // Extract unique cities and towns
+    const cities = Array.from(
+      new Set([
+        ...nurseries.map(n => n.city).filter(Boolean),
+        ...groups.map(g => g.city).filter(Boolean),
+      ])
+    );
+
+    const towns = Array.from(
+      new Set(nurseries.map(n => n.town).filter(Boolean))
+    );
+
     res.json({
       success: true,
-      data: nurseries,
+      data: {
+        nurseries,
+        groups,
+        cities,
+        towns,
+      },
     });
   } catch (error) {
     next(error);

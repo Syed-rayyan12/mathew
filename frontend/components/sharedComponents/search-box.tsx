@@ -49,8 +49,6 @@ const SearchBox = ({
   const [selectedCity, setSelectedCity] = useState<string>('');
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [citySearchQuery, setCitySearchQuery] = useState('');
-  const [townSearchQuery, setTownSearchQuery] = useState('');
   const [searchType, setSearchType] = useState<'nursery' | 'group'>('nursery');
   const [autocompleteResults, setAutocompleteResults] = useState<AutocompleteResults>({
     cities: [],
@@ -82,8 +80,10 @@ const SearchBox = ({
           const response = await nurseryService.autocomplete(searchQuery);
           if (response.success && response.data) {
             setAutocompleteResults({
-              ...response.data,
+              cities: response.data.cities || [],
               towns: response.data.towns || [],
+              groups: response.data.groups || [],
+              nurseries: response.data.nurseries || [],
             });
           }
         } catch (error) {
@@ -92,7 +92,6 @@ const SearchBox = ({
           setIsLoading(false);
         }
       } else {
-        // Show limited UK cities and towns when no search query
         setAutocompleteResults({
           cities: UK_CITIES.slice(0, 10),
           towns: UK_TOWNS.slice(0, 10),
@@ -194,27 +193,15 @@ const SearchBox = ({
                       <CommandEmpty>No results found.</CommandEmpty>
                     ) : (
                       <>
-                        {/* Cities and Towns in 2 columns with separate search */}
+                        {/* Cities and Towns in 2 columns */}
                         {(autocompleteResults.cities.length > 0 || autocompleteResults.towns.length > 0) && (
                           <div className="grid grid-cols-2 gap-2 p-2">
                             {/* Cities Column */}
                             <div className="border-r pr-2">
-                              <div className="px-2 pb-2">
-                                <input
-                                  type="text"
-                                  placeholder="Search cities..."
-                                  value={citySearchQuery}
-                                  onChange={(e) => setCitySearchQuery(e.target.value)}
-                                  className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-md outline-none focus:border-secondary"
-                                  onClick={(e) => e.stopPropagation()}
-                                />
-                              </div>
+                              <div className="px-2 pb-1 text-xs font-semibold text-gray-500 uppercase">Cities</div>
                               <div className="max-h-64 overflow-y-auto">
-                                <CommandGroup heading="Cities">
-                                  {(citySearchQuery ? UK_CITIES : autocompleteResults.cities)
-                                    .filter(city => city.toLowerCase().includes(citySearchQuery.toLowerCase()))
-                                    .slice(0, 50)
-                                    .map((city) => (
+                                <CommandGroup>
+                                  {autocompleteResults.cities.slice(0, 50).map((city) => (
                                     <CommandItem
                                       key={`city-${city}`}
                                       value={city}
@@ -236,22 +223,10 @@ const SearchBox = ({
 
                             {/* Towns Column */}
                             <div>
-                              <div className="px-2 pb-2">
-                                <input
-                                  type="text"
-                                  placeholder="Search towns..."
-                                  value={townSearchQuery}
-                                  onChange={(e) => setTownSearchQuery(e.target.value)}
-                                  className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-md outline-none focus:border-blue-600"
-                                  onClick={(e) => e.stopPropagation()}
-                                />
-                              </div>
+                              <div className="px-2 pb-1 text-xs font-semibold text-gray-500 uppercase">Towns</div>
                               <div className="max-h-64 overflow-y-auto">
-                                <CommandGroup heading="Towns">
-                                  {(townSearchQuery ? UK_TOWNS : autocompleteResults.towns)
-                                    .filter(town => town.toLowerCase().includes(townSearchQuery.toLowerCase()))
-                                    .slice(0, 50)
-                                    .map((town) => (
+                                <CommandGroup>
+                                  {autocompleteResults.towns.slice(0, 50).map((town) => (
                                     <CommandItem
                                       key={`town-${town}`}
                                       value={town}
@@ -273,28 +248,28 @@ const SearchBox = ({
                           </div>
                         )}
 
-                        {/* Groups - Show only if searchType is 'group' or showTypeSelector is false */}
-                        {(searchType === 'group' || !showTypeSelector) && autocompleteResults.groups.length > 0 && (
-                          <CommandGroup heading="Nursery Groups">
-                            {autocompleteResults.groups.map((group) => (
-                              <CommandItem
-                                key={`group-${group.id}`}
-                                value={group.name}
-                                onSelect={() => handleSelectGroup(group)}
-                              >
-                                <Building2 className="mr-2 h-4 w-4 text-secondary" />
-                                <div className="flex flex-col">
-                                  <span className="font-medium">{group.name}</span>
-                                  <span className="text-xs text-gray-500">{group.city}</span>
-                                </div>
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        )}
+                {/* Groups - Show only if searchType is 'group' or showTypeSelector is false */}
+                {(searchType === 'group' || !showTypeSelector) && searchQuery && autocompleteResults.groups.length > 0 && (
+                  <CommandGroup heading="Nursery Groups" className="mt-4 px-2">
+                    {autocompleteResults.groups.map((group) => (
+                      <CommandItem
+                        key={`group-${group.id}`}
+                        value={group.name}
+                        onSelect={() => handleSelectGroup(group)}
+                      >
+                        <Building2 className="mr-2 h-4 w-4 text-secondary" />
+                        <div className="flex flex-col">
+                          <span className="font-medium">{group.name}</span>
+                          <span className="text-xs text-gray-500">{group.city}</span>
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                )}
 
                         {/* Nurseries - Show only if searchType is 'nursery' or showTypeSelector is false */}
                         {(searchType === 'nursery' || !showTypeSelector) && autocompleteResults.nurseries.length > 0 && (
-                          <CommandGroup heading="Nurseries">
+                          <CommandGroup heading="Nurseries" className="px-2">
                             {autocompleteResults.nurseries.map((nursery) => (
                               <CommandItem
                                 key={`nursery-${nursery.id}`}

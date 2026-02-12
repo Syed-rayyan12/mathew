@@ -9,14 +9,28 @@ export const getAllGroups = async (
   next: NextFunction
 ) => {
   try {
+    const { city } = req.query;
+    
+    const where: any = { 
+      isActive: true 
+    };
+
+    // Filter by city or town if provided
+    if (city) {
+      where.OR = [
+        { city: { contains: city as string, mode: 'insensitive' } },
+        { town: { contains: city as string, mode: 'insensitive' } },
+      ];
+    }
+
     const groups = await prisma.group.findMany({
-      where: { 
-        isActive: true 
-      },
+      where,
       select: {
         id: true,
         name: true,
         slug: true,
+        city: true,
+        town: true,
         cardImage: true,
         logo: true,
         aboutUs: true,
@@ -57,6 +71,7 @@ export const getGroupBySlug = async (
         slug: true,
         description: true,
         city: true,
+        town: true,
         logo: true,
         cardImage: true,
         images: true,
@@ -502,14 +517,28 @@ export const getAllNurseries = async (
     };
 
     if (city) {
-      where.city = { contains: city as string, mode: 'insensitive' };
+      where.OR = [
+        { city: { contains: city as string, mode: 'insensitive' } },
+        { town: { contains: city as string, mode: 'insensitive' } },
+      ];
     }
 
     if (search) {
-      where.OR = [
+      const searchConditions = [
         { name: { contains: search as string, mode: 'insensitive' } },
         { description: { contains: search as string, mode: 'insensitive' } },
       ];
+      
+      // If we already have OR from city filter, we need to combine them
+      if (where.OR) {
+        where.AND = [
+          { OR: where.OR },
+          { OR: searchConditions }
+        ];
+        delete where.OR;
+      } else {
+        where.OR = searchConditions;
+      }
     }
 
     // Filter by age range

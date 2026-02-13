@@ -39,8 +39,9 @@ export default function MiniNav() {
             href="/parent-dashboard" 
             className="cursor-pointer text-white transition flex items-center gap-2 hover:opacity-80"
           >
-            <LayoutDashboard size={18} />
-            My Dashboard
+            <LayoutDashboard size={22} /> 
+            <span className="text-[20px]">My Dashboard</span>
+   
           </Link>
         )}
       </div>

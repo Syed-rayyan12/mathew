@@ -1,5 +1,5 @@
 import React from "react";
-import { Eye, Trash2, MoreVertical, CheckCircle, XCircle } from "lucide-react";
+import { Eye, Trash2, MoreVertical, CheckCircle, XCircle, Edit } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 
-export default function NurseriesTable({ nurseries = [], onView, onDelete, onToggleStatus }: any) {
+export default function NurseriesTable({ nurseries = [], onView, onEdit, onDelete, onToggleStatus }: any) {
     return (
         <div className="w-full mt-4 overflow-x-auto">
             <table className="w-full min-w-[900px]">
@@ -79,6 +79,10 @@ export default function NurseriesTable({ nurseries = [], onView, onDelete, onTog
                                             <DropdownMenuItem onClick={() => onView?.(nursery)}>
                                                 <Eye className="mr-2 h-4 w-4" />
                                                 View Details
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => onEdit?.(nursery)}>
+                                                <Edit className="mr-2 h-4 w-4" />
+                                                Edit Nursery
                                             </DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => onToggleStatus?.(nursery)}>
                                                 {nursery.isApproved ? (

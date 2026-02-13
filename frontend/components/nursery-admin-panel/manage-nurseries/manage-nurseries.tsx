@@ -7,6 +7,7 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { Search, Filter } from "lucide-react";
 import NurseriesTable from "./nurseries-table/nurseries-table";
 import ViewNurseriesModal from "./view-nurseries-modal/view-nurseries-modal";
+import EditNurseryModal from "./edit-nurseries-modal/edit-nurseries-admin-modal";
 import AddNurseriesModal from "./add-nurseries-modal/add-nurseries-modal";
 import DeleteNurseriesModal from "./delete-nurseries-modal/delete-nurseries-modal";
 import { adminService } from "@/lib/api/admin";
@@ -22,6 +23,7 @@ export default function ManageNurseries() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openViewModal, setOpenViewModal] = useState(false);
+  const [openEditModal, setOpenEditModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [selectedNursery, setSelectedNursery] = useState<any>(null);
 
@@ -69,6 +71,12 @@ export default function ManageNurseries() {
   const handleView = (nursery: any) => {
     setSelectedNursery(nursery);
     setOpenViewModal(true);
+  };
+
+  // Edit Nursery
+  const handleEdit = (nursery: any) => {
+    setSelectedNursery(nursery);
+    setOpenEditModal(true);
   };
 
   // Delete Nursery
@@ -188,7 +196,7 @@ export default function ManageNurseries() {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-secondary"></div>
           </div>
         ) : (
-          <NurseriesTable nurseries={nurseries} onView={handleView} onDelete={handleDelete} onToggleStatus={handleToggleStatus} />
+          <NurseriesTable nurseries={nurseries} onView={handleView} onEdit={handleEdit} onDelete={handleDelete} onToggleStatus={handleToggleStatus} />
         )}
       </div>
 
@@ -206,6 +214,16 @@ export default function ManageNurseries() {
           setOpenViewModal(false);
           setSelectedNursery(null);
         }}
+      />
+
+      <EditNurseryModal
+        open={openEditModal}
+        nursery={selectedNursery}
+        onClose={() => {
+          setOpenEditModal(false);
+          setSelectedNursery(null);
+        }}
+        onSuccess={fetchNurseries}
       />
 
       <DeleteNurseriesModal

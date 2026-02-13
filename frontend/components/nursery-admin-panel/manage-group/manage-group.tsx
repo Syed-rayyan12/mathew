@@ -8,6 +8,7 @@ import { Search, Filter } from "lucide-react";
 import UsersTable from "./group-table/group-table"; // Your table component
 
 import ViewGroupModal from "./view-group-modal/view-group-modal";
+import EditGroupModal from "./edit-group-modal/edit-group-admin-modal";
 import { DeleteGroupModal } from "./delete-group-modal/delete-group-modal";
 import { AddGroupModal } from "./add-group-modal/add-group-modal";
 import { adminService } from "@/lib/api/admin";
@@ -23,6 +24,7 @@ export default function ManageGroups() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openViewModal, setOpenViewModal] = useState(false);
+  const [openEditModal, setOpenEditModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<any>(null);
   
@@ -72,6 +74,12 @@ export default function ManageGroups() {
   const handleView = (group: any) => {
     setSelectedGroup(group);
     setOpenViewModal(true);
+  };
+
+  // Edit group
+  const handleEdit = (group: any) => {
+    setSelectedGroup(group);
+    setOpenEditModal(true);
   };
 
   // Delete group
@@ -190,6 +198,7 @@ export default function ManageGroups() {
           <UsersTable
             groups={groups}
             onView={handleView}
+            onEdit={handleEdit}
             onDelete={handleDelete}
             onToggleStatus={handleToggleStatus}
           />
@@ -210,6 +219,16 @@ export default function ManageGroups() {
           setOpenViewModal(false);
           setSelectedGroup(null);
         }}
+      />
+
+      <EditGroupModal
+        open={openEditModal}
+        group={selectedGroup}
+        onClose={() => {
+          setOpenEditModal(false);
+          setSelectedGroup(null);
+        }}
+        onSuccess={fetchGroups}
       />
 
       <DeleteGroupModal

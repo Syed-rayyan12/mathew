@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Eye, Trash2, MoreVertical, CheckCircle, XCircle } from "lucide-react";
+import { Eye, Trash2, MoreVertical, CheckCircle, XCircle, Edit } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 
-export default function GroupsTable({ groups = [], onView, onDelete, onToggleStatus }: any) {
+export default function GroupsTable({ groups = [], onView, onEdit, onDelete, onToggleStatus }: any) {
   return (
     <div className="w-full mt-4 overflow-x-auto">
       <table className="w-full min-w-[700px]">
@@ -79,6 +79,10 @@ export default function GroupsTable({ groups = [], onView, onDelete, onToggleSta
                       <DropdownMenuItem onClick={() => onView?.(group)}>
                         <Eye className="mr-2 h-4 w-4" />
                         View Details
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onEdit?.(group)}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit Group
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onToggleStatus?.(group)}>
                         {group.isActive ? (

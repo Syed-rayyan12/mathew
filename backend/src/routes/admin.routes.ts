@@ -18,6 +18,8 @@ import {
   rejectUser,
   getMonthlyUserStats,
   getMonthlyReviewStats,
+  updateNurseryAdmin,
+  updateGroupAdmin,
 } from '../controllers/admin.controller';
 import { authenticate } from '../middleware';
 
@@ -47,6 +49,10 @@ router.delete('/users/:id', authenticate, deleteUser);
 // Toggle active status routes
 router.patch('/groups/:id/toggle-status', authenticate, toggleGroupStatus);
 router.patch('/nurseries/:id/toggle-status', authenticate, toggleNurseryStatus);
+
+// Update routes
+router.put('/nurseries/:id', authenticate, updateNurseryAdmin);
+router.put('/groups/:id', authenticate, updateGroupAdmin);
 
 // User approval routes
 router.get('/approvals/pending', authenticate, getUsersPendingApproval);

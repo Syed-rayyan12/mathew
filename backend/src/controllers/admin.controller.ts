@@ -1099,3 +1099,179 @@ export const getMonthlyReviewStats = async (
   }
 };
 
+// Admin: Update any nursery
+export const updateNurseryAdmin = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    const {
+      name,
+      description,
+      phone,
+      email,
+      city,
+      town,
+      ageRange,
+      facilities,
+      fees,
+      openingHours,
+      aboutUs,
+      philosophy,
+      cardImage,
+      images,
+      videoUrl,
+    } = req.body;
+
+    // Find nursery
+    const nursery = await prisma.nursery.findUnique({
+      where: { id },
+    });
+
+    if (!nursery) {
+      return res.status(404).json({
+        success: false,
+        message: 'Nursery not found',
+      });
+    }
+
+    // Generate slug from name if name is updated
+    let slug = nursery.slug;
+    if (name && name !== nursery.name) {
+      slug = name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      
+      // Ensure unique slug
+      let uniqueSlug = slug;
+      let counter = 1;
+      while (await prisma.nursery.findFirst({ where: { slug: uniqueSlug, id: { not: id } } })) {
+        uniqueSlug = `${slug}-${counter}`;
+        counter++;
+      }
+      slug = uniqueSlug;
+    }
+
+    // Build update data
+    const updateData: any = {};
+    
+    if (name) updateData.name = name;
+    if (slug) updateData.slug = slug;
+    if (description !== undefined) updateData.description = description;
+    if (phone !== undefined) updateData.phone = phone;
+    if (email !== undefined) updateData.email = email;
+    if (city !== undefined) updateData.city = city;
+    if (town !== undefined) updateData.town = town;
+    if (ageRange !== undefined) updateData.ageRange = ageRange;
+    if (facilities !== undefined) updateData.facilities = facilities;
+    if (fees !== undefined) updateData.fees = fees;
+    if (openingHours !== undefined) updateData.openingHours = openingHours;
+    if (aboutUs !== undefined) updateData.aboutUs = aboutUs;
+    if (philosophy !== undefined) updateData.philosophy = philosophy;
+    if (cardImage !== undefined) updateData.cardImage = cardImage;
+    if (images !== undefined) updateData.images = images;
+    if (videoUrl !== undefined) updateData.videoUrl = videoUrl;
+
+    const updatedNursery = await prisma.nursery.update({
+      where: { id },
+      data: updateData,
+    });
+
+    res.json({
+      success: true,
+      message: 'Nursery updated successfully',
+      data: updatedNursery,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Admin: Update any group
+export const updateGroupAdmin = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    const {
+      name,
+      logo,
+      cardImage,
+      images,
+      aboutUs,
+      description,
+      city,
+      town,
+      email,
+      phone,
+      firstName,
+      lastName,
+    } = req.body;
+
+    // Find group
+    const group = await prisma.group.findUnique({
+      where: { id },
+    });
+
+    if (!group) {
+      return res.status(404).json({
+        success: false,
+        message: 'Group not found',
+      });
+    }
+
+    // Generate slug from name if name is updated
+    let slug = group.slug;
+    if (name && name !== group.name) {
+      slug = name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      
+      // Ensure unique slug
+      let uniqueSlug = slug;
+      let counter = 1;
+      while (await prisma.group.findFirst({ where: { slug: uniqueSlug, id: { not: id } } })) {
+        uniqueSlug = `${slug}-${counter}`;
+        counter++;
+      }
+      slug = uniqueSlug;
+    }
+
+    // Build update data
+    const updateData: any = {};
+    
+    if (name) updateData.name = name;
+    if (slug) updateData.slug = slug;
+    if (logo !== undefined) updateData.logo = logo;
+    if (cardImage !== undefined) updateData.cardImage = cardImage;
+    if (images !== undefined) updateData.images = images;
+    if (aboutUs !== undefined) updateData.aboutUs = aboutUs;
+    if (description !== undefined) updateData.description = description;
+    if (city !== undefined) updateData.city = city;
+    if (town !== undefined) updateData.town = town;
+    if (email !== undefined) updateData.email = email;
+    if (phone !== undefined) updateData.phone = phone;
+    if (firstName !== undefined) updateData.firstName = firstName;
+    if (lastName !== undefined) updateData.lastName = lastName;
+
+    const updatedGroup = await prisma.group.update({
+      where: { id },
+      data: updateData,
+    });
+
+    res.json({
+      success: true,
+      message: 'Group updated successfully',
+      data: updatedGroup,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

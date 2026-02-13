@@ -277,6 +277,24 @@ export const adminService = {
     );
   },
 
+  // Update nursery (admin)
+  updateNursery: async (id: string, data: any) => {
+    return adminApiClient.put<{ success: boolean; message: string; data: any }>(
+      `/admin/nurseries/${id}`,
+      data,
+      true
+    );
+  },
+
+  // Update group (admin)
+  updateGroup: async (id: string, data: any) => {
+    return adminApiClient.put<{ success: boolean; message: string; data: any }>(
+      `/admin/groups/${id}`,
+      data,
+      true
+    );
+  },
+
   // Get users pending approval
   getPendingApprovals: async (params?: SearchParams) => {
     const queryString = params ? '?' + new URLSearchParams(params as any).toString() : '';

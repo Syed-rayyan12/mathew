@@ -38,6 +38,8 @@ export default function AddNurseryModal({
   const [cardImagePreview, setCardImagePreview] = useState<string>('');
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [videoPreview, setVideoPreview] = useState<string>('');
+  const [careTypes, setCareTypes] = useState<string[]>([]);
+  const [services, setServices] = useState<string[]>([]);
   const [facilities, setFacilities] = useState<string[]>(['']);
   const [formData, setFormData] = useState({
     nurseryName: "",
@@ -76,6 +78,22 @@ export default function AddNurseryModal({
   const removeFacility = (index: number) => {
     const newFacilities = facilities.filter((_, i) => i !== index);
     setFacilities(newFacilities);
+  };
+
+  const toggleCareType = (careType: string) => {
+    setCareTypes(prev => 
+      prev.includes(careType) 
+        ? prev.filter(ct => ct !== careType)
+        : [...prev, careType]
+    );
+  };
+
+  const toggleService = (service: string) => {
+    setServices(prev => 
+      prev.includes(service)
+        ? prev.filter(s => s !== service)
+        : [...prev, service]
+    );
   };
 
   const handleMultipleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -130,6 +148,13 @@ export default function AddNurseryModal({
         closingTime: formData.closingTime,
       };
 
+      // Combine care types, services, and facilities into one array
+      const allFacilities = [
+        ...careTypes,
+        ...services,
+        ...facilities.filter(f => f.trim() !== '')
+      ];
+
       const response = await nurseryDashboardService.createNursery({
         name: formData.nurseryName,
         ageRange: formData.ageGroup,
@@ -142,7 +167,7 @@ export default function AddNurseryModal({
         videoUrl: formData.videoUrl,
         cardImage: cardImagePreview,
         images: imagePreviews.filter(img => img !== ''),
-        facilities: facilities.filter(f => f.trim() !== ''),
+        facilities: allFacilities,
         fees,
         openingHours,
       });
@@ -176,6 +201,8 @@ export default function AddNurseryModal({
         setCardImagePreview('');
         setImagePreviews([]);
         setVideoPreview('');
+        setCareTypes([]);
+        setServices([]);
         setFacilities(['']);
         
         onOpenChange(false);
@@ -356,6 +383,58 @@ export default function AddNurseryModal({
                   </PopoverContent>
                 </Popover>
               </div>
+            </div>
+          </div>
+
+          {/* Care Types */}
+          <div>
+            <h3 className="font-medium text-lg mb-4">Care Types</h3>
+            <p className="text-sm text-muted-foreground mb-4">Select all care types that your nursery provides</p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {[
+                'Daycare',
+                'Holiday Club',
+                'Key Worker Childcare',
+                'Pre-School',
+                '2 Year Old Funded Childcare',
+                '9 Months Old Funded Childcare',
+                'After School Care',
+                '3 and 4 Year Old Funded Childcare',
+                'Before School Care'
+              ].map((careType) => (
+                <label key={careType} className="flex items-center gap-2 cursor-pointer p-3 border rounded-lg hover:bg-gray-50">
+                  <input
+                    type="checkbox"
+                    checked={careTypes.includes(careType)}
+                    onChange={() => toggleCareType(careType)}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm">{careType}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Services */}
+          <div>
+            <h3 className="font-medium text-lg mb-4">Services</h3>
+            <p className="text-sm text-muted-foreground mb-4">Select all services that apply to your nursery</p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {[
+                'Ofsted Registered',
+                'Tax-Free Childcare',
+                'Available Space'
+              ].map((service) => (
+                <label key={service} className="flex items-center gap-2 cursor-pointer p-3 border rounded-lg hover:bg-gray-50">
+                  <input
+                    type="checkbox"
+                    checked={services.includes(service)}
+                    onChange={() => toggleService(service)}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm">{service}</span>
+                </label>
+              ))}
             </div>
           </div>
 

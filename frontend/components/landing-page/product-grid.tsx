@@ -116,7 +116,7 @@ export default function NurseriesPage() {
 
   // Filter content component for reusability
   const FilterContent = () => (
-    <div className="p-5">
+    <div className="p-5 max-h-[calc(100vh-200px)] overflow-y-auto">
       <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
         <Filter size={18} /> Filters
       </h2>

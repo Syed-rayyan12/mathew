@@ -70,7 +70,9 @@ export const nurseryService = {
     page?: number;
     limit?: number;
     ageRange?: string[];
+    careTypes?: string[];
     facilities?: string[];
+    services?: string[];
   }) => {
     let endpoint = '/user/nurseries';
     
@@ -86,9 +88,19 @@ export const nurseryService = {
         params.ageRange.forEach(age => queryParams.append('ageRange', age));
       }
       
+      // Add care types filters
+      if (params.careTypes && params.careTypes.length > 0) {
+        params.careTypes.forEach(careType => queryParams.append('careTypes', careType));
+      }
+      
       // Add facilities filters
       if (params.facilities && params.facilities.length > 0) {
         params.facilities.forEach(facility => queryParams.append('facilities', facility));
+      }
+      
+      // Add services filters
+      if (params.services && params.services.length > 0) {
+        params.services.forEach(service => queryParams.append('services', service));
       }
       
       const queryString = queryParams.toString();

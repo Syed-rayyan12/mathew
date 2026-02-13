@@ -28,11 +28,13 @@ export default function NurseriesPage() {
   
   // Filter states
   const [selectedAgeGroups, setSelectedAgeGroups] = useState<string[]>([]);
+  const [selectedCareTypes, setSelectedCareTypes] = useState<string[]>([]);
   const [selectedFacilities, setSelectedFacilities] = useState<string[]>([]);
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
 
   useEffect(() => {
     fetchNurseries();
-  }, [selectedAgeGroups, selectedFacilities, cityFromUrl]);
+  }, [selectedAgeGroups, selectedCareTypes, selectedFacilities, selectedServices, cityFromUrl]);
 
   const fetchNurseries = async () => {
     setLoading(true);
@@ -41,7 +43,9 @@ export default function NurseriesPage() {
         limit: 100,
         city: cityFromUrl || undefined,
         ageRange: selectedAgeGroups,
+        careTypes: selectedCareTypes,
         facilities: selectedFacilities,
+        services: selectedServices,
       });
       if (response.success && Array.isArray(response.data)) {
         // Only show child nurseries (not parent groups)
@@ -74,6 +78,14 @@ export default function NurseriesPage() {
     );
   };
 
+  const handleCareTypeChange = (careType: string) => {
+    setSelectedCareTypes(prev =>
+      prev.includes(careType)
+        ? prev.filter(c => c !== careType)
+        : [...prev, careType]
+    );
+  };
+
   const handleFacilityChange = (facility: string) => {
     setSelectedFacilities(prev =>
       prev.includes(facility)
@@ -82,9 +94,19 @@ export default function NurseriesPage() {
     );
   };
 
+  const handleServiceChange = (service: string) => {
+    setSelectedServices(prev =>
+      prev.includes(service)
+        ? prev.filter(s => s !== service)
+        : [...prev, service]
+    );
+  };
+
   const clearFilters = () => {
     setSelectedAgeGroups([]);
+    setSelectedCareTypes([]);
     setSelectedFacilities([]);
+    setSelectedServices([]);
     setIsFilterOpen(false);
   };
 
@@ -122,6 +144,75 @@ export default function NurseriesPage() {
               checked={selectedAgeGroups.includes('3-5 years')}
               onChange={() => handleAgeGroupChange('3-5 years')}
             /> 3–5 years
+          </label>
+        </div>
+      </div>
+
+      <div className="mb-6">
+        <h3 className="font-semibold mb-2">CARE TYPE</h3>
+        <div className="space-y-2 text-sm">
+          <label className="flex items-center gap-2">
+            <input 
+              type="checkbox" 
+              checked={selectedCareTypes.includes('Daycare')}
+              onChange={() => handleCareTypeChange('Daycare')}
+            /> Daycare
+          </label>
+          <label className="flex items-center gap-2">
+            <input 
+              type="checkbox" 
+              checked={selectedCareTypes.includes('Holiday Club')}
+              onChange={() => handleCareTypeChange('Holiday Club')}
+            /> Holiday Club
+          </label>
+          <label className="flex items-center gap-2">
+            <input 
+              type="checkbox" 
+              checked={selectedCareTypes.includes('Key Worker Childcare')}
+              onChange={() => handleCareTypeChange('Key Worker Childcare')}
+            /> Key Worker Childcare
+          </label>
+          <label className="flex items-center gap-2">
+            <input 
+              type="checkbox" 
+              checked={selectedCareTypes.includes('Pre-School')}
+              onChange={() => handleCareTypeChange('Pre-School')}
+            /> Pre-School
+          </label>
+          <label className="flex items-center gap-2">
+            <input 
+              type="checkbox" 
+              checked={selectedCareTypes.includes('2 Year Old Funded Childcare')}
+              onChange={() => handleCareTypeChange('2 Year Old Funded Childcare')}
+            /> 2 Year Old Funded Childcare
+          </label>
+          <label className="flex items-center gap-2">
+            <input 
+              type="checkbox" 
+              checked={selectedCareTypes.includes('9 Months Old Funded Childcare')}
+              onChange={() => handleCareTypeChange('9 Months Old Funded Childcare')}
+            /> 9 Months Old Funded Childcare
+          </label>
+          <label className="flex items-center gap-2">
+            <input 
+              type="checkbox" 
+              checked={selectedCareTypes.includes('After School Care')}
+              onChange={() => handleCareTypeChange('After School Care')}
+            /> After School Care
+          </label>
+          <label className="flex items-center gap-2">
+            <input 
+              type="checkbox" 
+              checked={selectedCareTypes.includes('3 and 4 Year Old Funded Childcare')}
+              onChange={() => handleCareTypeChange('3 and 4 Year Old Funded Childcare')}
+            /> 3 and 4 Year Old Funded Childcare
+          </label>
+          <label className="flex items-center gap-2">
+            <input 
+              type="checkbox" 
+              checked={selectedCareTypes.includes('Before School Care')}
+              onChange={() => handleCareTypeChange('Before School Care')}
+            /> Before School Care
           </label>
         </div>
       </div>
@@ -167,6 +258,33 @@ export default function NurseriesPage() {
         </div>
       </div>
 
+      <div className="mb-6">
+        <h3 className="font-semibold mb-2">SERVICES</h3>
+        <div className="space-y-2 text-sm">
+          <label className="flex items-center gap-2">
+            <input 
+              type="checkbox" 
+              checked={selectedServices.includes('Ofsted Registered')}
+              onChange={() => handleServiceChange('Ofsted Registered')}
+            /> Ofsted Registered
+          </label>
+          <label className="flex items-center gap-2">
+            <input 
+              type="checkbox" 
+              checked={selectedServices.includes('Tax-Free Childcare')}
+              onChange={() => handleServiceChange('Tax-Free Childcare')}
+            /> Tax-Free Childcare
+          </label>
+          <label className="flex items-center gap-2">
+            <input 
+              type="checkbox" 
+              checked={selectedServices.includes('Available Space')}
+              onChange={() => handleServiceChange('Available Space')}
+            /> Available Space
+          </label>
+        </div>
+      </div>
+
       <button 
         onClick={clearFilters}
         className="w-full mt-3 text-sm text-gray-500 hover:underline"
@@ -198,7 +316,7 @@ export default function NurseriesPage() {
             <SheetHeader>
               <SheetTitle>Filter Nurseries</SheetTitle>
               <SheetDescription>
-                Filter by age group and facilities
+                Filter by age group, care type, facilities, and services
               </SheetDescription>
             </SheetHeader>
             <FilterContent />

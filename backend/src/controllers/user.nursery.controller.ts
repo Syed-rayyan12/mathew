@@ -508,7 +508,7 @@ export const getAllNurseries = async (
   next: NextFunction
 ) => {
   try {
-    const { city, search, page = 1, limit = 100, ageRange, facilities } = req.query;
+    const { city, search, page = 1, limit = 100, ageRange, careTypes, facilities, services } = req.query;
 
     const skip = (Number(page) - 1) * Number(limit);
 
@@ -549,13 +549,49 @@ export const getAllNurseries = async (
       };
     }
 
+    // Filter by care types (stored in facilities array)
+    if (careTypes) {
+      const careTypeList = Array.isArray(careTypes) ? careTypes : [careTypes];
+      if (!where.facilities) {
+        where.facilities = { hasEvery: careTypeList };
+      } else {
+        // Merge with existing facilities filter
+        const allFilters = [...careTypeList];
+        if (where.facilities.hasEvery) {
+          allFilters.push(...where.facilities.hasEvery);
+        }
+        where.facilities = { hasEvery: allFilters };
+      }
+    }
+
     // Filter by facilities
     if (facilities) {
       const facilityList = Array.isArray(facilities) ? facilities : [facilities];
-      // Check if nursery has all selected facilities
-      where.facilities = {
-        hasEvery: facilityList,
-      };
+      if (!where.facilities) {
+        where.facilities = { hasEvery: facilityList };
+      } else {
+        // Merge with existing care types filter
+        const allFilters = [...facilityList];
+        if (where.facilities.hasEvery) {
+          allFilters.push(...where.facilities.hasEvery);
+        }
+        where.facilities = { hasEvery: allFilters };
+      }
+    }
+
+    // Filter by services (stored in facilities array)
+    if (services) {
+      const serviceList = Array.isArray(services) ? services : [services];
+      if (!where.facilities) {
+        where.facilities = { hasEvery: serviceList };
+      } else {
+        // Merge with existing filters
+        const allFilters = [...serviceList];
+        if (where.facilities.hasEvery) {
+          allFilters.push(...where.facilities.hasEvery);
+        }
+        where.facilities = { hasEvery: allFilters };
+      }
     }
 
     const [nurseries, total] = await Promise.all([

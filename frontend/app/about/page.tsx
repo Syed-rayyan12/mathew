@@ -19,7 +19,7 @@ const page = () => {
       <AboutLeft />
       <WhatWeDo />
       <OurStory />
-      <CircleGridSection />
+      {/* <CircleGridSection /> */}
       <TestimonialSlider />
       <NewsletterSignup />
       <Footer />

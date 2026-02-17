@@ -15,8 +15,8 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
   const links = [
 
     { name: 'Management Nurseries', href: '/nursery-dashboard' },
-    { name: 'My Nurseries (Detailed)', href: '/nursery-dashboard/my-nurseries' },
-    { name: 'My Group', href: '/nursery-dashboard/my-group' },
+    // { name: 'My Nurseries (Detailed)', href: '/nursery-dashboard/my-nurseries' },
+    // { name: 'My Group', href: '/nursery-dashboard/my-group' },
     // { name: 'Photos & Media Gallery', href: '/nursery-dashboard/photos-media-gallery' },
     { name: 'Reviews Management', href: '/nursery-dashboard/review-management' },
     { name: 'Help & Support', href: '/nursery-dashboard/help-and-support' },

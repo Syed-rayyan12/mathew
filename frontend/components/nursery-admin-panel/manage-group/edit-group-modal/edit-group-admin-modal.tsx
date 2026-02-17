@@ -14,9 +14,11 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { adminService } from "@/lib/api/admin";
+import { Plus, X } from "lucide-react";
 
 export default function EditGroupAdminModal({ open, group, onClose, onSuccess }: any) {
   const [loading, setLoading] = useState(false);
+  const [images, setImages] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -27,6 +29,8 @@ export default function EditGroupAdminModal({ open, group, onClose, onSuccess }:
     town: "",
     aboutUs: "",
     description: "",
+    logo: "",
+    cardImage: "",
   });
 
   useEffect(() => {
@@ -41,12 +45,36 @@ export default function EditGroupAdminModal({ open, group, onClose, onSuccess }:
         town: group.town || "",
         aboutUs: group.aboutUs || "",
         description: group.description || "",
+        logo: group.logo || "",
+        cardImage: group.cardImage || "",
       });
+      
+      // Initialize images array
+      if (group.images && Array.isArray(group.images)) {
+        setImages(group.images);
+      } else {
+        setImages([]);
+      }
     }
   }, [group, open]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const addImage = () => {
+    setImages([...images, '']);
+  };
+
+  const removeImage = (index: number) => {
+    const newImages = images.filter((_, i) => i !== index);
+    setImages(newImages);
+  };
+
+  const updateImage = (index: number, value: string) => {
+    const newImages = [...images];
+    newImages[index] = value;
+    setImages(newImages);
   };
 
   const handleSubmit = async () => {
@@ -67,6 +95,9 @@ export default function EditGroupAdminModal({ open, group, onClose, onSuccess }:
         town: formData.town || undefined,
         aboutUs: formData.aboutUs,
         description: formData.description,
+        logo: formData.logo,
+        cardImage: formData.cardImage,
+        images: images.filter(img => img.trim() !== ''),
       });
 
       if (response.success) {
@@ -144,6 +175,63 @@ export default function EditGroupAdminModal({ open, group, onClose, onSuccess }:
                   onChange={handleChange}
                   placeholder="Last name"
                 />
+              </div>
+            </div>
+          </div>
+
+          {/* Images */}
+          <div>
+            <h3 className="font-medium text-lg mb-4">Images</h3>
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <Label className="block mb-2">Logo URL</Label>
+                <Input
+                  name="logo"
+                  value={formData.logo}
+                  onChange={handleChange}
+                  placeholder="https://..."
+                />
+              </div>
+              <div>
+                <Label className="block mb-2">Card Image URL</Label>
+                <Input
+                  name="cardImage"
+                  value={formData.cardImage}
+                  onChange={handleChange}
+                  placeholder="https://..."
+                />
+              </div>
+              <div>
+                <Label className="block mb-2">Gallery Images</Label>
+                <div className="space-y-2">
+                  {images.map((image, index) => (
+                    <div key={index} className="flex gap-2">
+                      <Input
+                        value={image}
+                        onChange={(e) => updateImage(index, e.target.value)}
+                        placeholder="https://..."
+                      />
+                      {images.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => removeImage(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={addImage}
+                    className="w-full"
+                  >
+                    <Plus className="h-4 w-4 mr-2" /> Add Image
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

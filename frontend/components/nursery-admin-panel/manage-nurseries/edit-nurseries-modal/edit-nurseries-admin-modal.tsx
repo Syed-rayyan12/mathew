@@ -26,11 +26,18 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
     ageGroup: "",
     email: "",
     phone: "",
+    address: "",
     city: "",
     town: "",
+    postcode: "",
     aboutUs: "",
     philosophy: "",
     videoUrl: "",
+    logo: "",
+    cardImage: "",
+    capacity: "",
+    openingTime: "",
+    closingTime: "",
   });
 
   useEffect(() => {
@@ -40,11 +47,18 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
         ageGroup: nursery.ageRange || "",
         email: nursery.email || "",
         phone: nursery.phone || nursery.phoneNumber || "",
+        address: nursery.address || "",
         city: nursery.city || "",
         town: nursery.town || "",
+        postcode: nursery.postcode || "",
         aboutUs: nursery.aboutUs || "",
         philosophy: nursery.philosophy || "",
         videoUrl: nursery.videoUrl || "",
+        logo: nursery.logo || "",
+        cardImage: nursery.cardImage || "",
+        capacity: nursery.capacity?.toString() || "",
+        openingTime: nursery.openingHours?.openingTime || "",
+        closingTime: nursery.openingHours?.closingTime || "",
       });
 
       // Parse facilities into care types, services, and other facilities
@@ -123,12 +137,21 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
         ageRange: formData.ageGroup,
         email: formData.email,
         phone: formData.phone,
+        address: formData.address,
         city: formData.city,
         town: formData.town || undefined,
+        postcode: formData.postcode,
         aboutUs: formData.aboutUs,
         philosophy: formData.philosophy,
         videoUrl: formData.videoUrl,
+        logo: formData.logo,
+        cardImage: formData.cardImage,
+        capacity: formData.capacity ? parseInt(formData.capacity) : undefined,
         facilities: allFacilities,
+        openingHours: (formData.openingTime || formData.closingTime) ? {
+          openingTime: formData.openingTime,
+          closingTime: formData.closingTime,
+        } : undefined,
       });
 
       if (response.success) {
@@ -204,13 +227,50 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
                   placeholder="+44 123 456 7890"
                 />
               </div>
+              <div>
+                <Label className="block mb-2">Capacity (Children)</Label>
+                <Input
+                  name="capacity"
+                  type="number"
+                  value={formData.capacity}
+                  onChange={handleChange}
+                  placeholder="e.g., 50"
+                />
+              </div>
+              <div>
+                <Label className="block mb-2">Logo URL</Label>
+                <Input
+                  name="logo"
+                  value={formData.logo}
+                  onChange={handleChange}
+                  placeholder="https://..."
+                />
+              </div>
+              <div className="col-span-2">
+                <Label className="block mb-2">Card Image URL</Label>
+                <Input
+                  name="cardImage"
+                  value={formData.cardImage}
+                  onChange={handleChange}
+                  placeholder="https://..."
+                />
+              </div>
             </div>
           </div>
 
-          {/* Location */}
+          {/* Address Information */}
           <div>
-            <h3 className="font-medium text-lg mb-4">Location</h3>
+            <h3 className="font-medium text-lg mb-4">Address Information</h3>
             <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <Label className="block mb-2">Address</Label>
+                <Input
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  placeholder="Street address"
+                />
+              </div>
               <div>
                 <Label className="block mb-2">City *</Label>
                 <Input
@@ -227,6 +287,40 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
                   value={formData.town}
                   onChange={handleChange}
                   placeholder="Enter town"
+                />
+              </div>
+              <div>
+                <Label className="block mb-2">Postcode</Label>
+                <Input
+                  name="postcode"
+                  value={formData.postcode}
+                  onChange={handleChange}
+                  placeholder="e.g., SW1A 1AA"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Opening Hours */}
+          <div>
+            <h3 className="font-medium text-lg mb-4">Opening Hours</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="block mb-2">Opening Time</Label>
+                <Input
+                  name="openingTime"
+                  type="time"
+                  value={formData.openingTime}
+                  onChange={handleChange}
+                />
+              </div>
+              <div>
+                <Label className="block mb-2">Closing Time</Label>
+                <Input
+                  name="closingTime"
+                  type="time"
+                  value={formData.closingTime}
+                  onChange={handleChange}
                 />
               </div>
             </div>

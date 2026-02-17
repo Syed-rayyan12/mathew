@@ -42,7 +42,7 @@ export default function EditGroupAdminModal({ open, group, onClose, onSuccess }:
       console.log('🏘️ Town from group:', group.town);
       console.log('🏙️ City from group:', group.city);
       
-      setFormData({
+      const newFormData = {
         name: group.name || "",
         email: group.email || group.ownerEmail || "",
         phone: group.phone || group.ownerPhone || "",
@@ -54,10 +54,13 @@ export default function EditGroupAdminModal({ open, group, onClose, onSuccess }:
         description: group.description || "",
         logo: group.logo || "",
         cardImage: group.cardImage || "",
-      });
+      };
       
-      console.log('✅ Set town in form:', group.town || "");
-      console.log('✅ Set city in form:', group.city || "");
+      console.log('✅ Setting formData with town:', newFormData.town);
+      console.log('✅ Setting formData with city:', newFormData.city);
+      console.log('📦 Full formData:', newFormData);
+      
+      setFormData(newFormData);
       
       // Set image previews from saved data
       if (group.logo) {

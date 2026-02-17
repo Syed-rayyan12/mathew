@@ -123,30 +123,44 @@ export const getAllGroups = async (
     });
 
     // Flatten the data to avoid nested objects in React
-    const flattenedGroups = groups.map((group: any) => ({
-      id: group.id,
-      name: group.name,
-      slug: group.slug,
-      address: group.address,
-      city: group.city || (group.nurseries && group.nurseries[0]?.city) || "",
-      town: group.town || (group.nurseries && group.nurseries[0]?.town) || "",
-      postcode: group.postcode,
-      aboutUs: group.aboutUs,
-      description: group.description,
-      logo: group.logo,
-      cardImage: group.cardImage,
-      images: group.images,
-      isActive: group.isActive,
-      createdAt: group.createdAt,
-      updatedAt: group.updatedAt,
-      ownerId: group.ownerId,
-      ownerFirstName: group.owner.firstName,
-      ownerLastName: group.owner.lastName,
-      ownerEmail: group.owner.email,
-      ownerPhone: group.owner.phone,
-      ownerIsOnline: group.owner.isOnline,
-      nurseriesCount: group._count.nurseries,
-    }));
+    const flattenedGroups = groups.map((group: any) => {
+      const townValue = group.town || (group.nurseries && group.nurseries[0]?.town) || "";
+      const cityValue = group.city || (group.nurseries && group.nurseries[0]?.city) || "";
+      
+      console.log(`📋 Group ${group.name}:`, {
+        groupTown: group.town,
+        nurseryTown: group.nurseries?.[0]?.town,
+        finalTown: townValue,
+        groupCity: group.city,
+        nurseryCity: group.nurseries?.[0]?.city,
+        finalCity: cityValue
+      });
+      
+      return {
+        id: group.id,
+        name: group.name,
+        slug: group.slug,
+        address: group.address,
+        city: cityValue,
+        town: townValue,
+        postcode: group.postcode,
+        aboutUs: group.aboutUs,
+        description: group.description,
+        logo: group.logo,
+        cardImage: group.cardImage,
+        images: group.images,
+        isActive: group.isActive,
+        createdAt: group.createdAt,
+        updatedAt: group.updatedAt,
+        ownerId: group.ownerId,
+        ownerFirstName: group.owner.firstName,
+        ownerLastName: group.owner.lastName,
+        ownerEmail: group.owner.email,
+        ownerPhone: group.owner.phone,
+        ownerIsOnline: group.owner.isOnline,
+        nurseriesCount: group._count.nurseries,
+      };
+    });
 
     res.json({
       success: true,

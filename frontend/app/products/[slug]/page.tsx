@@ -59,6 +59,11 @@ export default function NurseryDetailsPage() {
         if (response.success && response.data) {
           console.log('✅ Setting nursery data:', response.data);
           const nurseryData = (response.data as any).data || response.data;
+          
+          // Debug: Check opening hours
+          console.log('🕐 Opening Hours Data:', nurseryData.openingHours);
+          console.log('🕐 Opening Hours Type:', typeof nurseryData.openingHours);
+          
           setNursery(nurseryData);
           
           // Fetch reviews for this nursery
@@ -441,17 +446,44 @@ export default function NurseryDetailsPage() {
                 {[nursery.address, nursery.town, nursery.city, nursery.postcode].filter(Boolean).join(', ')}
               </p>
             </div>
-            {nursery.openingHours && typeof nursery.openingHours === 'object' && (
-              <div className="flex items-start gap-3 md:gap-4 mb-4 md:mb-6">
-                <Clock className="text-secondary flex-shrink-0 w-5 h-5" />
-                <p className="text-sm md:text-[15px] font-medium font-sans text-muted-foreground">
-                  {nursery.openingHours.openingTime && nursery.openingHours.closingTime 
-                    ? `${nursery.openingHours.openingTime} - ${nursery.openingHours.closingTime}`
-                    : 'Monday - Friday: 7:30 AM - 6:30 PM'
+            
+            {/* Opening Hours - Show if openingHours exists and has valid data */}
+            {(() => {
+              console.log('🕐 Rendering Opening Hours, data:', nursery.openingHours);
+              
+              // Handle different data structures
+              let hours = null;
+              if (nursery.openingHours) {
+                // If it's already an object
+                if (typeof nursery.openingHours === 'object' && !Array.isArray(nursery.openingHours)) {
+                  hours = nursery.openingHours;
+                }
+                // If it's a JSON string, parse it
+                else if (typeof nursery.openingHours === 'string') {
+                  try {
+                    hours = JSON.parse(nursery.openingHours);
+                  } catch (e) {
+                    console.error('Failed to parse opening hours:', e);
                   }
-                </p>
-              </div>
-            )}
+                }
+              }
+              
+              console.log('🕐 Parsed hours:', hours);
+              
+              // Display if we have valid opening and closing times
+              if (hours && hours.openingTime && hours.closingTime) {
+                return (
+                  <div className="flex items-start gap-3 md:gap-4 mb-4 md:mb-6">
+                    <Clock className="text-secondary flex-shrink-0 w-5 h-5" />
+                    <p className="text-sm md:text-[15px] font-medium font-sans text-muted-foreground">
+                      {hours.openingTime} - {hours.closingTime}
+                    </p>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+            
             {nursery.phone && (
               <div className="flex items-start gap-3 md:gap-4 mb-4 md:mb-6">
                 <Phone className="text-secondary flex-shrink-0 w-5 h-5" />

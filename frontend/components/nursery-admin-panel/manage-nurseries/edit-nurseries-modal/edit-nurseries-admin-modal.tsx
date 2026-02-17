@@ -35,7 +35,7 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
     aboutUs: "",
     philosophy: "",
     videoUrl: "",
-    logo: "",
+    // logo: "",
     cardImage: "",
     openingTime: "",
     closingTime: "",
@@ -43,6 +43,9 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
 
   useEffect(() => {
     if (nursery && open) {
+      console.log('📝 Loading nursery data into edit form:', nursery);
+      console.log('🕐 Opening hours from nursery:', nursery.openingHours);
+      
       setFormData({
         name: nursery.name || "",
         ageGroup: nursery.ageRange || "",
@@ -53,10 +56,15 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
         aboutUs: nursery.aboutUs || "",
         philosophy: nursery.philosophy || "",
         videoUrl: nursery.videoUrl || "",
-        logo: nursery.logo || "",
+        // logo: nursery.logo || "",
         cardImage: nursery.cardImage || "",
         openingTime: nursery.openingHours?.openingTime || "",
         closingTime: nursery.openingHours?.closingTime || "",
+      });
+
+      console.log('🕐 Set opening times:', {
+        openingTime: nursery.openingHours?.openingTime,
+        closingTime: nursery.openingHours?.closingTime
       });
 
       // Set image previews
@@ -142,18 +150,18 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
     setFacilities(newFacilities);
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setFormData({ ...formData, logo: base64String });
-        setLogoPreview(base64String);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  // const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const file = e.target.files?.[0];
+  //   if (file) {
+  //     const reader = new FileReader();
+  //     reader.onloadend = () => {
+  //       const base64String = reader.result as string;
+  //       setFormData({ ...formData, logo: base64String });
+  //       setLogoPreview(base64String);
+  //     };
+  //     reader.readAsDataURL(file);
+  //   }
+  // };
 
   const handleCardImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -168,10 +176,10 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
     }
   };
 
-  const removeLogo = () => {
-    setFormData({ ...formData, logo: "" });
-    setLogoPreview("");
-  };
+  // const removeLogo = () => {
+  //   setFormData({ ...formData, logo: "" });
+  //   setLogoPreview("");
+  // };
 
   const removeCardImage = () => {
     setFormData({ ...formData, cardImage: "" });
@@ -241,7 +249,7 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
         ...facilities.filter(f => f.trim() !== '')
       ];
 
-      const response = await adminService.updateNursery(nursery.id, {
+      const updatePayload = {
         name: formData.name,
         ageRange: formData.ageGroup,
         email: formData.email,
@@ -251,7 +259,7 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
         aboutUs: formData.aboutUs,
         philosophy: formData.philosophy,
         videoUrl: formData.videoUrl,
-        logo: formData.logo,
+        // logo: formData.logo,
         cardImage: formData.cardImage,
         images: imagePreviews.filter(img => img.trim() !== ''),
         facilities: allFacilities,
@@ -259,7 +267,12 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
           openingTime: formData.openingTime,
           closingTime: formData.closingTime,
         } : undefined,
-      });
+      };
+
+      console.log('🕐 Submitting opening hours:', updatePayload.openingHours);
+      console.log('📤 Full update payload:', updatePayload);
+
+      const response = await adminService.updateNursery(nursery.id, updatePayload);
 
       if (response.success) {
         toast.success('Nursery updated successfully!');
@@ -338,9 +351,9 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
           </div>
 
           {/* Logo Upload */}
-          <div>
+          {/* <div>
             <h3 className="font-medium text-lg mb-4">Logo</h3>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-primary transition-colors">
+            {/* <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-primary transition-colors">
               {logoPreview ? (
                 <div className="space-y-4">
                   <div className="relative group max-w-xs mx-auto">
@@ -371,20 +384,20 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
                   </label>
                 </div>
               ) : (
-                <label className="cursor-pointer flex flex-col items-center justify-center h-40">
-                  <Upload className="text-gray-400 mb-2" size={40} />
-                  <span className="text-lg text-gray-600 mb-1">Upload Logo</span>
-                  <span className="text-sm text-gray-500">Click to select an image</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleLogoUpload}
-                  />
-                </label>
+                // <label className="cursor-pointer flex flex-col items-center justify-center h-40">
+                //   <Upload className="text-gray-400 mb-2" size={40} />
+                //   <span className="text-lg text-gray-600 mb-1">Upload Logo</span>
+                //   <span className="text-sm text-gray-500">Click to select an image</span>
+                //   <input
+                //     type="file"
+                //     accept="image/*"
+                //     className="hidden"
+                //     onChange={handleLogoUpload}
+                //   />
+                // </label>
               )}
             </div>
-          </div>
+          </div>  */}
 
           {/* Card Image Upload */}
           <div>

@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { useRouter } from 'next/navigation'
 import { adminService } from '@/lib/api/admin'
 import { toast } from 'sonner'
+import { Eye, EyeOff } from 'lucide-react'
 
 const AdminSignInPage = () => {
   const router = useRouter()
@@ -20,6 +21,7 @@ const AdminSignInPage = () => {
   })
   const [loading, setLoading] = useState(false)
   const [showLoader, setShowLoader] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const validateForm = (): boolean => {
     const newErrors = {
@@ -166,16 +168,25 @@ const AdminSignInPage = () => {
 
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              placeholder="••••••••"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              className={errors.password ? 'border-red-500' : ''}
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                className={errors.password ? 'border-red-500 pr-10' : 'pr-10'}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
             <span className={`overflow-hidden transition-all duration-500 ease-in-out ${errors.password ? 'max-h-10 opacity-100 translate-y-0' : 'max-h-0 opacity-0 -translate-y-2'}`}>
               <span className="text-red-500 text-sm block mt-1">{errors.password || ' '}</span>
             </span>

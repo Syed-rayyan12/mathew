@@ -279,6 +279,11 @@ export const nurseryDashboardService = {
     return apiClient.get<{ success: boolean; data: Nursery[] }>('/nursery-dashboard/my-nursery', true);
   },
 
+  // Get my group details
+  getMyGroup: async () => {
+    return apiClient.get<{ success: boolean; data: any }>('/nursery-dashboard/my-group', true);
+  },
+
   // Get my nursery reviews with stats
   getMyReviews: async () => {
     return apiClient.get<NurseryReviewsResponse>(

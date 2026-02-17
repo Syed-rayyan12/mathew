@@ -353,6 +353,7 @@ export const getMyGroup = async (
       },
       select: {
         id: true,
+        shortId: true,
         name: true,
         slug: true,
         logo: true,
@@ -361,6 +362,17 @@ export const getMyGroup = async (
         aboutUs: true,
         description: true,
         city: true,
+        town: true,
+        email: true,
+        phone: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+        _count: {
+          select: {
+            nurseries: true,
+          },
+        },
       },
     });
 

@@ -23,6 +23,7 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
   const [facilities, setFacilities] = useState<string[]>([]);
   const [logoPreview, setLogoPreview] = useState<string>("");
   const [cardImagePreview, setCardImagePreview] = useState<string>("");
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     ageGroup: "",
@@ -64,9 +65,21 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
       // Set image previews
       if (nursery.logo) {
         setLogoPreview(nursery.logo);
+      } else {
+        setLogoPreview("");
       }
+      
       if (nursery.cardImage) {
         setCardImagePreview(nursery.cardImage);
+      } else {
+        setCardImagePreview("");
+      }
+      
+      // Load gallery images
+      if (nursery.images && Array.isArray(nursery.images)) {
+        setImagePreviews(nursery.images);
+      } else {
+        setImagePreviews([]);
       }
 
       // Parse facilities into care types, services, and other facilities
@@ -161,6 +174,30 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
     setCardImagePreview("");
   };
 
+  const handleMultipleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const fileArray = Array.from(files);
+      const newPreviews: string[] = [];
+
+      fileArray.forEach((file) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          newPreviews.push(reader.result as string);
+          if (newPreviews.length === fileArray.length) {
+            setImagePreviews([...imagePreviews, ...newPreviews]);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  };
+
+  const removeGalleryImage = (index: number) => {
+    const newPreviews = imagePreviews.filter((_, i) => i !== index);
+    setImagePreviews(newPreviews);
+  };
+
   const handleSubmit = async () => {
     if (!formData.name || !formData.city) {
       toast.error('Please fill in nursery name and city');
@@ -190,6 +227,7 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
         videoUrl: formData.videoUrl,
         logo: formData.logo,
         cardImage: formData.cardImage,
+        images: imagePreviews.filter(img => img.trim() !== ''),
         facilities: allFacilities,
         openingHours: (formData.openingTime || formData.closingTime) ? {
           openingTime: formData.openingTime,
@@ -372,10 +410,59 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
             </div>
           </div>
 
-          {/* Address Information */}
+          {/* Gallery Images Upload */}
           <div>
-            <h3 className="font-medium text-lg mb-4">Address Information</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <h3 className="font-medium text-lg mb-4">Gallery Images</h3>
+            <p className="text-sm text-muted-foreground mb-4">Upload multiple images for the slider on your nursery page</p>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-primary transition-colors">
+              {imagePreviews.length > 0 ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {imagePreviews.map((preview, index) => (
+                      <div key={index} className="relative group">
+                        <div className="border-2 border-gray-200 rounded-lg h-32 overflow-hidden">
+                          <img
+                            src={preview}
+                            alt={`Preview ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeGalleryImage(index)}
+                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 border-2 border-primary text-foreground rounded-lg hover:bg-primary hover:text-white transition-colors">
+                    <Plus size={18} />
+                    <span>Add More Images</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={handleMultipleImageUpload}
+                    />
+                  </label>
+                </div>
+              ) : (
+                <label className="cursor-pointer flex flex-col items-center justify-center h-48">
+                  <Upload className="text-gray-400 mb-2" size={48} />
+                  <span className="text-lg text-gray-600 mb-1">Upload Images</span>
+                  <span className="text-sm text-gray-500">Click to select multiple images</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={handleMultipleImageUpload}
+                  />
+                </label>
+              )}
             </div>
           </div>
 

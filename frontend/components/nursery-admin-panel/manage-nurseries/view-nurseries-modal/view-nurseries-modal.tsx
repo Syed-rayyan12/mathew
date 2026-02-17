@@ -59,6 +59,11 @@ export default function ViewNurseriesModal({
               </div>
 
               <div>
+                <label className="text-sm font-medium text-gray-500">Town</label>
+                <p className="text-base text-gray-900">{nursery.town || 'N/A'}</p>
+              </div>
+
+              <div>
                 <label className="text-sm font-medium text-gray-500">Postcode</label>
                 <p className="text-base text-gray-900">{nursery.postcode || 'N/A'}</p>
               </div>

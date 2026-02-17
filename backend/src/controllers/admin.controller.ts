@@ -243,6 +243,7 @@ export const getAllNurseriesAdmin = async (
         description: nursery.description,
         address: nursery.address,
         city: nursery.city,
+        town: nursery.town,
         postcode: nursery.postcode,
         phone: nursery.phone,
         email: nursery.email,

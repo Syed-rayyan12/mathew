@@ -45,6 +45,8 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
     if (nursery && open) {
       console.log('📝 Loading nursery data into edit form:', nursery);
       console.log('🕐 Opening hours from nursery:', nursery.openingHours);
+      console.log('🏘️ Town from nursery:', nursery.town);
+      console.log('🏙️ City from nursery:', nursery.city);
       
       setFormData({
         name: nursery.name || "",
@@ -66,6 +68,8 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
         openingTime: nursery.openingHours?.openingTime,
         closingTime: nursery.openingHours?.closingTime
       });
+      console.log('✅ Set town in form:', nursery.town || "");
+      console.log('✅ Set city in form:', nursery.city || "");
 
       // Set image previews
       if (nursery.logo) {
@@ -519,7 +523,7 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
                 />
               </div>
               <div>
-                <Label className="block mb-2">Town (Optional)</Label>
+                <Label className="block mb-2">Town</Label>
                 <Input
                   name="town"
                   value={formData.town}

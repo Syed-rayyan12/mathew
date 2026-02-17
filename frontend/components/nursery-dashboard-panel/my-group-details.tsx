@@ -239,7 +239,7 @@ export default function MyGroupDetails() {
       {/* MODALS */}
       <ViewGroupModal
         open={openViewModal}
-        onOpenChange={setOpenViewModal}
+        onClose={() => setOpenViewModal(false)}
         group={group}
       />
 

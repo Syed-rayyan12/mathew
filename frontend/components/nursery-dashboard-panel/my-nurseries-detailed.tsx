@@ -45,7 +45,7 @@ export default function MyNurseriesDetailed() {
       const response = await nurseryDashboardService.getMyNursery();
 
       if (response.success && response.data) {
-        let nurseriesData = Array.isArray(response.data) ? response.data : [];
+        let nurseriesData: any[] = Array.isArray(response.data) ? response.data : [];
         
         // Filter by search query
         if (debouncedSearch) {
@@ -251,7 +251,7 @@ export default function MyNurseriesDetailed() {
 
       <ViewNurseriesModal
         open={openViewModal}
-        onOpenChange={setOpenViewModal}
+        onClose={() => setOpenViewModal(false)}
         nursery={selectedNursery}
       />
 

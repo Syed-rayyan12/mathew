@@ -111,7 +111,6 @@ export const getAllGroups = async (
             town: true,
             city: true,
           },
-          take: 1,
         },
         _count: {
           select: {
@@ -124,16 +123,22 @@ export const getAllGroups = async (
 
     // Flatten the data to avoid nested objects in React
     const flattenedGroups = groups.map((group: any) => {
-      const townValue = group.town || (group.nurseries && group.nurseries[0]?.town) || "";
-      const cityValue = group.city || (group.nurseries && group.nurseries[0]?.city) || "";
+      // Get town and city from first nursery that has town value, fallback to first nursery
+      const nurseryWithTown = group.nurseries?.find((n: any) => n.town) || group.nurseries?.[0];
+      const nurseryTown = nurseryWithTown?.town || "";
+      const nurseryCity = nurseryWithTown?.city || group.nurseries?.[0]?.city || "";
+      const townValue = group.town || nurseryTown;
+      const cityValue = group.city || nurseryCity;
       
       console.log(`📋 Group ${group.name}:`, {
         groupTown: group.town,
-        nurseryTown: group.nurseries?.[0]?.town,
+        nurseryTown: nurseryTown,
         finalTown: townValue,
         groupCity: group.city,
-        nurseryCity: group.nurseries?.[0]?.city,
-        finalCity: cityValue
+        nurseryCity: nurseryCity,
+        finalCity: cityValue,
+        totalNurseries: group.nurseries?.length,
+        nurseriesWithTown: group.nurseries?.filter((n: any) => n.town).length
       });
       
       return {

@@ -41,6 +41,11 @@ export default function EditGroupAdminModal({ open, group, onClose, onSuccess }:
       console.log('📝 Loading group data into edit form:', group);
       console.log('🏘️ Town from group:', group.town);
       console.log('🏙️ City from group:', group.city);
+      console.log('📊 Group object keys:', Object.keys(group));
+      
+      // Ensure town and city have string values (not null/undefined)
+      const townValue = group.town ?? "";
+      const cityValue = group.city ?? "";
       
       const newFormData = {
         name: group.name || "",
@@ -48,16 +53,16 @@ export default function EditGroupAdminModal({ open, group, onClose, onSuccess }:
         phone: group.phone || group.ownerPhone || "",
         firstName: group.firstName || group.ownerFirstName || "",
         lastName: group.lastName || group.ownerLastName || "",
-        city: group.city || "",
-        town: group.town || "",
+        city: cityValue,
+        town: townValue,
         aboutUs: group.aboutUs || "",
         description: group.description || "",
         logo: group.logo || "",
         cardImage: group.cardImage || "",
       };
       
-      console.log('✅ Setting formData with town:', newFormData.town);
-      console.log('✅ Setting formData with city:', newFormData.city);
+      console.log('✅ Setting formData with town:', newFormData.town, '(type:', typeof newFormData.town, ')');
+      console.log('✅ Setting formData with city:', newFormData.city, '(type:', typeof newFormData.city, ')');
       console.log('📦 Full formData:', newFormData);
       
       setFormData(newFormData);

@@ -17,6 +17,7 @@ export default function NurseriesTable({ nurseries = [], onView, onEdit, onDelet
                         <th className="p-3 text-left">ID</th>
                         <th className="p-3 text-left" style={{ borderRadius: "4px 0px 0px 4px" }}>Name</th>
                         <th className="p-3 text-left">Group</th>
+                        <th className="p-3 text-left">Town</th>
                         <th className="p-3 text-left">City</th>
                         <th className="p-3 text-left">Rating</th>
                         <th className="p-3 text-left">Reviews</th>
@@ -29,7 +30,7 @@ export default function NurseriesTable({ nurseries = [], onView, onEdit, onDelet
                 <tbody>
                     {nurseries.length === 0 ? (
                         <tr>
-                            <td colSpan={9}>
+                            <td colSpan={10}>
                                 <div className="flex justify-center w-full">
                                     <span className="block text-center py-10 text-gray-500">
                                         No Nurseries Found
@@ -43,6 +44,7 @@ export default function NurseriesTable({ nurseries = [], onView, onEdit, onDelet
                                 <td className="py-6 px-3 font-bold">{nursery.id}</td>
                                 <td className="py-6 px-3 font-bold">{nursery.name}</td>
                                 <td className="py-6 px-3 text-gray-500">{nursery.groupName || 'N/A'}</td>
+                                <td className="py-6 px-3 text-gray-500">{nursery.town || '-'}</td>
                                 <td className="py-6 px-3 text-gray-500">{nursery.city}</td>
                                 <td className="py-6 px-3">{nursery.averageRating?.toFixed(1) || '0.0'}</td>
                                 <td className="py-6 px-3">{nursery.reviewsCount || 0}</td>

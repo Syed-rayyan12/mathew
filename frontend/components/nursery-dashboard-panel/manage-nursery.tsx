@@ -109,7 +109,9 @@ export default function ManageNursery() {
                       <h3 className='text-xl font-medium font-heading mb-3'>{nursery.name}</h3>
                       <div className='flex items-center gap-2 mb-2'>
                         <MapPin className='size-4' />
-                        <span className='text-sm'>{nursery.city}, {nursery.postcode}</span>
+                        <span className='text-sm'>
+                          {[nursery.town, nursery.city].filter(Boolean).join(', ')}
+                        </span>
                       </div>
                       <div className='flex items-center gap-2'>
                         {Array.from({ length: 5 }, (_, i) => (

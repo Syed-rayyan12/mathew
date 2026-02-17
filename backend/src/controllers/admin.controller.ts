@@ -106,6 +106,13 @@ export const getAllGroups = async (
             isOnline: true,
           },
         },
+        nurseries: {
+          select: {
+            town: true,
+            city: true,
+          },
+          take: 1,
+        },
         _count: {
           select: {
             nurseries: true,
@@ -121,8 +128,8 @@ export const getAllGroups = async (
       name: group.name,
       slug: group.slug,
       address: group.address,
-      city: group.city,
-      town: group.town,
+      city: group.city || (group.nurseries && group.nurseries[0]?.city) || "",
+      town: group.town || (group.nurseries && group.nurseries[0]?.town) || "",
       postcode: group.postcode,
       aboutUs: group.aboutUs,
       description: group.description,

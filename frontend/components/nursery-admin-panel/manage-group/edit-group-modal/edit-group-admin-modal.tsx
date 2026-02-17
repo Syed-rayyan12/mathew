@@ -38,6 +38,10 @@ export default function EditGroupAdminModal({ open, group, onClose, onSuccess }:
 
   useEffect(() => {
     if (group && open) {
+      console.log('📝 Loading group data into edit form:', group);
+      console.log('🏘️ Town from group:', group.town);
+      console.log('🏙️ City from group:', group.city);
+      
       setFormData({
         name: group.name || "",
         email: group.email || group.ownerEmail || "",
@@ -51,6 +55,9 @@ export default function EditGroupAdminModal({ open, group, onClose, onSuccess }:
         logo: group.logo || "",
         cardImage: group.cardImage || "",
       });
+      
+      console.log('✅ Set town in form:', group.town || "");
+      console.log('✅ Set city in form:', group.city || "");
       
       // Set image previews from saved data
       if (group.logo) {
@@ -428,7 +435,7 @@ export default function EditGroupAdminModal({ open, group, onClose, onSuccess }:
                 />
               </div>
               <div>
-                <Label className="block mb-2">Town (Optional)</Label>
+                <Label className="block mb-2">Town</Label>
                 <Input
                   name="town"
                   value={formData.town}

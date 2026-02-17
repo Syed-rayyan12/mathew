@@ -14,11 +14,14 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { adminService } from "@/lib/api/admin";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Upload } from "lucide-react";
 
 export default function EditGroupAdminModal({ open, group, onClose, onSuccess }: any) {
   const [loading, setLoading] = useState(false);
   const [images, setImages] = useState<string[]>([]);
+  const [logoPreview, setLogoPreview] = useState<string>("");
+  const [cardImagePreview, setCardImagePreview] = useState<string>("");
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -49,11 +52,26 @@ export default function EditGroupAdminModal({ open, group, onClose, onSuccess }:
         cardImage: group.cardImage || "",
       });
       
-      // Initialize images array
+      // Set image previews from saved data
+      if (group.logo) {
+        setLogoPreview(group.logo);
+      } else {
+        setLogoPreview("");
+      }
+      
+      if (group.cardImage) {
+        setCardImagePreview(group.cardImage);
+      } else {
+        setCardImagePreview("");
+      }
+      
+      // Initialize gallery images
       if (group.images && Array.isArray(group.images)) {
         setImages(group.images);
+        setImagePreviews(group.images);
       } else {
         setImages([]);
+        setImagePreviews([]);
       }
     }
   }, [group, open]);
@@ -75,6 +93,68 @@ export default function EditGroupAdminModal({ open, group, onClose, onSuccess }:
     const newImages = [...images];
     newImages[index] = value;
     setImages(newImages);
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setFormData({ ...formData, logo: base64String });
+        setLogoPreview(base64String);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCardImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setFormData({ ...formData, cardImage: base64String });
+        setCardImagePreview(base64String);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleMultipleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const fileArray = Array.from(files);
+      const newPreviews: string[] = [];
+
+      fileArray.forEach((file) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          newPreviews.push(reader.result as string);
+          if (newPreviews.length === fileArray.length) {
+            setImagePreviews([...imagePreviews, ...newPreviews]);
+            setImages([...images, ...newPreviews]);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  };
+
+  const removeGalleryImage = (index: number) => {
+    const newPreviews = imagePreviews.filter((_, i) => i !== index);
+    setImagePreviews(newPreviews);
+    setImages(newPreviews);
+  };
+
+  const removeLogo = () => {
+    setFormData({ ...formData, logo: "" });
+    setLogoPreview("");
+  };
+
+  const removeCardImagePreview = () => {
+    setFormData({ ...formData, cardImage: "" });
+    setCardImagePreview("");
   };
 
   const handleSubmit = async () => {
@@ -179,60 +259,158 @@ export default function EditGroupAdminModal({ open, group, onClose, onSuccess }:
             </div>
           </div>
 
-          {/* Images */}
+          {/* Logo Upload */}
           <div>
-            <h3 className="font-medium text-lg mb-4">Images</h3>
-            <div className="grid grid-cols-1 gap-4">
-              <div>
-                <Label className="block mb-2">Logo URL</Label>
-                <Input
-                  name="logo"
-                  value={formData.logo}
-                  onChange={handleChange}
-                  placeholder="https://..."
-                />
-              </div>
-              <div>
-                <Label className="block mb-2">Card Image URL</Label>
-                <Input
-                  name="cardImage"
-                  value={formData.cardImage}
-                  onChange={handleChange}
-                  placeholder="https://..."
-                />
-              </div>
-              <div>
-                <Label className="block mb-2">Gallery Images</Label>
-                <div className="space-y-2">
-                  {images.map((image, index) => (
-                    <div key={index} className="flex gap-2">
-                      <Input
-                        value={image}
-                        onChange={(e) => updateImage(index, e.target.value)}
-                        placeholder="https://..."
+            <h3 className="font-medium text-lg mb-4">Logo</h3>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-primary transition-colors">
+              {logoPreview ? (
+                <div className="space-y-4">
+                  <div className="relative group max-w-xs mx-auto">
+                    <div className="border-2 border-gray-200 rounded-lg p-4 bg-white">
+                      <img
+                        src={logoPreview}
+                        alt="Logo Preview"
+                        className="w-full h-32 object-contain"
                       />
-                      {images.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={() => removeImage(index)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      )}
                     </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={addImage}
-                    className="w-full"
-                  >
-                    <Plus className="h-4 w-4 mr-2" /> Add Image
-                  </Button>
+                    <button
+                      type="button"
+                      onClick={removeLogo}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                  <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 border-2 border-primary text-foreground rounded-lg hover:bg-primary hover:text-white transition-colors">
+                    <Upload size={18} />
+                    <span>Change Logo</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleLogoUpload}
+                    />
+                  </label>
                 </div>
-              </div>
+              ) : (
+                <label className="cursor-pointer flex flex-col items-center justify-center h-40">
+                  <Upload className="text-gray-400 mb-2" size={40} />
+                  <span className="text-lg text-gray-600 mb-1">Upload Logo</span>
+                  <span className="text-sm text-gray-500">Click to select an image</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleLogoUpload}
+                  />
+                </label>
+              )}
+            </div>
+          </div>
+
+          {/* Card Image Upload */}
+          <div>
+            <h3 className="font-medium text-lg mb-4">Card Image</h3>
+            <p className="text-sm text-muted-foreground mb-4">Upload a single image that will appear on group cards in listings</p>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-primary transition-colors">
+              {cardImagePreview ? (
+                <div className="space-y-4">
+                  <div className="relative group max-w-md mx-auto">
+                    <div className="border-2 border-gray-200 rounded-lg h-48 overflow-hidden">
+                      <img
+                        src={cardImagePreview}
+                        alt="Card Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={removeCardImagePreview}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                  <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 border-2 border-primary text-foreground rounded-lg hover:bg-primary hover:text-white transition-colors">
+                    <Upload size={18} />
+                    <span>Change Card Image</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleCardImageUpload}
+                    />
+                  </label>
+                </div>
+              ) : (
+                <label className="cursor-pointer flex flex-col items-center justify-center h-48">
+                  <Upload className="text-gray-400 mb-2" size={48} />
+                  <span className="text-lg text-gray-600 mb-1">Upload Card Image</span>
+                  <span className="text-sm text-gray-500">Click to select an image for cards</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleCardImageUpload}
+                  />
+                </label>
+              )}
+            </div>
+          </div>
+
+          {/* Gallery Images Upload */}
+          <div>
+            <h3 className="font-medium text-lg mb-4">Gallery Images</h3>
+            <p className="text-sm text-muted-foreground mb-4">Upload multiple images for the slider on your group page</p>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-primary transition-colors">
+              {imagePreviews.length > 0 ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {imagePreviews.map((preview, index) => (
+                      <div key={index} className="relative group">
+                        <div className="border-2 border-gray-200 rounded-lg h-32 overflow-hidden">
+                          <img
+                            src={preview}
+                            alt={`Preview ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeGalleryImage(index)}
+                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 border-2 border-primary text-foreground rounded-lg hover:bg-primary hover:text-white transition-colors">
+                    <Plus size={18} />
+                    <span>Add More Images</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={handleMultipleImageUpload}
+                    />
+                  </label>
+                </div>
+              ) : (
+                <label className="cursor-pointer flex flex-col items-center justify-center h-48">
+                  <Upload className="text-gray-400 mb-2" size={48} />
+                  <span className="text-lg text-gray-600 mb-1">Upload Images</span>
+                  <span className="text-sm text-gray-500">Click to select multiple images</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={handleMultipleImageUpload}
+                  />
+                </label>
+              )}
             </div>
           </div>
 

@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Upload, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { adminService } from "@/lib/api/admin";
 
@@ -21,6 +21,8 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
   const [careTypes, setCareTypes] = useState<string[]>([]);
   const [services, setServices] = useState<string[]>([]);
   const [facilities, setFacilities] = useState<string[]>([]);
+  const [logoPreview, setLogoPreview] = useState<string>("");
+  const [cardImagePreview, setCardImagePreview] = useState<string>("");
   const [formData, setFormData] = useState({
     name: "",
     ageGroup: "",
@@ -35,7 +37,6 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
     videoUrl: "",
     logo: "",
     cardImage: "",
-    capacity: "",
     openingTime: "",
     closingTime: "",
   });
@@ -56,10 +57,17 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
         videoUrl: nursery.videoUrl || "",
         logo: nursery.logo || "",
         cardImage: nursery.cardImage || "",
-        capacity: nursery.capacity?.toString() || "",
         openingTime: nursery.openingHours?.openingTime || "",
         closingTime: nursery.openingHours?.closingTime || "",
       });
+
+      // Set image previews
+      if (nursery.logo) {
+        setLogoPreview(nursery.logo);
+      }
+      if (nursery.cardImage) {
+        setCardImagePreview(nursery.cardImage);
+      }
 
       // Parse facilities into care types, services, and other facilities
       const allFacilities = nursery.facilities || [];
@@ -117,6 +125,42 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
     setFacilities(newFacilities);
   };
 
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setFormData({ ...formData, logo: base64String });
+        setLogoPreview(base64String);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCardImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setFormData({ ...formData, cardImage: base64String });
+        setCardImagePreview(base64String);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeLogo = () => {
+    setFormData({ ...formData, logo: "" });
+    setLogoPreview("");
+  };
+
+  const removeCardImage = () => {
+    setFormData({ ...formData, cardImage: "" });
+    setCardImagePreview("");
+  };
+
   const handleSubmit = async () => {
     if (!formData.name || !formData.city) {
       toast.error('Please fill in nursery name and city');
@@ -146,7 +190,6 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
         videoUrl: formData.videoUrl,
         logo: formData.logo,
         cardImage: formData.cardImage,
-        capacity: formData.capacity ? parseInt(formData.capacity) : undefined,
         facilities: allFacilities,
         openingHours: (formData.openingTime || formData.closingTime) ? {
           openingTime: formData.openingTime,
@@ -174,7 +217,7 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl w-[95%] overflow-y-auto p-4 max-h-[90vh]">
+      <DialogContent className="max-w-6xl w-[95%] overflow-y-auto p-4 max-h-[90vh]">
         <DialogHeader className="border-b pb-4">
           <DialogTitle className="font-sans text-xl">Edit Nursery</DialogTitle>
         </DialogHeader>
@@ -227,34 +270,112 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
                   placeholder="+44 123 456 7890"
                 />
               </div>
-              <div>
-                <Label className="block mb-2">Capacity (Children)</Label>
-                <Input
-                  name="capacity"
-                  type="number"
-                  value={formData.capacity}
-                  onChange={handleChange}
-                  placeholder="e.g., 50"
-                />
-              </div>
-              <div>
-                <Label className="block mb-2">Logo URL</Label>
-                <Input
-                  name="logo"
-                  value={formData.logo}
-                  onChange={handleChange}
-                  placeholder="https://..."
-                />
-              </div>
-              <div className="col-span-2">
-                <Label className="block mb-2">Card Image URL</Label>
-                <Input
-                  name="cardImage"
-                  value={formData.cardImage}
-                  onChange={handleChange}
-                  placeholder="https://..."
-                />
-              </div>
+            </div>
+          </div>
+
+          {/* Logo Upload */}
+          <div>
+            <h3 className="font-medium text-lg mb-4">Logo</h3>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-primary transition-colors">
+              {logoPreview ? (
+                <div className="space-y-4">
+                  <div className="relative group max-w-xs mx-auto">
+                    <div className="border-2 border-gray-200 rounded-lg p-4 bg-white">
+                      <img
+                        src={logoPreview}
+                        alt="Logo Preview"
+                        className="w-full h-32 object-contain"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={removeLogo}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                  <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 border-2 border-primary text-foreground rounded-lg hover:bg-primary hover:text-white transition-colors">
+                    <Upload size={18} />
+                    <span>Change Logo</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleLogoUpload}
+                    />
+                  </label>
+                </div>
+              ) : (
+                <label className="cursor-pointer flex flex-col items-center justify-center h-40">
+                  <Upload className="text-gray-400 mb-2" size={40} />
+                  <span className="text-lg text-gray-600 mb-1">Upload Logo</span>
+                  <span className="text-sm text-gray-500">Click to select an image</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleLogoUpload}
+                  />
+                </label>
+              )}
+            </div>
+          </div>
+
+          {/* Card Image Upload */}
+          <div>
+            <h3 className="font-medium text-lg mb-4">Card Image</h3>
+            <p className="text-sm text-muted-foreground mb-4">Upload a single image that will appear on nursery cards in listings</p>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-primary transition-colors">
+              {cardImagePreview ? (
+                <div className="space-y-4">
+                  <div className="relative group max-w-md mx-auto">
+                    <div className="border-2 border-gray-200 rounded-lg h-48 overflow-hidden">
+                      <img
+                        src={cardImagePreview}
+                        alt="Card Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={removeCardImage}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                  <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 border-2 border-primary text-foreground rounded-lg hover:bg-primary hover:text-white transition-colors">
+                    <Upload size={18} />
+                    <span>Change Card Image</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleCardImageUpload}
+                    />
+                  </label>
+                </div>
+              ) : (
+                <label className="cursor-pointer flex flex-col items-center justify-center h-48">
+                  <Upload className="text-gray-400 mb-2" size={48} />
+                  <span className="text-lg text-gray-600 mb-1">Upload Card Image</span>
+                  <span className="text-sm text-gray-500">Click to select an image for cards</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleCardImageUpload}
+                  />
+                </label>
+              )}
+            </div>
+          </div>
+
+          {/* Address Information */}
+          <div>
+            <h3 className="font-medium text-lg mb-4">Address Information</h3>
+            <div className="grid grid-cols-2 gap-4">
             </div>
           </div>
 

@@ -43,6 +43,7 @@ export interface AdminNursery {
   name: string;
   slug: string;
   city: string;
+  town: string;
   postcode: string;
   address: string;
   groupId?: string | null;

@@ -42,32 +42,41 @@ export interface AdminNursery {
   id: string;
   name: string;
   slug: string;
+  description?: string;
+  address: string;
   city: string;
   town: string;
   postcode: string;
-  address: string;
-  groupId?: string | null;
+  phone: string;
+  email: string;
+  website?: string;
   logo?: string;
   cardImage?: string;
   images: string[];
   reviewCount: number;
-  averageRating: number;
+  isVerified: boolean;
   isApproved: boolean;
-  owner: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone?: string;
-  };
-  parentGroup?: {
-    id: string;
-    name: string;
-  } | null;
-  _count: {
-    reviews: number;
-  };
+  isActive: boolean;
+  openingHours?: any;
+  ageRange?: string;
+  capacity?: string;
+  fees?: any;
+  facilities?: any;
   createdAt: string;
+  updatedAt: string;
+  ownerId: string;
+  groupId?: string | null;
+  aboutUs?: string;
+  philosophy?: string;
+  videoUrl?: string;
+  ownerFirstName: string;
+  ownerLastName: string;
+  ownerEmail: string;
+  ownerPhone?: string;
+  ownerIsOnline: boolean;
+  groupName?: string | null;
+  averageRating: number;
+  reviewsCount: number;
 }
 
 export interface AdminUser {

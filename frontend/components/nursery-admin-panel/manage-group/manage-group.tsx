@@ -136,9 +136,9 @@ export default function ManageGroups() {
             </p>
           </div>
 
-          <Button className="bg-secondary cursor-pointer w-full md:w-auto" variant="ghost" onClick={() => setOpenAddModal(true)}>
+          {/* <Button className="bg-secondary cursor-pointer w-full md:w-auto" variant="ghost" onClick={() => setOpenAddModal(true)}>
             Add New Group
-          </Button>
+          </Button> */}
         </div>
       </div>
 

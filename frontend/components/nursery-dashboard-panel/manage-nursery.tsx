@@ -75,9 +75,9 @@ export default function ManageNursery() {
               <Input placeholder='Search your shortlisted nurseries...' className='w-full rounded-md h-9 bg-white' />
             </div>
           </div>
-          <Button onClick={() => setOpenModal(true)} className='bg-secondary hover:bg-none'>
+          {/* <Button onClick={() => setOpenModal(true)} className='bg-secondary hover:bg-none'>
             Add New Nursery
-          </Button>
+          </Button> */}
         </div>
 
         <div className='mt-6  flex w-full gap-4 items-center'>

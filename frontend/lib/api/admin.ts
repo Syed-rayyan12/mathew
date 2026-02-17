@@ -13,29 +13,25 @@ export interface AdminGroup {
   id: string;
   name: string;
   slug: string;
+  address: string;
+  city: string;
+  town: string;
+  postcode: string;
+  aboutUs?: string;
+  description?: string;
   logo?: string;
   cardImage?: string;
   images: string[];
-  aboutUs?: string;
-  address: string;
-  city: string;
-  postcode: string;
-  owner: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone?: string;
-  };
-  childNurseries: Array<{
-    id: string;
-    name: string;
-  }>;
-  _count: {
-    childNurseries: number;
-    reviews: number;
-  };
+  isActive: boolean;
   createdAt: string;
+  updatedAt: string;
+  ownerId: string;
+  ownerFirstName: string;
+  ownerLastName: string;
+  ownerEmail: string;
+  ownerPhone?: string;
+  ownerIsOnline: boolean;
+  nurseriesCount: number;
 }
 
 export interface AdminNursery {

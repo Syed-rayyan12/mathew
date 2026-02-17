@@ -122,6 +122,7 @@ export const getAllGroups = async (
       slug: group.slug,
       address: group.address,
       city: group.city,
+      town: group.town,
       postcode: group.postcode,
       aboutUs: group.aboutUs,
       description: group.description,

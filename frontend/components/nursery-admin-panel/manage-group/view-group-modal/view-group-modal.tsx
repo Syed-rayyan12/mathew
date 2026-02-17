@@ -49,6 +49,11 @@ export default function ViewGroupModal({
               </div>
 
               <div>
+                <label className="text-sm font-medium text-gray-500">Town</label>
+                <p className="text-base text-gray-900">{group.town || 'N/A'}</p>
+              </div>
+
+              <div>
                 <label className="text-sm font-medium text-gray-500">City</label>
                 <p className="text-base text-gray-900">{group.city || 'N/A'}</p>
               </div>

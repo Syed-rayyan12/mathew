@@ -19,6 +19,7 @@ export default function GroupsTable({ groups = [], onView, onEdit, onDelete, onT
             <th className="p-3 text-left">Group Name</th>
             <th className="p-3 text-left">Owner</th>
             <th className="p-3 text-left">Email</th>
+            <th className="p-3 text-left">Town</th>
             <th className="p-3 text-left">City</th>
             <th className="p-3 text-left">Nurseries</th>
             <th className="p-3 text-left">Owner Status</th>
@@ -30,7 +31,7 @@ export default function GroupsTable({ groups = [], onView, onEdit, onDelete, onT
         <tbody>
           {groups.length === 0 ? (
             <tr>
-              <td colSpan={8}>
+              <td colSpan={9}>
                 <div className="flex justify-center py-10 text-gray-500">
                   No Groups Found
                 </div>
@@ -44,6 +45,7 @@ export default function GroupsTable({ groups = [], onView, onEdit, onDelete, onT
                   {group.ownerFirstName} {group.ownerLastName}
                 </td>
                 <td className="py-6 px-3 text-gray-500">{group.ownerEmail}</td>
+                <td className="py-6 px-3 text-gray-500">{group.town || '-'}</td>
                 <td className="py-6 px-3 text-gray-500">{group.city || 'N/A'}</td>
                 <td className="py-6 px-3">{group.nurseriesCount || 0}</td>
                 <td className="py-6 px-3">

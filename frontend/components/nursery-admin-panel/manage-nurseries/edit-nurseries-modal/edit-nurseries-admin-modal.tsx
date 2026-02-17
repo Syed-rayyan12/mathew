@@ -24,15 +24,14 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
   const [logoPreview, setLogoPreview] = useState<string>("");
   const [cardImagePreview, setCardImagePreview] = useState<string>("");
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [videoPreview, setVideoPreview] = useState<string>("");
   const [formData, setFormData] = useState({
     name: "",
     ageGroup: "",
     email: "",
     phone: "",
-    address: "",
     city: "",
     town: "",
-    postcode: "",
     aboutUs: "",
     philosophy: "",
     videoUrl: "",
@@ -49,10 +48,8 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
         ageGroup: nursery.ageRange || "",
         email: nursery.email || "",
         phone: nursery.phone || nursery.phoneNumber || "",
-        address: nursery.address || "",
         city: nursery.city || "",
         town: nursery.town || "",
-        postcode: nursery.postcode || "",
         aboutUs: nursery.aboutUs || "",
         philosophy: nursery.philosophy || "",
         videoUrl: nursery.videoUrl || "",
@@ -80,6 +77,13 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
         setImagePreviews(nursery.images);
       } else {
         setImagePreviews([]);
+      }
+      
+      // Load video
+      if (nursery.videoUrl) {
+        setVideoPreview(nursery.videoUrl);
+      } else {
+        setVideoPreview("");
       }
 
       // Parse facilities into care types, services, and other facilities
@@ -198,6 +202,30 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
     setImagePreviews(newPreviews);
   };
 
+  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check if file is a video
+      if (!file.type.startsWith('video/')) {
+        toast.error('Please select a valid video file');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setFormData({ ...formData, videoUrl: base64String });
+        setVideoPreview(base64String);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeVideo = () => {
+    setFormData({ ...formData, videoUrl: "" });
+    setVideoPreview("");
+  };
+
   const handleSubmit = async () => {
     if (!formData.name || !formData.city) {
       toast.error('Please fill in nursery name and city');
@@ -218,10 +246,8 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
         ageRange: formData.ageGroup,
         email: formData.email,
         phone: formData.phone,
-        address: formData.address,
         city: formData.city,
         town: formData.town || undefined,
-        postcode: formData.postcode,
         aboutUs: formData.aboutUs,
         philosophy: formData.philosophy,
         videoUrl: formData.videoUrl,
@@ -466,19 +492,10 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
             </div>
           </div>
 
-          {/* Address Information */}
+          {/* Location Information */}
           <div>
-            <h3 className="font-medium text-lg mb-4">Address Information</h3>
+            <h3 className="font-medium text-lg mb-4">Location Information</h3>
             <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <Label className="block mb-2">Address</Label>
-                <Input
-                  name="address"
-                  value={formData.address}
-                  onChange={handleChange}
-                  placeholder="Street address"
-                />
-              </div>
               <div>
                 <Label className="block mb-2">City *</Label>
                 <Input
@@ -495,15 +512,6 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
                   value={formData.town}
                   onChange={handleChange}
                   placeholder="Enter town"
-                />
-              </div>
-              <div>
-                <Label className="block mb-2">Postcode</Label>
-                <Input
-                  name="postcode"
-                  value={formData.postcode}
-                  onChange={handleChange}
-                  placeholder="e.g., SW1A 1AA"
                 />
               </div>
             </div>
@@ -635,17 +643,55 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
             </div>
           </div>
 
-          {/* Video URL */}
+          {/* Video Upload */}
           <div>
             <h3 className="font-medium text-lg mb-4">Video</h3>
-            <div>
-              <Label className="block mb-2">Video URL</Label>
-              <Input
-                name="videoUrl"
-                value={formData.videoUrl}
-                onChange={handleChange}
-                placeholder="https://..."
-              />
+            <p className="text-sm text-muted-foreground mb-4">Upload a video showcasing your nursery</p>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-primary transition-colors">
+              {videoPreview ? (
+                <div className="space-y-4">
+                  <div className="relative group max-w-2xl mx-auto">
+                    <div className="border-2 border-gray-200 rounded-lg overflow-hidden bg-black">
+                      <video
+                        src={videoPreview}
+                        controls
+                        className="w-full h-64 object-contain"
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={removeVideo}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                  <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 border-2 border-primary text-foreground rounded-lg hover:bg-primary hover:text-white transition-colors">
+                    <Upload size={18} />
+                    <span>Change Video</span>
+                    <input
+                      type="file"
+                      accept="video/*"
+                      className="hidden"
+                      onChange={handleVideoUpload}
+                    />
+                  </label>
+                </div>
+              ) : (
+                <label className="cursor-pointer flex flex-col items-center justify-center h-48">
+                  <Upload className="text-gray-400 mb-2" size={48} />
+                  <span className="text-lg text-gray-600 mb-1">Upload Video</span>
+                  <span className="text-sm text-gray-500">Click to select a video file</span>
+                  <input
+                    type="file"
+                    accept="video/*"
+                    className="hidden"
+                    onChange={handleVideoUpload}
+                  />
+                </label>
+              )}
             </div>
           </div>
         </div>

@@ -24,6 +24,7 @@ export interface NurseryGroupUpdateData {
   aboutUs?: string;
   description?: string;
   address?: string;
+  town?: string;
   city?: string;
   postcode?: string;
 }

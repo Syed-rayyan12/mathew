@@ -18,6 +18,8 @@ export function AddGroupModal({ open, onClose, onAdd }: any) {
     groupName: "",
     owner: "",
     email: "",
+    town: "",
+    city: "",
     Nurseries: "",
     status: "Active",
     plan: "Basic",
@@ -45,6 +47,8 @@ export function AddGroupModal({ open, onClose, onAdd }: any) {
       groupName: "",
       owner: "",
       email: "",
+      town: "",
+      city: "",
       Nurseries: "",
       status: "Active",
       plan: "Basic",
@@ -103,6 +107,26 @@ export function AddGroupModal({ open, onClose, onAdd }: any) {
               value={formData.email}
               onChange={(e) => handleChange("email", e.target.value)}
               placeholder="Enter email"
+            />
+          </div>
+
+          {/* Town */}
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium">Town</label>
+            <Input
+              value={formData.town}
+              onChange={(e) => handleChange("town", e.target.value)}
+              placeholder="Enter town"
+            />
+          </div>
+
+          {/* City */}
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium">City</label>
+            <Input
+              value={formData.city}
+              onChange={(e) => handleChange("city", e.target.value)}
+              placeholder="Enter city"
             />
           </div>
 

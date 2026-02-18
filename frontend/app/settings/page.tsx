@@ -22,6 +22,7 @@ export default function SettingsPage() {
   const [formData, setFormData] = useState({
     nurseryName: '',
     address: '',
+    town: '',
     city: '',
     postcode: '',
     aboutUs: '',
@@ -81,6 +82,7 @@ export default function SettingsPage() {
             setFormData({
               nurseryName: nurseryName,
               address: '',
+              town: '',
               city: '',
               postcode: '',
               aboutUs: '',
@@ -95,6 +97,7 @@ export default function SettingsPage() {
           setFormData({
             nurseryName: group.name || nurseryName,
             address: group.address || '',
+            town: group.town || '',
             city: group.city || '',
             postcode: group.postcode || '',
             aboutUs: group.aboutUs || '',
@@ -123,6 +126,7 @@ export default function SettingsPage() {
           setFormData({
             nurseryName: nurseryName,
             address: '',
+            town: '',
             city: '',
             postcode: '',
             aboutUs: '',
@@ -212,6 +216,7 @@ export default function SettingsPage() {
         aboutUs: formData.aboutUs,
         description: formData.description,
         address: formData.address,
+        town: formData.town,
         city: formData.city,
         postcode: formData.postcode,
       }
@@ -505,6 +510,16 @@ export default function SettingsPage() {
                     placeholder="Enter street address"
                     required
                    
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="town" className='mb-2'>Town (Optional)</Label>
+                  <Input
+                    id="town"
+                    name="town"
+                    value={formData.town}
+                    onChange={handleInputChange}
+                    placeholder="Enter town"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-6">

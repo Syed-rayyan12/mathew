@@ -353,7 +353,6 @@ export const getMyGroup = async (
       },
       select: {
         id: true,
-        shortId: true,
         name: true,
         slug: true,
         logo: true,
@@ -413,6 +412,7 @@ export const updateNurseryGroup = async (
       images,
       aboutUs,
       description,
+      town,
       city,
     } = req.body;
 
@@ -461,6 +461,7 @@ export const updateNurseryGroup = async (
           aboutUs: aboutUs || '',
           description: description || '',
           city: city || '',
+          town: town || null,
         },
       });
 
@@ -498,6 +499,7 @@ export const updateNurseryGroup = async (
     if (aboutUs !== undefined) updateGroupData.aboutUs = aboutUs;
     if (description !== undefined) updateGroupData.description = description;
     if (city !== undefined) updateGroupData.city = city;
+    if (town !== undefined) updateGroupData.town = town;
 
     const updatedGroup = await prisma.group.update({
       where: { id: group.id },

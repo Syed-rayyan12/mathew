@@ -23,6 +23,7 @@ export default function AddNurseryModal({ open, onClose, onAdd }: any) {
     id: "",
     name: "",
     group: "",
+    town: "",
     city: "",
     reviews: "",
     status: "",
@@ -53,6 +54,7 @@ export default function AddNurseryModal({ open, onClose, onAdd }: any) {
       id: "",
       name: "",
       group: "",
+      town: "",
       city: "",
       reviews: "",
       status: "",
@@ -100,6 +102,17 @@ export default function AddNurseryModal({ open, onClose, onAdd }: any) {
               name="group"
               placeholder="Enter group"
               value={form.group}
+              onChange={handleChange}
+              className="mt-1"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium">Town</label>
+            <Input
+              name="town"
+              placeholder="Enter town"
+              value={form.town}
               onChange={handleChange}
               className="mt-1"
             />

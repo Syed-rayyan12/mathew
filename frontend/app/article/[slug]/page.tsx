@@ -3,10 +3,10 @@
 import Footer from "@/components/landing-page/footer";
 import Header from "@/components/landing-page/header";
 import MiniNav from "@/components/landing-page/little-nav";
-import { ArrowRight, Calendar, Download } from "lucide-react";
+import { ArrowRight, Calendar, Download, FileText, FileDown, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { apiClient } from "@/lib/api/client";
 
 interface Article {
@@ -57,12 +57,24 @@ export default function ArticleDetailPage() {
     const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+    const downloadMenuRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (slug) {
             fetchArticle();
         }
     }, [slug]);
+
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (downloadMenuRef.current && !downloadMenuRef.current.contains(event.target as Node)) {
+                setShowDownloadMenu(false);
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const fetchArticle = async () => {
         try {
@@ -80,6 +92,244 @@ export default function ArticleDetailPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const downloadAsText = () => {
+        if (!article) return;
+
+        let content = `${article.cardHeading}\n`;
+        content += `${'='.repeat(article.cardHeading.length)}\n\n`;
+        content += `Author: ${article.name}\n`;
+        content += `Published: ${new Date(article.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}\n`;
+        content += `Category: ${getCategoryLabel(article.category)}\n\n`;
+        content += `${article.cardParagraph}\n\n`;
+
+        article.sections?.forEach(section => {
+            content += `${section.heading}\n`;
+            content += `${'-'.repeat(section.heading.length)}\n`;
+            content += `${section.paragraph}\n\n`;
+        });
+
+        if (article.listHeading && article.listItems && article.listItems.length > 0) {
+            content += `${article.listHeading}\n`;
+            content += `${'-'.repeat(article.listHeading.length)}\n`;
+            article.listItems.forEach(item => {
+                content += `• ${item.heading}\n`;
+            });
+            content += '\n';
+        }
+
+        if (article.tipText) {
+            content += `Top Tip\n`;
+            content += `--------\n`;
+            content += `${article.tipText}\n\n`;
+        }
+
+        if (article.finalHeading && article.finalParagraph) {
+            content += `${article.finalHeading}\n`;
+            content += `${'-'.repeat(article.finalHeading.length)}\n`;
+            content += `${article.finalParagraph}\n`;
+        }
+
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${article.slug}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        setShowDownloadMenu(false);
+    };
+
+    const downloadAsPDF = async () => {
+        if (!article) return;
+
+        try {
+            // Import jsPDF dynamically
+            const { default: jsPDF } = await import('jspdf');
+            const doc = new jsPDF();
+            
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const margin = 20;
+            const maxWidth = pageWidth - (margin * 2);
+            let yPosition = margin;
+
+            // Helper function to add text with automatic page breaks
+            const addText = (text: string, fontSize: number, isBold: boolean = false) => {
+                doc.setFontSize(fontSize);
+                doc.setFont('helvetica', isBold ? 'bold' : 'normal');
+                
+                const lines = doc.splitTextToSize(text, maxWidth);
+                
+                lines.forEach((line: string) => {
+                    if (yPosition + fontSize / 2 > pageHeight - margin) {
+                        doc.addPage();
+                        yPosition = margin;
+                    }
+                    doc.text(line, margin, yPosition);
+                    yPosition += fontSize / 2 + 2;
+                });
+                yPosition += 5;
+            };
+
+            // Title
+            addText(article.cardHeading, 18, true);
+            
+            // Metadata
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'italic');
+            doc.text(`Author: ${article.name}`, margin, yPosition);
+            yPosition += 7;
+            doc.text(`Published: ${new Date(article.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, margin, yPosition);
+            yPosition += 7;
+            doc.text(`Category: ${getCategoryLabel(article.category)}`, margin, yPosition);
+            yPosition += 15;
+
+            // Main paragraph
+            addText(article.cardParagraph, 11);
+
+            // Sections
+            article.sections?.forEach(section => {
+                addText(section.heading, 14, true);
+                addText(section.paragraph, 11);
+            });
+
+            // List
+            if (article.listHeading && article.listItems && article.listItems.length > 0) {
+                addText(article.listHeading, 14, true);
+                article.listItems.forEach(item => {
+                    addText(`• ${item.heading}`, 11);
+                });
+            }
+
+            // Tip
+            if (article.tipText) {
+                addText('Top Tip', 14, true);
+                addText(article.tipText, 11);
+            }
+
+            // Final section
+            if (article.finalHeading && article.finalParagraph) {
+                addText(article.finalHeading, 14, true);
+                addText(article.finalParagraph, 11);
+            }
+
+            doc.save(`${article.slug}.pdf`);
+            setShowDownloadMenu(false);
+        } catch (error) {
+            console.error('Failed to generate PDF:', error);
+            alert('Failed to download PDF. Please try text format instead.');
+        }
+    };
+
+    const downloadAsHTML = () => {
+        if (!article) return;
+
+        let html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${article.cardHeading}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+        h1 {
+            color: #044A55;
+            border-bottom: 3px solid #D5F7FF;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #044A55;
+            margin-top: 30px;
+        }
+        .metadata {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .tip {
+            background-color: #D5F7FF;
+            padding: 15px;
+            border-left: 4px solid #044A55;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .category {
+            display: inline-block;
+            background-color: #D5F7FF;
+            color: #044A55;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="category">${getCategoryLabel(article.category)}</div>
+    <h1>${article.cardHeading}</h1>
+    <div class="metadata">
+        <strong>Author:</strong> ${article.name}<br>
+        <strong>Published:</strong> ${new Date(article.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+    </div>
+    <p>${article.cardParagraph}</p>
+`;
+
+        article.sections?.forEach(section => {
+            html += `<h2>${section.heading}</h2>
+    <p>${section.paragraph}</p>
+`;
+        });
+
+        if (article.listHeading && article.listItems && article.listItems.length > 0) {
+            html += `<h2>${article.listHeading}</h2>
+    <ul>
+`;
+            article.listItems.forEach(item => {
+                html += `        <li>${item.heading}</li>
+`;
+            });
+            html += `    </ul>
+`;
+        }
+
+        if (article.tipText) {
+            html += `<div class="tip">
+        <strong>Top Tip:</strong> ${article.tipText}
+    </div>
+`;
+        }
+
+        if (article.finalHeading && article.finalParagraph) {
+            html += `<h2>${article.finalHeading}</h2>
+    <p>${article.finalParagraph}</p>
+`;
+        }
+
+        html += `</body>
+</html>`;
+
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${article.slug}.html`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        setShowDownloadMenu(false);
     };
 
     if (loading) {
@@ -143,9 +393,41 @@ export default function ArticleDetailPage() {
                                     <span className="max-sm:hidden">•</span>
                                     <span className="max-sm:text-xs">{new Date(article.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                                 </div>
-                                <div className="flex items-center max-sm:self-end max-sm:mt-2">
+                                <div className="relative flex items-center max-sm:self-end max-sm:mt-2" ref={downloadMenuRef}>
                                     <Download className="text-secondary w-6 h-6 max-sm:w-5 max-sm:h-5" />
-                                    <button className="px-4 max-sm:px-2 py-2 bg-transparent text-secondary rounded-lg w-max max-sm:text-sm">Share</button>
+                                    <button 
+                                        onClick={() => setShowDownloadMenu(!showDownloadMenu)}
+                                        className="px-4 max-sm:px-2 py-2 bg-transparent text-secondary rounded-lg w-max max-sm:text-sm flex items-center gap-1"
+                                    >
+                                        Download
+                                        <ChevronDown className="w-4 h-4" />
+                                    </button>
+                                    
+                                    {showDownloadMenu && (
+                                        <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
+                                            <button
+                                                onClick={downloadAsPDF}
+                                                className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-gray-700"
+                                            >
+                                                <FileDown className="w-4 h-4 text-secondary" />
+                                                Download as PDF
+                                            </button>
+                                            <button
+                                                onClick={downloadAsText}
+                                                className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-gray-700"
+                                            >
+                                                <FileText className="w-4 h-4 text-secondary" />
+                                                Download as Text
+                                            </button>
+                                            <button
+                                                onClick={downloadAsHTML}
+                                                className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-gray-700"
+                                            >
+                                                <FileDown className="w-4 h-4 text-secondary" />
+                                                Download as HTML
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

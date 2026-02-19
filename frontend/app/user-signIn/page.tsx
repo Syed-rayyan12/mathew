@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { authService } from '@/lib/api/auth'
@@ -20,11 +21,20 @@ const UserSignInPage = () => {
   const [showLoader, setShowLoader] = useState(false)
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
 
   // Check if already authenticated, redirect to home
   useEffect(() => {
     if (authService.isAuthenticated()) { 
       router.replace('/')
+      return;
+    }
+
+    // Load saved email if remember me was checked
+    const savedEmail = localStorage.getItem('userRememberEmail');
+    if (savedEmail) {
+      setFormData(prev => ({ ...prev, email: savedEmail }));
+      setRememberMe(true);
     }
   }, [router])
 
@@ -66,6 +76,13 @@ const UserSignInPage = () => {
 
       if (!response.success || !response.data) {
         throw new Error(response.error || 'Login failed')
+      }
+
+      // Handle Remember Me
+      if (rememberMe) {
+        localStorage.setItem('userRememberEmail', formData.email);
+      } else {
+        localStorage.removeItem('userRememberEmail');
       }
 
       toast.success(`Welcome back, ${response.data.user.firstName}!`)
@@ -150,7 +167,19 @@ const UserSignInPage = () => {
             </div>
           </div>
 
-        
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="rememberMe"
+              checked={rememberMe}
+              onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+            />
+            <Label
+              htmlFor="rememberMe"
+              className="text-sm font-normal cursor-pointer"
+            >
+              Remember my email
+            </Label>
+          </div>
 
           <Button
             type="submit"

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -13,6 +14,7 @@ export default function NurseryLoginPage() {
   const router = useRouter();
   const [showLoader, setShowLoader] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -22,13 +24,21 @@ export default function NurseryLoginPage() {
     password: "",
   });
 
-  // Check if already logged in
+  // Check if already logged in and load saved email
   useEffect(() => {
     const accessToken = localStorage.getItem('accessToken');
     const email = localStorage.getItem('email');
     
     if (accessToken && email) {
       router.replace('/settings');
+      return;
+    }
+
+    // Load saved email if remember me was checked
+    const savedEmail = localStorage.getItem('nurseryRememberEmail');
+    if (savedEmail) {
+      setFormData(prev => ({ ...prev, email: savedEmail }));
+      setRememberMe(true);
     }
   }, [router]);
 
@@ -108,6 +118,13 @@ export default function NurseryLoginPage() {
         localStorage.setItem("lastName", data.data.user.lastName || "");
         localStorage.setItem("phone", data.data.user.phone || "");
         localStorage.setItem("nurseryName", data.data.user.nurseryName || "");
+
+        // Handle Remember Me
+        if (rememberMe) {
+          localStorage.setItem('nurseryRememberEmail', formData.email);
+        } else {
+          localStorage.removeItem('nurseryRememberEmail');
+        }
 
         toast.success("Login successful! Redirecting to settings...");
 
@@ -195,6 +212,22 @@ export default function NurseryLoginPage() {
               <div className={`overflow-hidden transition-all duration-500 ease-in-out ${errors.password ? 'max-h-10 opacity-100 translate-y-0' : 'max-h-0 opacity-0 -translate-y-2'}`}>
                 <span className="text-red-500 text-sm block mt-1">{errors.password || ' '}</span>
               </div>
+            </div>
+
+            {/* Remember Me */}
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="rememberMe"
+                checked={rememberMe}
+                onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                disabled={showLoader}
+              />
+              <Label
+                htmlFor="rememberMe"
+                className="text-sm font-normal cursor-pointer"
+              >
+                Remember my email
+              </Label>
             </div>
 
             {/* Forgot Password */}

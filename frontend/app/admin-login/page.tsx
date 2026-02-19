@@ -1,9 +1,10 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import { useRouter } from 'next/navigation'
 import { adminService } from '@/lib/api/admin'
 import { toast } from 'sonner'
@@ -22,6 +23,16 @@ const AdminSignInPage = () => {
   const [loading, setLoading] = useState(false)
   const [showLoader, setShowLoader] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
+
+  // Load saved email on component mount
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('adminRememberEmail')
+    if (savedEmail) {
+      setFormData(prev => ({ ...prev, email: savedEmail }))
+      setRememberMe(true)
+    }
+  }, [])
 
   const validateForm = (): boolean => {
     const newErrors = {
@@ -112,6 +123,13 @@ const AdminSignInPage = () => {
         lastName: 'User'
       }))
 
+      // Handle Remember Me
+      if (rememberMe) {
+        localStorage.setItem('adminRememberEmail', formData.email)
+      } else {
+        localStorage.removeItem('adminRememberEmail')
+      }
+
       toast.success('Welcome Admin!')
 
       setTimeout(() => {
@@ -190,6 +208,20 @@ const AdminSignInPage = () => {
             <span className={`overflow-hidden transition-all duration-500 ease-in-out ${errors.password ? 'max-h-10 opacity-100 translate-y-0' : 'max-h-0 opacity-0 -translate-y-2'}`}>
               <span className="text-red-500 text-sm block mt-1">{errors.password || ' '}</span>
             </span>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="rememberMe"
+              checked={rememberMe}
+              onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+            />
+            <Label
+              htmlFor="rememberMe"
+              className="text-sm font-normal cursor-pointer"
+            >
+              Remember my email
+            </Label>
           </div>
 
           <Button

@@ -470,15 +470,45 @@ export default function NurseryDetailsPage() {
               
               console.log('🕐 Parsed hours:', hours);
               
-              // Display if we have valid opening and closing times
+              // Check for new weekly schedule format
+              if (hours?.schedule && Array.isArray(hours.schedule)) {
+                return (
+                  <div className="mb-4 md:mb-6">
+                    <div className="flex items-start gap-3 md:gap-4 mb-2">
+                      <Clock className="text-secondary flex-shrink-0 w-5 h-5 mt-1" />
+                      <div className="flex-1">
+                        <h2 className="text-sm md:text-[15px] font-semibold font-sans text-[#044A55] mb-2">Opening Hours</h2>
+                        <div className="space-y-1">
+                          {hours.schedule.map((day: any, index: number) => (
+                            <div key={index} className="flex justify-between items-center text-xs md:text-sm">
+                              <span className="font-medium text-gray-700 min-w-[80px]">{day.day}</span>
+                              {day.isOpen ? (
+                                <span className="text-muted-foreground">
+                                  {day.openTime} - {day.closeTime}
+                                </span>
+                              ) : (
+                                <span className="text-gray-400 italic">Closed</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+              
+              // Fall back to old format with just opening and closing times
               if (hours && hours.openingTime && hours.closingTime) {
                 return (
                   <div className="flex items-start gap-3 md:gap-4 mb-4 md:mb-6">
                     <Clock className="text-secondary flex-shrink-0 w-5 h-5" />
-                    <h2 className="text-sm md:text-[15px] font-medium font-sans text-muted-foreground">Opening Times</h2>
-                    <p className="text-sm md:text-[15px] font-medium font-sans text-muted-foreground">
-                     {hours.openingTime} - Closing Time: {hours.closingTime}
-                    </p>
+                    <div className="flex-1">
+                      <h2 className="text-sm md:text-[15px] font-semibold font-sans text-[#044A55] mb-1">Opening Hours</h2>
+                      <p className="text-sm md:text-[15px] font-medium font-sans text-muted-foreground">
+                        {hours.openingTime} - {hours.closingTime}
+                      </p>
+                    </div>
                   </div>
                 );
               }

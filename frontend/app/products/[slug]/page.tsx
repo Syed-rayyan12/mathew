@@ -475,8 +475,9 @@ export default function NurseryDetailsPage() {
                 return (
                   <div className="flex items-start gap-3 md:gap-4 mb-4 md:mb-6">
                     <Clock className="text-secondary flex-shrink-0 w-5 h-5" />
+                    <h2 className="text-sm md:text-[15px] font-medium font-sans text-muted-foreground">Opening Times</h2>
                     <p className="text-sm md:text-[15px] font-medium font-sans text-muted-foreground">
-                      Opening Time: {hours.openingTime} - Closing Time: {hours.closingTime}
+                     {hours.openingTime} - Closing Time: {hours.closingTime}
                     </p>
                   </div>
                 );

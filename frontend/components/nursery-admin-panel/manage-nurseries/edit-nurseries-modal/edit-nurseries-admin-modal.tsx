@@ -15,12 +15,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Plus, X, Upload, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { adminService } from "@/lib/api/admin";
+import WeeklyTimings, { getDefaultTimings, parseTimingsFromOpeningHours, formatTimingsForAPI } from "@/components/sharedComponents/weekly-timings";
+import type { DayTiming } from "@/components/sharedComponents/weekly-timings";
 
 export default function EditNurseryAdminModal({ open, nursery, onClose, onSuccess }: any) {
   const [loading, setLoading] = useState(false);
   const [careTypes, setCareTypes] = useState<string[]>([]);
   const [services, setServices] = useState<string[]>([]);
   const [facilities, setFacilities] = useState<string[]>([]);
+  const [weeklyTimings, setWeeklyTimings] = useState<DayTiming[]>(getDefaultTimings());
   const [logoPreview, setLogoPreview] = useState<string>("");
   const [cardImagePreview, setCardImagePreview] = useState<string>("");
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
@@ -35,10 +38,7 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
     aboutUs: "",
     philosophy: "",
     videoUrl: "",
-    // logo: "",
     cardImage: "",
-    openingTime: "",
-    closingTime: "",
   });
 
   useEffect(() => {
@@ -58,18 +58,20 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
         aboutUs: nursery.aboutUs || "",
         philosophy: nursery.philosophy || "",
         videoUrl: nursery.videoUrl || "",
-        // logo: nursery.logo || "",
         cardImage: nursery.cardImage || "",
-        openingTime: nursery.openingHours?.openingTime || "",
-        closingTime: nursery.openingHours?.closingTime || "",
       });
 
-      console.log('🕐 Set opening times:', {
-        openingTime: nursery.openingHours?.openingTime,
-        closingTime: nursery.openingHours?.closingTime
-      });
       console.log('✅ Set town in form:', nursery.town || "");
       console.log('✅ Set city in form:', nursery.city || "");
+
+      // Load weekly timings
+      if (nursery.openingHours) {
+        const parsedTimings = parseTimingsFromOpeningHours(nursery.openingHours);
+        setWeeklyTimings(parsedTimings);
+        console.log('🕐 Loaded weekly timings:', parsedTimings);
+      } else {
+        setWeeklyTimings(getDefaultTimings());
+      }
 
       // Set image previews
       if (nursery.logo) {
@@ -267,10 +269,7 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
         cardImage: formData.cardImage,
         images: imagePreviews.filter(img => img.trim() !== ''),
         facilities: allFacilities,
-        openingHours: (formData.openingTime || formData.closingTime) ? {
-          openingTime: formData.openingTime,
-          closingTime: formData.closingTime,
-        } : undefined,
+        openingHours: formatTimingsForAPI(weeklyTimings),
       };
 
       console.log('🕐 Submitting opening hours:', updatePayload.openingHours);
@@ -534,31 +533,6 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
             </div>
           </div>
 
-          {/* Opening Hours */}
-          <div>
-            <h3 className="font-medium text-lg mb-4">Opening Hours</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="block mb-2">Opening Time</Label>
-                <Input
-                  name="openingTime"
-                  type="time"
-                  value={formData.openingTime}
-                  onChange={handleChange}
-                />
-              </div>
-              <div>
-                <Label className="block mb-2">Closing Time</Label>
-                <Input
-                  name="closingTime"
-                  type="time"
-                  value={formData.closingTime}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-          </div>
-
           {/* Care Types */}
           <div>
             <h3 className="font-medium text-lg mb-4">Care Types</h3>
@@ -659,6 +633,9 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
               </div>
             </div>
           </div>
+
+          {/* Weekly Timings */}
+          <WeeklyTimings timings={weeklyTimings} onChange={setWeeklyTimings} />
 
           {/* Video Upload */}
           <div>

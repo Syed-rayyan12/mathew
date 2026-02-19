@@ -22,6 +22,8 @@ import { nurseryDashboardService } from "@/lib/api/nursery";
 import { authService } from "@/lib/api/auth";
 import { UK_CITIES } from "@/lib/data/uk-cities";
 import { UK_TOWNS } from "@/lib/data/uk-towns";
+import WeeklyTimings, { getDefaultTimings, formatTimingsForAPI } from "./weekly-timings";
+import type { DayTiming } from "./weekly-timings";
 
 export default function AddNurseryModal({
   open,
@@ -41,6 +43,7 @@ export default function AddNurseryModal({
   const [careTypes, setCareTypes] = useState<string[]>([]);
   const [services, setServices] = useState<string[]>([]);
   const [facilities, setFacilities] = useState<string[]>(['']);
+  const [weeklyTimings, setWeeklyTimings] = useState(getDefaultTimings());
   const [formData, setFormData] = useState({
     nurseryName: "",
     ageGroup: "",
@@ -51,8 +54,6 @@ export default function AddNurseryModal({
     aboutUs: "",
     philosophy: "",
     videoUrl: "",
-    openingTime: "",
-    closingTime: "",
     fees0to2Full: "",
     fees0to2Part: "",
     fees2to3Full: "",
@@ -143,10 +144,7 @@ export default function AddNurseryModal({
         },
       };
 
-      const openingHours = {
-        openingTime: formData.openingTime,
-        closingTime: formData.closingTime,
-      };
+      const openingHours = formatTimingsForAPI(weeklyTimings);
 
       // Combine care types, services, and facilities into one array
       const allFacilities = [
@@ -189,8 +187,6 @@ export default function AddNurseryModal({
           aboutUs: "",
           philosophy: "",
           videoUrl: "",
-          openingTime: "",
-          closingTime: "",
           fees0to2Full: "",
           fees0to2Part: "",
           fees2to3Full: "",
@@ -204,6 +200,7 @@ export default function AddNurseryModal({
         setCareTypes([]);
         setServices([]);
         setFacilities(['']);
+        setWeeklyTimings(getDefaultTimings());
         
         onOpenChange(false);
         if (onSuccess) {
@@ -687,30 +684,8 @@ export default function AddNurseryModal({
             </div>
           </div>
 
-          {/* Opening Hours */}
-          <div>
-            <h3 className="font-medium text-lg mb-4">Opening Hours</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="block mb-2">Opening Time</Label>
-                <Input
-                  type="time"
-                  name="openingTime"
-                  value={formData.openingTime}
-                  onChange={handleChange}
-                />
-              </div>
-              <div>
-                <Label className="block mb-2">Closing Time</Label>
-                <Input
-                  type="time"
-                  name="closingTime"
-                  value={formData.closingTime}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-          </div>
+          {/* Weekly Timings */}
+          <WeeklyTimings timings={weeklyTimings} onChange={setWeeklyTimings} />
 
           {/* Fees */}
           <div>

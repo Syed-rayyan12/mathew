@@ -81,8 +81,7 @@ export const createNursery = async (
       ageRange,
       facilities,
       fees,
-      openingTime,
-      closingTime,
+      openingHours,
       aboutUs,
       philosophy,
       cardImage,
@@ -148,10 +147,7 @@ export const createNursery = async (
           ageRange: ageRange || null,
           facilities: Array.isArray(facilities) ? facilities : [],
           fees: fees && Object.keys(fees).length > 0 ? fees : null,
-          openingHours: (openingTime || closingTime) ? {
-            openingTime: openingTime || '',
-            closingTime: closingTime || '',
-          } : undefined,
+          openingHours: openingHours || null,
           aboutUs: aboutUs || null,
           philosophy: philosophy || null,
           cardImage: cardImage || null,
@@ -214,8 +210,7 @@ export const updateNursery = async (
       ageRange,
       facilities,
       fees,
-      openingTime,
-      closingTime,
+      openingHours,
       aboutUs,
       philosophy,
       cardImage,
@@ -269,14 +264,7 @@ export const updateNursery = async (
     if (cardImage !== undefined) updateData.cardImage = cardImage;
     if (images !== undefined) updateData.images = images;
     if (videoUrl !== undefined) updateData.videoUrl = videoUrl;
-    
-    if (openingTime !== undefined || closingTime !== undefined) {
-      const currentHours = nursery.openingHours as any;
-      updateData.openingHours = {
-        openingTime: openingTime !== undefined ? openingTime : currentHours?.openingTime || '',
-        closingTime: closingTime !== undefined ? closingTime : currentHours?.closingTime || '',
-      };
-    }
+    if (openingHours !== undefined) updateData.openingHours = openingHours;
 
     const updatedNursery = await prisma.nursery.update({
       where: { id: nursery.id },

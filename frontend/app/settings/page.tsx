@@ -253,7 +253,7 @@ export default function SettingsPage() {
         <div className="mb-8 flex justify-between items-center">
           <div>
             <h2 className='text-secondary font-medium text-[48px] font-heading'>
-              <span className='text-foreground'>NURSERY </span>SETTINGS
+              <span className='text-foreground'>GROUP </span>SETTINGS
             </h2>
             <p className="text-muted-foreground">Complete your nursery profile to get approved</p>
           </div>
@@ -275,7 +275,7 @@ export default function SettingsPage() {
               <h3 className="text-2xl font-medium mb-4 text-foreground">Basic Information</h3>
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <Label className='text-foreground mb-2' htmlFor="nurseryName">Nursery Name *</Label>
+                  <Label className='text-foreground mb-2' htmlFor="nurseryName">Group Name</Label>
                   <Input
                     id="nurseryName"
                     name="nurseryName"

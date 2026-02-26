@@ -243,7 +243,7 @@ export default function NurserySignupPage() {
            <img src="/images/logo.png" className="w-60 object-cover" alt="Nursery Logo" />
           </div>
           <CardDescription className="text-base mb-5">
-            Join our platform and grow your nursery business
+            Join our platform and grow your Group business
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -342,7 +342,7 @@ export default function NurserySignupPage() {
 
             {/* City */}
             <div className="space-y-2">
-              <Label htmlFor="city">City *</Label>
+              <Label htmlFor="city">City (Optional)</Label>
               <Popover open={cityOpen} onOpenChange={setCityOpen}>
                 <PopoverTrigger asChild>
                   <Button

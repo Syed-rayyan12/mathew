@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
+import { nurseryDashboardService } from "@/lib/api/nursery";
 
 export default function NurseryLoginPage() {
   const router = useRouter();
@@ -26,20 +27,38 @@ export default function NurseryLoginPage() {
 
   // Check if already logged in and load saved email
   useEffect(() => {
-    const accessToken = localStorage.getItem('accessToken');
-    const email = localStorage.getItem('email');
-    
-    if (accessToken && email) {
-      router.replace('/settings');
-      return;
-    }
+    const checkLoginStatus = async () => {
+      const accessToken = localStorage.getItem('accessToken');
+      const email = localStorage.getItem('email');
+      
+      if (accessToken && email) {
+        try {
+          // Check if nursery exists
+          const response = await nurseryDashboardService.getMyNursery();
+          const nurseriesData = Array.isArray(response.data) ? response.data : [];
+          if (response.success && nurseriesData.length > 0) {
+            // Nursery exists, redirect to dashboard
+            router.replace('/nursery-dashboard');
+          } else {
+            // No nursery, redirect to settings
+            router.replace('/settings');
+          }
+        } catch (error) {
+          // If API call fails, redirect to settings as default
+          router.replace('/settings');
+        }
+        return;
+      }
 
-    // Load saved email if remember me was checked
-    const savedEmail = localStorage.getItem('nurseryRememberEmail');
-    if (savedEmail) {
-      setFormData(prev => ({ ...prev, email: savedEmail }));
-      setRememberMe(true);
-    }
+      // Load saved email if remember me was checked
+      const savedEmail = localStorage.getItem('nurseryRememberEmail');
+      if (savedEmail) {
+        setFormData(prev => ({ ...prev, email: savedEmail }));
+        setRememberMe(true);
+      }
+    };
+
+    checkLoginStatus();
   }, [router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -126,14 +145,37 @@ export default function NurseryLoginPage() {
           localStorage.removeItem('nurseryRememberEmail');
         }
 
-        toast.success("Login successful! Redirecting to settings...");
-
-        // Keep loader visible during redirect
-        setTimeout(() => {
-          router.push('/settings')
-          clearTimeout(loaderTimeout);
-          setShowLoader(false);
-        }, 2000);
+        // Check if nursery exists to determine redirect
+        try {
+          const nurseryResponse = await nurseryDashboardService.getMyNursery();
+          const nurseriesData = Array.isArray(nurseryResponse.data) ? nurseryResponse.data : [];
+          
+          if (nurseryResponse.success && nurseriesData.length > 0) {
+            // Nursery exists, redirect to dashboard
+            toast.success("Login successful! Redirecting to dashboard...");
+            setTimeout(() => {
+              router.push('/nursery-dashboard');
+              clearTimeout(loaderTimeout);
+              setShowLoader(false);
+            }, 2000);
+          } else {
+            // No nursery, redirect to settings
+            toast.success("Login successful! Redirecting to settings...");
+            setTimeout(() => {
+              router.push('/settings');
+              clearTimeout(loaderTimeout);
+              setShowLoader(false);
+            }, 2000);
+          }
+        } catch (error) {
+          // If check fails, default to settings
+          toast.success("Login successful! Redirecting to settings...");
+          setTimeout(() => {
+            router.push('/settings');
+            clearTimeout(loaderTimeout);
+            setShowLoader(false);
+          }, 2000);
+        }
       } else {
         toast.error(data.message || "Login failed. Please check your credentials.");
         clearTimeout(loaderTimeout);

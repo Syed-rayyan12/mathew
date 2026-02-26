@@ -48,7 +48,7 @@ export default function SignInPage() {
                   <Building2 className="w-12 h-12 text-secondary group-hover:text-white transition-colors duration-300" />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-3">
-                  Nursery Login
+                  Group Login
                 </h2>
                 <p className="text-gray-600 mb-6">
                   Manage your nursery profile, respond to reviews, and update your information

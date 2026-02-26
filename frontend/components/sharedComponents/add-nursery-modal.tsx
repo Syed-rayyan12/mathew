@@ -285,7 +285,7 @@ export default function AddNurseryModal({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* City */}
               <div>
-                <Label className="block mb-2">City *</Label>
+                <Label className="block mb-2">City (Optional)</Label>
                 <Popover open={cityPopoverOpen} onOpenChange={setCityPopoverOpen}>
                   <PopoverTrigger asChild>
                     <Button

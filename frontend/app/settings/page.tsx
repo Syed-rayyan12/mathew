@@ -524,7 +524,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <Label htmlFor="city" className='mb-2'>City *</Label>
+                    <Label htmlFor="city" className='mb-2'>City (Optional)</Label>
                     <Input
                       id="city"
                       name="city"

@@ -154,7 +154,7 @@ const NurseryCardsSection = () => {
                         ) : displayNurseries.length > 0 ? (
                             <div className="grid grid-cols-3 max-lg:grid-cols-1 max-lg:gap-40 max-sm:gap-44 gap-6">
                                 {displayNurseries.map((nursery, index) => (
-                                    <SwiperSlide key={nursery.id}>
+                                    <SwiperSlide key={nursery.id} className="h-auto">
                                     <motion.div
                                        
                                         className="relative bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 h-80"
@@ -171,7 +171,7 @@ const NurseryCardsSection = () => {
                                                 (e.target as HTMLImageElement).src = '/images/nursery-placeholder.png';
                                             }}
                                         />
-                                        <div className="absolute top-60 left-0 right-0 px-4 py-6 mx-4 shadow-lg bg-white rounded-lg">
+                                        <div className="mt-[-60px] left-0 right-0 px-4 py-6 mx-4 shadow-lg bg-white rounded-lg relative">
                                             <div className="flex items-center justify-between gap-2 mb-2">
                                                 <h3 className="font-heading text-[24px] font-medium text-[#044A55]">{nursery.name}</h3>
                                                 {(nursery.city || nursery.town) && (

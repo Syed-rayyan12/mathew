@@ -1,4 +1,4 @@
-import { Facebook, Twitter, Youtube, Instagram, Mail, LocateIcon, Phone, LocationEdit } from 'lucide-react';
+import { Facebook, Twitter, Youtube, Instagram, Mail, LocateIcon, Phone, LocationEdit, Linkedin } from 'lucide-react';
 import Link from 'next/link';
 
 export default function Footer() {

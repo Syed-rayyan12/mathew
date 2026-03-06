@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { nurseryService } from '@/lib/api/nursery';
 import { motion, useInView } from 'framer-motion';
 
+import { Swiper, SwiperSlide } from 'swiper/react';
+
 interface NurseryCardData {
     id: string;
     name: string;
@@ -39,7 +41,7 @@ const NurseryCardsSection = () => {
             setLoading(true);
             setError(null);
             const response = await nurseryService.getAll({ limit: 12 });
-            
+
             if (response.success && Array.isArray(response.data)) {
                 // Get first 3 nurseries or all available
                 const displayNurseries = response.data.slice(0, 5).map(nursery => ({
@@ -113,7 +115,7 @@ const NurseryCardsSection = () => {
     return (
         <div className="py-16 relative bg-white" ref={ref}>
             <div>
-                <motion.div 
+                <motion.div
                     className='text-center'
                     initial={{ opacity: 0, y: 30 }}
                     animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
@@ -127,73 +129,87 @@ const NurseryCardsSection = () => {
                 </motion.div>
 
                 <div className='mx-auto px-24 max-sm:px-10 max-lg:px-36'>
-                    {loading ? (
-                        <div className="flex justify-center items-center h-80">
-                            <p className="text-muted-foreground">Loading nurseries...</p>
-                        </div>
-                    ) : error && nurseries.length === 0 ? (
-                        <div className="flex justify-center items-center h-80">
-                            <div className="text-center">
-                                <p className="text-muted-foreground mb-4">{error}</p>
-                                <p className="text-sm text-gray-500">Showing featured nurseries instead</p>
+                    <Swiper
+                        slidesPerView={3}
+                        spaceBetween={24}
+                        navigation
+                        pagination={{ clickable: true }}
+                        breakpoints={{
+                            320: { slidesPerView: 1 },
+                            768: { slidesPerView: 2 },
+                            1024: { slidesPerView: 3 },
+                        }}
+                    >
+                        {loading ? (
+                            <div className="flex justify-center items-center h-80">
+                                <p className="text-muted-foreground">Loading nurseries...</p>
                             </div>
-                        </div>
-                    ) : displayNurseries.length > 0 ? (
-                        <div className="grid grid-cols-3 max-lg:grid-cols-1 max-lg:gap-40 max-sm:gap-44 gap-6">
-                            {displayNurseries.map((nursery, index) => (
-                                <motion.div
-                                    key={nursery.id}
-                                    className="relative bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 h-80"
-                                    initial={{ opacity: 0, y: 50 }}
-                                    animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
-                                    transition={{ duration: 0.6, delay: 0.2 + index * 0.2 }}
-                                    whileHover={{ y: -10 }}
-                                >
-                                    <img 
-                                        src={nursery.cardImage || '/images/nursery-placeholder.png'} 
-                                        alt={nursery.name} 
-                                        className="w-full h-full object-cover rounded-xl" 
-                                        onError={(e) => {
-                                            (e.target as HTMLImageElement).src = '/images/nursery-placeholder.png';
-                                        }}
-                                    />
-                                    <div className="absolute top-60 left-0 right-0 px-4 py-6 mx-4 shadow-lg bg-white rounded-lg">
-                                        <div className="flex items-center justify-between gap-2 mb-2">
-                                            <h3 className="font-heading text-[24px] font-medium text-[#044A55]">{nursery.name}</h3>
-                                            {(nursery.city || nursery.town) && (
-                                                <span className="text-sm font-ubuntu flex items-center text-foreground whitespace-nowrap">
-                                                   <LocationEditIcon className='text-secondary'/>
-                                                    {[nursery.town, nursery.city].filter(Boolean).join(', ')}
+                        ) : error && nurseries.length === 0 ? (
+                            <div className="flex justify-center items-center h-80">
+                                <div className="text-center">
+                                    <p className="text-muted-foreground mb-4">{error}</p>
+                                    <p className="text-sm text-gray-500">Showing featured nurseries instead</p>
+                                </div>
+                            </div>
+                        ) : displayNurseries.length > 0 ? (
+                            <div className="grid grid-cols-3 max-lg:grid-cols-1 max-lg:gap-40 max-sm:gap-44 gap-6">
+                                {displayNurseries.map((nursery, index) => (
+                                    <SwiperSlide key={nursery.id}>
+                                    <motion.div
+                                       
+                                        className="relative bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 h-80"
+                                        initial={{ opacity: 0, y: 50 }}
+                                        animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
+                                        transition={{ duration: 0.6, delay: 0.2 + index * 0.2 }}
+                                        whileHover={{ y: -10 }}
+                                    >
+                                        <img
+                                            src={nursery.cardImage || '/images/nursery-placeholder.png'}
+                                            alt={nursery.name}
+                                            className="w-full h-full object-cover rounded-xl"
+                                            onError={(e) => {
+                                                (e.target as HTMLImageElement).src = '/images/nursery-placeholder.png';
+                                            }}
+                                        />
+                                        <div className="absolute top-60 left-0 right-0 px-4 py-6 mx-4 shadow-lg bg-white rounded-lg">
+                                            <div className="flex items-center justify-between gap-2 mb-2">
+                                                <h3 className="font-heading text-[24px] font-medium text-[#044A55]">{nursery.name}</h3>
+                                                {(nursery.city || nursery.town) && (
+                                                    <span className="text-sm font-ubuntu flex items-center text-foreground whitespace-nowrap">
+                                                        <LocationEditIcon className='text-secondary' />
+                                                        {[nursery.town, nursery.city].filter(Boolean).join(', ')}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-1 mb-2">
+                                                {renderStars(5)}
+                                                <span className="text-sm ml-2 text-foreground">
+                                                    {nursery.reviewCount || 0} reviews
                                                 </span>
-                                            )}
+                                            </div>
+                                            <p className="font-ubuntu text-[14px] text-muted-foreground">
+                                                {nursery.description || 'High-quality childcare and early learning'}
+                                            </p>
+                                            <div className='mt-4 flex items-center gap-2 pt-2'>
+                                                <Link
+                                                    href="/products"
+                                                    className='text-secondary font-heading text-[20px] uppercase hover:underline'
+                                                >
+                                                    view all nurseries
+                                                </Link>
+                                                <ArrowRight className='text-secondary size-5' />
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-1 mb-2">
-                                            {renderStars(5)}
-                                            <span className="text-sm ml-2 text-foreground">
-                                                {nursery.reviewCount || 0} reviews
-                                            </span>
-                                        </div>
-                                        <p className="font-ubuntu text-[14px] text-muted-foreground">
-                                            {nursery.description || 'High-quality childcare and early learning'}
-                                        </p>
-                                        <div className='mt-4 flex items-center gap-2 pt-2'>
-                                            <Link 
-                                                href="/products"
-                                                className='text-secondary font-heading text-[20px] uppercase hover:underline'
-                                            >
-                                                view all nurseries
-                                            </Link>
-                                            <ArrowRight className='text-secondary size-5' />
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="flex justify-center items-center h-80">
-                            <p className="text-muted-foreground">No nurseries available at the moment</p>
-                        </div>
-                    )}
+                                    </motion.div>
+                                    </SwiperSlide>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex justify-center items-center h-80">
+                                <p className="text-muted-foreground">No nurseries available at the moment</p>
+                            </div>
+                        )}
+                    </Swiper>
                 </div>
             </div>
 

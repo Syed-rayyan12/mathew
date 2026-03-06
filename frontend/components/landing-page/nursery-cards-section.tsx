@@ -201,9 +201,9 @@ const NurseryCardsSection = () => {
                             </div>
                         ) : displayNurseries.length > 0 ? (
                             displayNurseries.map((nursery, index) => (
-                                <SwiperSlide key={nursery.id} className="h-auto">
+                                <SwiperSlide key={nursery.id} className="h-auto flex justify-center items-center">
                                     <motion.div
-                                        className="relative bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 h-80"
+                                        className="relative bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 h-80 w-full max-w-[400px]"
                                         initial={{ opacity: 0, y: 50 }}
                                         animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
                                         transition={{ duration: 0.6, delay: 0.2 + index * 0.2 }}

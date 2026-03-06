@@ -43,8 +43,8 @@ const NurseryCardsSection = () => {
             const response = await nurseryService.getAll({ limit: 12 });
 
             if (response.success && Array.isArray(response.data)) {
-                // Get first 3 nurseries or all available
-                const displayNurseries = response.data.slice(0, 5).map(nursery => ({
+                // Get first 6 nurseries or all available
+                const displayNurseries = response.data.slice(0, 6).map(nursery => ({
                     id: nursery.id,
                     name: nursery.name,
                     slug: nursery.slug,
@@ -102,6 +102,36 @@ const NurseryCardsSection = () => {
             city: 'Birmingham',
             group: { name: 'Happy Tots', slug: 'happy-tots' },
         },
+        {
+            id: '4',
+            name: 'Sunshine Kids',
+            slug: 'sunshine-kids',
+            cardImage: '/images/nursery-4.png',
+            reviewCount: 29,
+            description: 'Bright and cheerful environment for early learners.',
+            city: 'Leeds',
+            group: { name: 'Sunshine Kids', slug: 'sunshine-kids' },
+        },
+        {
+            id: '5',
+            name: 'Tiny Treasures',
+            slug: 'tiny-treasures',
+            cardImage: '/images/nursery-5.png',
+            reviewCount: 34,
+            description: 'A place where every child is a treasure.',
+            city: 'Liverpool',
+            group: { name: 'Tiny Treasures', slug: 'tiny-treasures' },
+        },
+        {
+            id: '6',
+            name: 'Little Explorers',
+            slug: 'little-explorers',
+            cardImage: '/images/nursery-6.png',
+            reviewCount: 41,
+            description: 'Encouraging curiosity and adventure in every child.',
+            city: 'Bristol',
+            group: { name: 'Little Explorers', slug: 'little-explorers' },
+        },
     ];
 
     const displayNurseries = nurseries.length > 0 ? nurseries : (loading ? [] : fallbackNurseries);
@@ -128,17 +158,35 @@ const NurseryCardsSection = () => {
                     <p className='text-[16px] font-ubuntu mb-9'>Nurturing spaces where little ones grow and glow</p>
                 </motion.div>
 
+                {/* Custom navigation arrows */}
+                <div className="flex justify-end items-center gap-4 mb-4 px-24 max-sm:px-10 max-lg:px-36">
+                    <button className="swiper-button-prev-custom bg-white border-2 border-orange-500 rounded-full p-2 shadow hover:bg-orange-500 group transition-all duration-200" aria-label="Previous">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M15.5 19L8.5 12L15.5 5" stroke="#FF8800" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="group-hover:stroke-white"/>
+                        </svg>
+                    </button>
+                    <button className="swiper-button-next-custom bg-white border-2 border-orange-500 rounded-full p-2 shadow hover:bg-orange-500 group transition-all duration-200" aria-label="Next">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M8.5 5L15.5 12L8.5 19" stroke="#FF8800" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="group-hover:stroke-white"/>
+                        </svg>
+                    </button>
+                </div>
+
                 <div className='mx-auto px-24 max-sm:px-10 max-lg:px-36'>
                     <Swiper
                         slidesPerView={3}
                         spaceBetween={24}
-                        navigation
+                        navigation={{
+                            nextEl: '.swiper-button-next-custom',
+                            prevEl: '.swiper-button-prev-custom',
+                        }}
                         pagination={{ clickable: true }}
                         breakpoints={{
                             320: { slidesPerView: 1 },
                             768: { slidesPerView: 2 },
                             1024: { slidesPerView: 3 },
                         }}
+                        style={{ paddingBottom: 40 }}
                     >
                         {loading ? (
                             <div className="flex justify-center items-center h-80">
@@ -152,11 +200,9 @@ const NurseryCardsSection = () => {
                                 </div>
                             </div>
                         ) : displayNurseries.length > 0 ? (
-                            <div className="grid grid-cols-3 max-lg:grid-cols-1 max-lg:gap-40 max-sm:gap-44 gap-6">
-                                {displayNurseries.map((nursery, index) => (
-                                    <SwiperSlide key={nursery.id} className="h-auto">
+                            displayNurseries.map((nursery, index) => (
+                                <SwiperSlide key={nursery.id} className="h-auto">
                                     <motion.div
-                                       
                                         className="relative bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 h-80"
                                         initial={{ opacity: 0, y: 50 }}
                                         animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
@@ -201,9 +247,8 @@ const NurseryCardsSection = () => {
                                             </div>
                                         </div>
                                     </motion.div>
-                                    </SwiperSlide>
-                                ))}
-                            </div>
+                                </SwiperSlide>
+                            ))
                         ) : (
                             <div className="flex justify-center items-center h-80">
                                 <p className="text-muted-foreground">No nurseries available at the moment</p>

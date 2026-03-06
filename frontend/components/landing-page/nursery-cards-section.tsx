@@ -200,55 +200,57 @@ const NurseryCardsSection = () => {
                                 </div>
                             </div>
                         ) : displayNurseries.length > 0 ? (
-                            displayNurseries.map((nursery, index) => (
-                                <SwiperSlide key={nursery.id} className="h-auto flex justify-center items-center">
-                                    <motion.div
-                                        className="relative bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 h-80 w-full max-w-[400px]"
-                                        initial={{ opacity: 0, y: 50 }}
-                                        animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
-                                        transition={{ duration: 0.6, delay: 0.2 + index * 0.2 }}
-                                        whileHover={{ y: -10 }}
-                                    >
-                                        <img
-                                            src={nursery.cardImage || '/images/nursery-placeholder.png'}
-                                            alt={nursery.name}
-                                            className="w-full h-full object-cover rounded-xl"
-                                            onError={(e) => {
-                                                (e.target as HTMLImageElement).src = '/images/nursery-placeholder.png';
-                                            }}
-                                        />
-                                        <div className="mt-[-60px] left-0 right-0 px-4 py-6 mx-4 shadow-lg bg-white rounded-lg relative">
-                                            <div className="flex items-center justify-between gap-2 mb-2">
-                                                <h3 className="font-heading text-[24px] font-medium text-[#044A55]">{nursery.name}</h3>
-                                                {(nursery.city || nursery.town) && (
-                                                    <span className="text-sm font-ubuntu flex items-center text-foreground whitespace-nowrap">
-                                                        <LocationEditIcon className='text-secondary' />
-                                                        {[nursery.town, nursery.city].filter(Boolean).join(', ')}
+                            <div className="flex justify-center gap-6">
+                                {displayNurseries.map((nursery, index) => (
+                                    <SwiperSlide key={nursery.id} className="h-auto flex justify-center items-center">
+                                        <motion.div
+                                            className="relative bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 h-80 w-full max-w-[400px]"
+                                            initial={{ opacity: 0, y: 50 }}
+                                            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
+                                            transition={{ duration: 0.6, delay: 0.2 + index * 0.2 }}
+                                            whileHover={{ y: -10 }}
+                                        >
+                                            <img
+                                                src={nursery.cardImage || '/images/nursery-placeholder.png'}
+                                                alt={nursery.name}
+                                                className="w-full h-full object-cover rounded-xl"
+                                                onError={(e) => {
+                                                    (e.target as HTMLImageElement).src = '/images/nursery-placeholder.png';
+                                                }}
+                                            />
+                                            <div className="mt-[-60px] left-0 right-0 px-4 py-6 mx-4 shadow-lg bg-white rounded-lg relative">
+                                                <div className="flex items-center justify-between gap-2 mb-2">
+                                                    <h3 className="font-heading text-[24px] font-medium text-[#044A55]">{nursery.name}</h3>
+                                                    {(nursery.city || nursery.town) && (
+                                                        <span className="text-sm font-ubuntu flex items-center text-foreground whitespace-nowrap">
+                                                            <LocationEditIcon className='text-secondary' />
+                                                            {[nursery.town, nursery.city].filter(Boolean).join(', ')}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="flex items-center gap-1 mb-2">
+                                                    {renderStars(5)}
+                                                    <span className="text-sm ml-2 text-foreground">
+                                                        {nursery.reviewCount || 0} reviews
                                                     </span>
-                                                )}
+                                                </div>
+                                                <p className="font-ubuntu text-[14px] text-muted-foreground">
+                                                    {nursery.description || 'High-quality childcare and early learning'}
+                                                </p>
+                                                <div className='mt-4 flex items-center gap-2 pt-2'>
+                                                    <Link
+                                                        href="/products"
+                                                        className='text-secondary font-heading text-[20px] uppercase hover:underline'
+                                                    >
+                                                        view all nurseries
+                                                    </Link>
+                                                    <ArrowRight className='text-secondary size-5' />
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-1 mb-2">
-                                                {renderStars(5)}
-                                                <span className="text-sm ml-2 text-foreground">
-                                                    {nursery.reviewCount || 0} reviews
-                                                </span>
-                                            </div>
-                                            <p className="font-ubuntu text-[14px] text-muted-foreground">
-                                                {nursery.description || 'High-quality childcare and early learning'}
-                                            </p>
-                                            <div className='mt-4 flex items-center gap-2 pt-2'>
-                                                <Link
-                                                    href="/products"
-                                                    className='text-secondary font-heading text-[20px] uppercase hover:underline'
-                                                >
-                                                    view all nurseries
-                                                </Link>
-                                                <ArrowRight className='text-secondary size-5' />
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                </SwiperSlide>
-                            ))
+                                        </motion.div>
+                                    </SwiperSlide>
+                                ))}
+                            </div>
                         ) : (
                             <div className="flex justify-center items-center h-80">
                                 <p className="text-muted-foreground">No nurseries available at the moment</p>

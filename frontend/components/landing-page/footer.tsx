@@ -22,7 +22,7 @@ export default function Footer() {
               <Facebook className="w-5 h-5 md:w-6 md:h-6 text-white" />
             </div>
             <div className="rounded-full bg-black p-1.5 md:p-2">
-              <Twitter className="w-5 h-5 md:w-6 md:h-6 text-white" />
+              <Linkedin className="w-5 h-5 md:w-6 md:h-6 text-white" />
             </div>
             <div className="rounded-full bg-black p-1.5 md:p-2">
               <Youtube className="w-5 h-5 md:w-6 md:h-6 text-white" />

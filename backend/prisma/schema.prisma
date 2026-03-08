@@ -26,6 +26,7 @@ model User {
   groups      Group[]     @relation("GroupOwner")
   reviews     Review[]
   shortlist   Shortlist[]
+  recentlyViewed RecentlyViewed[]
   nurseryName String?
   @@map("users")
 }
@@ -88,6 +89,7 @@ model Nursery {
   owner        User          @relation("NurseryOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   reviews      Review[]
   shortlists   Shortlist[]
+  recentlyViewed RecentlyViewed[]
 
   @@map("nurseries")
 }
@@ -245,4 +247,16 @@ enum NotificationEntity {
   NURSERY
   GROUP
   REVIEW
+}
+
+model RecentlyViewed {
+  id        String   @id @db.VarChar(15)
+  viewedAt  DateTime @default(now())
+  userId    String   @db.VarChar(15)
+  nurseryId String   @db.VarChar(15)
+  nursery   Nursery  @relation(fields: [nurseryId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, nurseryId])
+  @@map("recently_viewed")
 }

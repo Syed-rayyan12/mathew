@@ -2,6 +2,7 @@ import { Response, NextFunction } from 'express';
 import prisma from '../config/database';
 import { AuthRequest } from '../middleware';
 import { NotFoundError } from '../utils';
+import { generateRandomId } from '../utils/id-generator';
 
 // GET /shortlist — get logged-in user's shortlisted nurseries
 export const getMyShortlist = async (
@@ -73,7 +74,7 @@ export const addToShortlist = async (
     const entry = await prisma.shortlist.upsert({
       where: { userId_nurseryId: { userId, nurseryId } },
       update: {},
-      create: { userId, nurseryId },
+      create: { id: generateRandomId(12), userId, nurseryId },
       include: {
         nursery: {
           select: {

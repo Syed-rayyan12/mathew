@@ -10,6 +10,7 @@ import Footer from "@/components/landing-page/footer";
 import { nurseryService, reviewService, Nursery, Review } from "@/lib/api/nursery";
 import { shortlistService } from "@/lib/api/shortlist";
 import { authService } from "@/lib/api/auth";
+import { recentlyViewedService } from "@/lib/api/recently-viewed";
 import { toast } from "sonner";
 import { useParams } from "next/navigation";
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -80,6 +81,13 @@ export default function NurseryDetailsPage() {
               if (shortlistRes.success && shortlistRes.data) {
                 setIsShortlisted(shortlistRes.data.isShortlisted);
               }
+            } catch {
+              // Not critical — ignore if fails
+            }
+
+            // Record this nursery as recently viewed
+            try {
+              await recentlyViewedService.recordView(nurseryData.id);
             } catch {
               // Not critical — ignore if fails
             }

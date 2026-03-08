@@ -7,7 +7,7 @@ import { Check, Clock, Heart, LocateIcon, LocationEdit, Mail, Phone, Star, Timer
 import Header from "@/components/landing-page/header";
 import MiniNav from "@/components/landing-page/little-nav";
 import Footer from "@/components/landing-page/footer";
-import { nurseryService, reviewService, Nursery, Review } from "@/lib/api/nursery";
+import { nurseryService, Nursery, Review } from "@/lib/api/nursery";
 import { shortlistService } from "@/lib/api/shortlist";
 import { authService } from "@/lib/api/auth";
 import { recentlyViewedService } from "@/lib/api/recently-viewed";
@@ -49,7 +49,6 @@ export default function NurseryDetailsPage() {
   const [nursery, setNursery] = useState<Nursery | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingReviews, setLoadingReviews] = useState(false);
   const swiperRef = useRef<SwiperType | null>(null);
   const [isShortlisted, setIsShortlisted] = useState(false);
   const [shortlistLoading, setShortlistLoading] = useState(false);
@@ -70,27 +69,19 @@ export default function NurseryDetailsPage() {
           console.log('🕐 Opening Hours Type:', typeof nurseryData.openingHours);
           
           setNursery(nurseryData);
-          
-          // Fetch reviews for this nursery
-          fetchReviews(nurseryData.id);
 
-          // Check if this nursery is already shortlisted (only for logged-in users)
+          // Use reviews already included in the nursery response — no extra API call needed
+          const reviewsFromNursery = Array.isArray(nurseryData.reviews) ? nurseryData.reviews : [];
+          setReviews(reviewsFromNursery);
+
+          // Fire shortlist check + recordView in parallel, non-blocking (don't await)
           if (authService.isAuthenticated() && nurseryData.id) {
-            try {
-              const shortlistRes = await shortlistService.checkShortlisted(nurseryData.id);
-              if (shortlistRes.success && shortlistRes.data) {
-                setIsShortlisted(shortlistRes.data.isShortlisted);
-              }
-            } catch {
-              // Not critical — ignore if fails
-            }
-
-            // Record this nursery as recently viewed
-            try {
-              await recentlyViewedService.recordView(nurseryData.id);
-            } catch {
-              // Not critical — ignore if fails
-            }
+            Promise.allSettled([
+              shortlistService.checkShortlisted(nurseryData.id).then((res) => {
+                if (res.success && res.data) setIsShortlisted(res.data.isShortlisted);
+              }),
+              recentlyViewedService.recordView(nurseryData.id),
+            ]);
           }
         } else {
           console.log('❌ No nursery data in response');
@@ -108,21 +99,6 @@ export default function NurseryDetailsPage() {
       fetchNursery();
     }
   }, [slug]);
-
-  const fetchReviews = async (nurseryId: string) => {
-    setLoadingReviews(true);
-    try {
-      const response = await reviewService.getNurseryReviews(nurseryId);
-      if (response.success && response.data) {
-        const reviewsData = Array.isArray(response.data) ? response.data : [];
-        setReviews(reviewsData);
-      }
-    } catch (error) {
-      console.error('Failed to fetch reviews:', error);
-    } finally {
-      setLoadingReviews(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -420,11 +396,7 @@ export default function NurseryDetailsPage() {
                     </Button>
                   </div>
                   
-                  {loadingReviews ? (
-                    <div className="text-center py-8">
-                      <p className="text-gray-500">Loading reviews...</p>
-                    </div>
-                  ) : reviews.length === 0 ? (
+                  {reviews.length === 0 ? (
                     <div className="text-center py-8 bg-gray-50 rounded-lg">
                       <p className="text-gray-500 text-lg">No reviews yet. Be the first to review this nursery!</p>
                     </div>

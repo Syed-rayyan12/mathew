@@ -1,9 +1,8 @@
 import { Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../config/database';
 import { AuthRequest } from '../middleware';
 import { generateRandomId } from '../utils/id-generator';
 
-const prisma = new PrismaClient();
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = prisma as any;
 

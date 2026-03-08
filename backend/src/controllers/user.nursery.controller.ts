@@ -607,32 +607,29 @@ export const getAllNurseries = async (
               slug: true,
             },
           },
-          reviews: {
-            where: { 
-              isApproved: true,
-              isRejected: false 
-            },
-            select: { overallRating: true },
-          },
         },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.nursery.count({ where }),
     ]);
 
-    // Calculate average rating for each nursery
-    const nurseriesWithRatings = nurseries.map(nursery => {
-      const approvedReviews = nursery.reviews;
-      const averageRating = approvedReviews.length > 0
-        ? approvedReviews.reduce((sum, r) => sum + r.overallRating, 0) / approvedReviews.length
-        : 0;
-
-      const { reviews, ...nurseryData } = nursery;
-      return {
-        ...nurseryData,
-        averageRating: Math.round(averageRating * 10) / 10,
-      };
+    // Compute average ratings in a single SQL GROUP BY + AVG — no review rows fetched
+    const nurseryIds = nurseries.map(n => n.id);
+    const avgRatings = await prisma.review.groupBy({
+      by: ['nurseryId'],
+      where: {
+        nurseryId: { in: nurseryIds },
+        isApproved: true,
+        isRejected: false,
+      },
+      _avg: { overallRating: true },
     });
+    const ratingMap = new Map(avgRatings.map(r => [r.nurseryId, r._avg.overallRating ?? 0]));
+
+    const nurseriesWithRatings = nurseries.map(nursery => ({
+      ...nursery,
+      averageRating: Math.round((ratingMap.get(nursery.id) ?? 0) * 10) / 10,
+    }));
 
     res.json({
       success: true,

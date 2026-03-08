@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { Star, Search } from "lucide-react";
 import { nurseryService } from "@/lib/api/nursery";
 import { useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 
 interface NurserySearchResult {
   id: string;
@@ -23,6 +24,7 @@ export default function NurseryReviewForm() {
   const [selectedNursery, setSelectedNursery] = useState<NurserySearchResult | null>(null);
   const [searchResults, setSearchResults] = useState<NurserySearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Check for pre-filled nursery from URL params
   useEffect(() => {
@@ -111,8 +113,10 @@ export default function NurseryReviewForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    if (isSubmitting) return;
+
     if (!selectedNursery) {
-      alert('Please select a nursery first');
+      toast.error('Please select a nursery first');
       return;
     }
 
@@ -133,7 +137,7 @@ export default function NurseryReviewForm() {
     ].filter(rating => rating > 0); // Only count ratings that were given
 
     if (ratings.length === 0) {
-      alert('Please provide at least one rating');
+      toast.error('Please provide at least one rating');
       return;
     }
 
@@ -146,6 +150,7 @@ export default function NurseryReviewForm() {
     console.log('Sum of ratings:', totalRating);
     console.log('Average rating:', averageRating);
 
+    setIsSubmitting(true);
     try {
       const { reviewService } = await import('@/lib/api/nursery');
       
@@ -186,8 +191,7 @@ export default function NurseryReviewForm() {
       const response = await reviewService.submit(submissionData);
 
       if (response.success) {
-        console.log('✅ Review submitted successfully:', response.data);
-        alert(`Thank you! Your review has been submitted successfully with an average rating of ${averageRating} stars.`);
+        toast.success(`Review submitted! Your average rating of ${averageRating} stars is pending approval.`);
         // Reset form
         setForm({
           overall: 0,
@@ -215,7 +219,9 @@ export default function NurseryReviewForm() {
       }
     } catch (error) {
       console.error('Error submitting review:', error);
-      alert('Failed to submit review. Please try again.');
+      toast.error('Failed to submit review. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -459,8 +465,8 @@ export default function NurseryReviewForm() {
               </div>
             </div>
 
-            <Button type="submit" className="w-full rounded-xl p-3 text-lg">
-              Submit Review
+            <Button type="submit" disabled={isSubmitting} className="w-full rounded-xl p-3 text-lg">
+              {isSubmitting ? 'Submitting...' : 'Submit Review'}
             </Button>
           </form>
         </CardContent>

@@ -47,8 +47,14 @@ export const TokenManager = {
 
   getUser: () => {
     if (typeof window !== 'undefined') {
-      const user = localStorage.getItem('user');
-      return user ? JSON.parse(user) : null;
+      try {
+        const user = localStorage.getItem('user');
+        return user ? JSON.parse(user) : null;
+      } catch {
+        // Corrupted data — clear it so the login screen shows cleanly
+        localStorage.removeItem('user');
+        return null;
+      }
     }
     return null;
   },

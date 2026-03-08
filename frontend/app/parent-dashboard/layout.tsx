@@ -2,10 +2,26 @@
 
 import Header from '@/components/parent-dashboard-panel/header';
 import Sidebar from '@/components/parent-dashboard-panel/sidebar';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { authService } from '@/lib/api/auth';
 
 export default function ParentDashboardLayout({ children }  : { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [checked, setChecked] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    const user = authService.getCurrentUser();
+    const hasToken = authService.isAuthenticated();
+    if (!hasToken || !user) {
+      router.replace('/user-signIn');
+    } else {
+      setChecked(true);
+    }
+  }, [router]);
+
+  if (!checked) return null;
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">

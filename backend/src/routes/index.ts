@@ -8,6 +8,7 @@ import contactRoutes from './contact.routes';
 import adminRoutes from './admin.routes';
 import groupRoutes from './group.routes';
 import notificationRoutes from './notification.routes';
+import shortlistRoutes from './shortlist.routes';
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use('/contact', contactRoutes);
 router.use('/admin', adminRoutes);  // Admin routes
 router.use('/groups', groupRoutes);  // Group routes
 router.use('/notifications', notificationRoutes);  // Notification routes
+router.use('/shortlist', shortlistRoutes);  // Shortlist routes
 
 export default router;

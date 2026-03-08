@@ -8,6 +8,8 @@ import Header from "@/components/landing-page/header";
 import MiniNav from "@/components/landing-page/little-nav";
 import Footer from "@/components/landing-page/footer";
 import { nurseryService, reviewService, Nursery, Review } from "@/lib/api/nursery";
+import { shortlistService } from "@/lib/api/shortlist";
+import { authService } from "@/lib/api/auth";
 import { toast } from "sonner";
 import { useParams } from "next/navigation";
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -48,6 +50,8 @@ export default function NurseryDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [loadingReviews, setLoadingReviews] = useState(false);
   const swiperRef = useRef<SwiperType | null>(null);
+  const [isShortlisted, setIsShortlisted] = useState(false);
+  const [shortlistLoading, setShortlistLoading] = useState(false);
 
   useEffect(() => {
     const fetchNursery = async () => {
@@ -68,6 +72,18 @@ export default function NurseryDetailsPage() {
           
           // Fetch reviews for this nursery
           fetchReviews(nurseryData.id);
+
+          // Check if this nursery is already shortlisted (only for logged-in users)
+          if (authService.isAuthenticated() && nurseryData.id) {
+            try {
+              const shortlistRes = await shortlistService.checkShortlisted(nurseryData.id);
+              if (shortlistRes.success && shortlistRes.data) {
+                setIsShortlisted(shortlistRes.data.isShortlisted);
+              }
+            } catch {
+              // Not critical — ignore if fails
+            }
+          }
         } else {
           console.log('❌ No nursery data in response');
           toast.error("Nursery not found");
@@ -145,7 +161,39 @@ export default function NurseryDetailsPage() {
               <span className="text-gray-600 ml-2">({nursery.reviewCount || 0} reviews)</span>
             </div>
           </div>
-          <div className="hidden md:flex gap-3">
+          <div className="hidden md:flex gap-3 items-center">
+            {authService.isAuthenticated() && nursery && (
+              <button
+                onClick={async () => {
+                  if (!nursery?.id) return;
+                  setShortlistLoading(true);
+                  try {
+                    if (isShortlisted) {
+                      await shortlistService.removeFromShortlist(nursery.id);
+                      setIsShortlisted(false);
+                      toast.success('Removed from shortlist');
+                    } else {
+                      await shortlistService.addToShortlist(nursery.id);
+                      setIsShortlisted(true);
+                      toast.success('Added to shortlist');
+                    }
+                  } catch {
+                    toast.error('Failed to update shortlist');
+                  } finally {
+                    setShortlistLoading(false);
+                  }
+                }}
+                disabled={shortlistLoading}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full border-2 transition-colors font-medium text-sm shadow ${
+                  isShortlisted
+                    ? 'bg-red-50 border-red-400 text-red-500 hover:bg-red-100'
+                    : 'bg-white border-gray-300 text-gray-600 hover:border-primary hover:text-primary'
+                } disabled:opacity-50`}
+              >
+                <Heart className={`w-4 h-4 ${isShortlisted ? 'fill-red-400 text-red-400' : ''}`} />
+                {isShortlisted ? 'Shortlisted' : 'Add to Shortlist'}
+              </button>
+            )}
             <button 
               onClick={() => swiperRef.current?.slidePrev()}
               className="bg-secondary hover:bg-secondary/90 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg transition-colors"

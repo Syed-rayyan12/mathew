@@ -555,27 +555,27 @@ const AccountsSetting = () => {
 
                     </div>
 
-                    <div className='bg-white rounded-md p-4'>
+                    {/* <div className='bg-white rounded-md p-4'>
                         <h2 className='font-sans text-[22px] font-semibold'>Preferences</h2>
                         <div className='py-4 flex flex-col gap-4'>
-                            {/* <div className='flex justify-between'>
+                            <div className='flex justify-between'>
                                 <div>
                                     <h2 className='font-sans text-[18px] font-normal'>Email Notifications</h2>
                                     <p className='font-sans text-[12px] text-gray-400'>Receive updates about your activity</p>
                                 </div>
                                 <input type="checkbox" className='pr-6' />
-                            </div> */}
+                            </div>
 
                             <Separator />
-                            {/* <div className='flex justify-between'>
+                            <div className='flex justify-between'>
                                 <div>
                                     <h2 className='font-sans text-[18px] font-normal'>Newsletter</h2>
                                     <p className='font-sans text-[12px] text-gray-400'>Subscribe to our weekly newsletter</p>
                                 </div>
                                 <input type="checkbox" className='pr-6' />
-                            </div> */}
+                            </div>
                         </div>
-                    </div>
+                    </div> */}
                     <div className='bg-white flex flex-col gap-4 rounded-md p-4'>
                         <h2 className='font-sans text-[18px] text-red-500 font-normal'>Delete Account</h2>
                         <p className='font-sans text-[14px] text-gray-400'>Once you delete your account, there is no going back. Please be certain.</p>

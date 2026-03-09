@@ -761,8 +761,8 @@ export default function AddNurseryModal({
 
           {/* Meet the Team */}
           <div>
-            <h3 className="font-medium text-lg mb-2">Meet the Team <span className="text-sm font-normal text-muted-foreground">(Optional)</span></h3>
-            <p className="text-sm text-muted-foreground mb-4">Add team members — they'll appear in the "Meet the Team" tab on your nursery page</p>
+            <h3 className="font-medium text-lg mb-2">Meet the Team <span className="text-sm font-normal text-muted-foreground"></span></h3>
+         
 
             {/* Existing members list */}
             {teamMembers.length > 0 && (

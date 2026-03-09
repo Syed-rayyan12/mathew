@@ -5,9 +5,12 @@ import { ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { apiClient } from '@/lib/api/client';
+import { toast } from 'sonner';
 
 export default function SupportSection() {
-  const [openIndex, setOpenIndex] = useState(null);
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     phone: '',
@@ -83,10 +86,30 @@ export default function SupportSection() {
     setFormData({ ...formData, phone: value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
-    console.log('Form submitted:', formData);
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
+    try {
+      const response = await apiClient.post<{ success: boolean; message: string }>(
+        '/notifications/support',
+        {
+          email: formData.email,
+          phone: formData.phone || undefined,
+          message: formData.message,
+        }
+      );
+
+      if (response.success) {
+        toast.success('Support request sent! Our team will get back to you shortly.');
+        setFormData({ email: '', phone: '', message: '' });
+      }
+    } catch {
+      toast.error('Failed to send support request. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -178,8 +201,8 @@ export default function SupportSection() {
             />
           </div>
           <div className="flex justify-start">
-            <Button type="submit" className="w-full bg-blue-500 text-white hover:bg-blue-600 font-sans">
-              Send Message
+            <Button type="submit" disabled={isSubmitting} className="w-full bg-blue-500 text-white hover:bg-blue-600 font-sans">
+              {isSubmitting ? 'Sending...' : 'Send Message'}
             </Button>
           </div>
         </form>

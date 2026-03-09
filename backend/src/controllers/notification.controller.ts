@@ -159,6 +159,36 @@ export const markAllAsRead = async (
   }
 };
 
+// Submit support request from parent dashboard — creates admin notification
+export const submitSupportRequest = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { email, phone, message } = req.body;
+    const userId = req.user!.userId;
+
+    if (!email || !message) {
+      res.status(400).json({ success: false, message: 'Email and message are required' });
+      return;
+    }
+
+    await prisma.notification.create({
+      data: {
+        title: 'Support Request',
+        message: `From: ${email}${phone ? ` | Phone: ${phone}` : ''}\n\n${message}`,
+        entity: 'USER',
+        entityId: userId,
+      },
+    });
+
+    res.json({ success: true, message: 'Support request sent successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Delete notification
 export const deleteNotification = async (
   req: AuthRequest,

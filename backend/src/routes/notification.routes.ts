@@ -7,6 +7,7 @@ import {
   deleteNotification,
   clearAllNotifications,
   getNotificationStats,
+  submitSupportRequest,
 } from '../controllers/notification.controller';
 import { authenticate } from '../middleware';
 
@@ -16,6 +17,7 @@ const router = Router();
 router.get('/recent', authenticate, getRecentNotifications);
 router.get('/stats', authenticate, getNotificationStats);
 router.put('/read-all', authenticate, markAllAsRead);
+router.post('/support', authenticate, submitSupportRequest);
 
 // Then parameter-based routes
 router.put('/:id/read', authenticate, markAsRead);

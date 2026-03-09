@@ -280,9 +280,10 @@ export default function NurseryDetailsPage() {
         {/* LEFT MAIN CONTENT */}
         <div className="col-span-1 lg:col-span-2 bg-white mt-6 md:mt-10 px-3 md:px-4 pt-3 md:pt-4 pb-10 md:pb-20 shadow-[0px_4px_4px_4px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] rounded-[6px]">
           <Tabs defaultValue="about" className="w-full">
-            <TabsList className="grid grid-cols-2 bg-transparent gap-2 md:gap-4 h-auto">
+            <TabsList className="grid grid-cols-3 bg-transparent gap-2 md:gap-4 h-auto">
               <TabsTrigger value="about" className="data-[state=active]:border-b-2 data-[state=active]:border-secondary data-[state=active]:text-secondary cursor-pointer font-medium font-heading text-lg md:text-[24px] data-[state=active]:bg-transparent data-[state=active]:shadow-none">About</TabsTrigger>
               <TabsTrigger value="reviews" className="data-[state=active]:border-b-2 data-[state=active]:border-secondary data-[state=active]:text-secondary cursor-pointer font-medium font-heading text-lg md:text-[24px] data-[state=active]:bg-transparent data-[state=active]:shadow-none">Reviews</TabsTrigger>
+              <TabsTrigger value="team" className="data-[state=active]:border-b-2 data-[state=active]:border-secondary data-[state=active]:text-secondary cursor-pointer font-medium font-heading text-lg md:text-[24px] data-[state=active]:bg-transparent data-[state=active]:shadow-none">Team</TabsTrigger>
             </TabsList>
             <TabsContent value="about" className="mt-4 md:mt-5 overflow-hidden">
               <div className="space-y-4 md:space-y-6">
@@ -458,6 +459,57 @@ export default function NurseryDetailsPage() {
                   )}
                   
                 </div>
+              </div>
+            </TabsContent>
+            <TabsContent value="team" className="mt-4 md:mt-5 overflow-hidden">
+              <div className="space-y-4 md:space-y-6">
+                <h2 className="text-xl md:text-2xl lg:text-[34px] mb-2 text-[#044A55] font-medium">MEET THE TEAM</h2>
+                {nursery.teamMembers && nursery.teamMembers.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {nursery.teamMembers.map((member: any) => (
+                      <div key={member.id} className="bg-[#F9F9F9] rounded-[6px] p-4 shadow-sm border border-gray-100">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="flex justify-center items-center bg-secondary rounded-full w-12 h-12 flex-shrink-0">
+                            <span className="text-lg text-white font-heading font-medium">
+                              {member.name.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <div>
+                            <h3 className="font-medium text-lg text-[#044A55] font-heading">{member.name}</h3>
+                          </div>
+                        </div>
+                        <div className="space-y-2 text-sm text-gray-600">
+                          {member.experience && (
+                            <div className="flex gap-2">
+                              <span className="font-semibold text-gray-700 min-w-[100px]">Experience:</span>
+                              <span>{member.experience}</span>
+                            </div>
+                          )}
+                          {member.qualifications && (
+                            <div className="flex gap-2">
+                              <span className="font-semibold text-gray-700 min-w-[100px]">Qualifications:</span>
+                              <span>{member.qualifications}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="font-semibold text-gray-700">DBS / CRB Check:</span>
+                            {member.crbChecked ? (
+                              <span className="flex items-center gap-1 text-green-600 font-medium">
+                                <Check className="w-4 h-4" /> Verified
+                              </span>
+                            ) : (
+                              <span className="text-gray-400">Not confirmed</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-10 bg-gray-50 rounded-lg">
+                    <p className="text-gray-500">No team information available yet.</p>
+                  </div>
+                )}
               </div>
             </TabsContent>
           </Tabs>

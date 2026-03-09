@@ -658,7 +658,7 @@ export const getNurseryBySlug = async (
     
     console.log('🔍 Searching for nursery with slug:', slug);
 
-    const nursery = await prisma.nursery.findUnique({
+    const nursery = await (prisma as any).nursery.findUnique({
       where: { slug },
       include: {
         owner: {
@@ -673,6 +673,9 @@ export const getNurseryBySlug = async (
           },
           orderBy: { createdAt: 'desc' },
           take: 10,
+        },
+        teamMembers: {
+          orderBy: { createdAt: 'asc' },
         },
         _count: {
           select: { reviews: true },

@@ -10,6 +10,7 @@ import groupRoutes from './group.routes';
 import notificationRoutes from './notification.routes';
 import shortlistRoutes from './shortlist.routes';
 import recentlyViewedRoutes from './recently-viewed.routes';
+import teamMemberRoutes from './team-member.routes';
 
 const router = Router();
 
@@ -24,5 +25,6 @@ router.use('/groups', groupRoutes);  // Group routes
 router.use('/notifications', notificationRoutes);  // Notification routes
 router.use('/shortlist', shortlistRoutes);
 router.use('/recently-viewed', recentlyViewedRoutes);
+router.use('/nursery-dashboard/:nurseryId/team', teamMemberRoutes);  // Team members
 
 export default router;

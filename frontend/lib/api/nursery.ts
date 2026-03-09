@@ -33,6 +33,13 @@ export interface Nursery {
     name: string;
     slug: string;
   };
+  teamMembers?: Array<{
+    id: string;
+    name: string;
+    experience?: string;
+    qualifications?: string;
+    crbChecked: boolean;
+  }>;
 }
 
 export interface NurseryUpdateData {

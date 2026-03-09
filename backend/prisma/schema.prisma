@@ -90,6 +90,7 @@ model Nursery {
   reviews      Review[]
   shortlists   Shortlist[]
   recentlyViewed RecentlyViewed[]
+  teamMembers  TeamMember[]
 
   @@map("nurseries")
 }
@@ -259,4 +260,18 @@ model RecentlyViewed {
 
   @@unique([userId, nurseryId])
   @@map("recently_viewed")
+}
+
+model TeamMember {
+  id             String   @id @db.VarChar(10)
+  name           String
+  experience     String?
+  qualifications String?
+  crbChecked     Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  nurseryId      String   @db.VarChar(15)
+  nursery        Nursery  @relation(fields: [nurseryId], references: [id], onDelete: Cascade)
+
+  @@map("team_members")
 }

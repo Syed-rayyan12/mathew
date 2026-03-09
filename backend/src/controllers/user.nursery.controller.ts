@@ -708,7 +708,7 @@ export const getNurseryBySlug = async (
     // Calculate average rating
     const approvedReviews = nursery.reviews || [];
     const averageRating = approvedReviews.length > 0
-      ? approvedReviews.reduce((sum, r) => sum + r.overallRating, 0) / approvedReviews.length
+      ? approvedReviews.reduce((sum: number, r: { overallRating: number }) => sum + r.overallRating, 0) / approvedReviews.length
       : 0;
 
     res.json({

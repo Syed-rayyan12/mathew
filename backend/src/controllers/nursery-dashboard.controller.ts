@@ -91,10 +91,10 @@ export const createNursery = async (
 
     console.log('Creating nursery with data:', { name, city, userId });
 
-    if (!name || !city) {
+    if (!name) {
       return res.status(400).json({
         success: false,
-        message: 'Nursery name and city are required',
+        message: 'Nursery name is required',
       });
     }
 
@@ -142,7 +142,7 @@ export const createNursery = async (
           description: description || null,
           phone: phone || null,
           email: email || null,
-          city: city,
+          city: city || '',
           town: town || null,
           ageRange: ageRange || null,
           facilities: Array.isArray(facilities) ? facilities : [],

@@ -18,7 +18,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { nurseryDashboardService } from "@/lib/api/nursery";
+import { nurseryDashboardService, teamMemberService } from "@/lib/api/nursery";
 import { authService } from "@/lib/api/auth";
 import { UK_CITIES } from "@/lib/data/uk-cities";
 import { UK_TOWNS } from "@/lib/data/uk-towns";
@@ -44,6 +44,8 @@ export default function AddNurseryModal({
   const [services, setServices] = useState<string[]>([]);
   const [facilities, setFacilities] = useState<string[]>(['']);
   const [weeklyTimings, setWeeklyTimings] = useState(getDefaultTimings());
+  const [teamMembers, setTeamMembers] = useState<{ name: string; experience: string; qualifications: string; crbChecked: boolean }[]>([]);
+  const [newMember, setNewMember] = useState({ name: '', experience: '', qualifications: '', crbChecked: false });
   const [formData, setFormData] = useState({
     nurseryName: "",
     ageGroup: "",
@@ -122,8 +124,8 @@ export default function AddNurseryModal({
   };
 
   const handleSubmit = async () => {
-    if (!formData.nurseryName || !formData.city) {
-      toast.error('Please fill in nursery name and city/town');
+    if (!formData.nurseryName) {
+      toast.error('Please fill in the nursery name');
       return;
     }
 
@@ -174,6 +176,15 @@ export default function AddNurseryModal({
       
       if (response.success) {
         console.log('Nursery created successfully:', response.data);
+
+        // Save team members if any
+        const nurseryId = (response.data as any)?.id;
+        if (nurseryId && teamMembers.length > 0) {
+          await Promise.allSettled(
+            teamMembers.map(m => teamMemberService.add(nurseryId, m))
+          );
+        }
+
         toast.success('Nursery created successfully!');
         
         // Reset form
@@ -201,6 +212,8 @@ export default function AddNurseryModal({
         setServices([]);
         setFacilities(['']);
         setWeeklyTimings(getDefaultTimings());
+        setTeamMembers([]);
+        setNewMember({ name: '', experience: '', qualifications: '', crbChecked: false });
         
         onOpenChange(false);
         if (onSuccess) {
@@ -745,6 +758,87 @@ export default function AddNurseryModal({
             </div>
           </div>
         </div>
+
+          {/* Meet the Team */}
+          <div>
+            <h3 className="font-medium text-lg mb-2">Meet the Team <span className="text-sm font-normal text-muted-foreground">(Optional)</span></h3>
+            <p className="text-sm text-muted-foreground mb-4">Add team members — they'll appear in the "Meet the Team" tab on your nursery page</p>
+
+            {/* Existing members list */}
+            {teamMembers.length > 0 && (
+              <div className="space-y-2 mb-4">
+                {teamMembers.map((m, i) => (
+                  <div key={i} className="flex items-start justify-between bg-gray-50 rounded-lg p-3 border">
+                    <div className="space-y-0.5">
+                      <p className="font-medium text-sm">{m.name}</p>
+                      {m.experience && <p className="text-xs text-gray-500">Experience: {m.experience}</p>}
+                      {m.qualifications && <p className="text-xs text-gray-500">Qualifications: {m.qualifications}</p>}
+                      {m.crbChecked && <p className="text-xs text-green-600 font-medium">✓ DBS / CRB Checked</p>}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setTeamMembers(prev => prev.filter((_, idx) => idx !== i))}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Add new member form */}
+            <div className="border rounded-lg p-4 space-y-3 bg-white">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="block mb-1">Name *</Label>
+                  <Input
+                    value={newMember.name}
+                    onChange={e => setNewMember(p => ({ ...p, name: e.target.value }))}
+                    placeholder="e.g. Sarah Johnson"
+                  />
+                </div>
+                <div>
+                  <Label className="block mb-1">Experience</Label>
+                  <Input
+                    value={newMember.experience}
+                    onChange={e => setNewMember(p => ({ ...p, experience: e.target.value }))}
+                    placeholder="e.g. 5 years in early years"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Label className="block mb-1">Qualifications</Label>
+                  <Input
+                    value={newMember.qualifications}
+                    onChange={e => setNewMember(p => ({ ...p, qualifications: e.target.value }))}
+                    placeholder="e.g. Level 3 CACHE Diploma"
+                  />
+                </div>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={newMember.crbChecked}
+                  onChange={e => setNewMember(p => ({ ...p, crbChecked: e.target.checked }))}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm">DBS / CRB Checked</span>
+              </label>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  if (!newMember.name.trim()) { toast.error('Team member name is required'); return; }
+                  setTeamMembers(prev => [...prev, { ...newMember }]);
+                  setNewMember({ name: '', experience: '', qualifications: '', crbChecked: false });
+                }}
+              >
+                <Plus className="h-4 w-4 mr-2" /> Add Team Member
+              </Button>
+            </div>
+          </div>
 
         <DialogFooter className="mt-6">
           <Button

@@ -343,3 +343,17 @@ export const nurseryDashboardService = {
     );
   },
 };
+
+export const teamMemberService = {
+  getAll: async (nurseryId: string) =>
+    apiClient.get<{ success: boolean; data: any[] }>(`/nursery-dashboard/${nurseryId}/team`, true),
+
+  add: async (nurseryId: string, data: { name: string; experience?: string; qualifications?: string; crbChecked: boolean }) =>
+    apiClient.post<{ success: boolean; data: any }>(`/nursery-dashboard/${nurseryId}/team`, data, true),
+
+  update: async (nurseryId: string, memberId: string, data: { name: string; experience?: string; qualifications?: string; crbChecked: boolean }) =>
+    apiClient.put<{ success: boolean; data: any }>(`/nursery-dashboard/${nurseryId}/team/${memberId}`, data, true),
+
+  remove: async (nurseryId: string, memberId: string) =>
+    apiClient.delete<{ success: boolean }>(`/nursery-dashboard/${nurseryId}/team/${memberId}`, true),
+};

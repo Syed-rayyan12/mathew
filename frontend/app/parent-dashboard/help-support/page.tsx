@@ -98,7 +98,8 @@ export default function SupportSection() {
           email: formData.email,
           phone: formData.phone || undefined,
           message: formData.message,
-        }
+        },
+        true  // requireAuth — Bearer token bhejo
       );
 
       if (response.success) {

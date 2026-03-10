@@ -21,8 +21,8 @@ const Page = () => {
   }, [])
 
   useEffect(() => {
-    const accessToken = localStorage.getItem('accessToken')
-    const email = localStorage.getItem('email')
+    const accessToken = localStorage.getItem('nurseryAccessToken')
+    const email = localStorage.getItem('nurseryEmail')
     
     if (!accessToken || !email) {
       toast.error('Please login to access dashboard')

@@ -28,7 +28,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
 
   useEffect(() => {
     // Load user data from localStorage
-    const storedEmail = localStorage.getItem('email') || 'no';
+    const storedEmail = localStorage.getItem('nurseryEmail') || 'no';
     const storedFirstName = localStorage.getItem('firstName') || '';
     const storedLastName = localStorage.getItem('lastName') || '';
     const storedNurseryName = localStorage.getItem('nurseryName') || 'no';
@@ -51,7 +51,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
     // Load nursery data for count
     const loadUserData = async () => {
       try {
-        const token = localStorage.getItem('accessToken');
+        const token = localStorage.getItem('nurseryAccessToken') || localStorage.getItem('accessToken');
         if (token) {
           // Load nurseries first
           const { nurseryDashboardService } = await import('@/lib/api/nursery');
@@ -73,7 +73,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
   const handleLogout = async () => {
     try {
       // Call backend logout API to update status
-      const token = localStorage.getItem('accessToken');
+      const token = localStorage.getItem('nurseryAccessToken') || localStorage.getItem('accessToken');
       if (token) {
         await fetch('https://mathew-production.up.railway.app/api/auth/logout', {
           method: 'POST',
@@ -86,7 +86,9 @@ const Header = ({ onMenuClick }: HeaderProps) => {
     } catch (error) {
       console.error('Logout API error:', error);
     } finally {
-      // Clear all authentication data
+      // Clear nursery authentication data
+      localStorage.removeItem('nurseryAccessToken');
+      localStorage.removeItem('nurseryEmail');
       localStorage.removeItem('accessToken');
       localStorage.removeItem('email');
       

@@ -44,8 +44,8 @@ export default function SettingsPage() {
   // Check authentication and load nursery data
   useEffect(() => {
     const checkAuthAndLoadData = async () => {
-      const accessToken = localStorage.getItem('accessToken')
-      const email = localStorage.getItem('email')
+      const accessToken = localStorage.getItem('nurseryAccessToken') || localStorage.getItem('accessToken')
+      const email = localStorage.getItem('nurseryEmail') || localStorage.getItem('email')
       const firstName = localStorage.getItem('firstName') || ''
       const lastName = localStorage.getItem('lastName') || ''
       const phone = localStorage.getItem('phone') || ''
@@ -200,7 +200,7 @@ export default function SettingsPage() {
 
     try {
       const { nurseryGroupService } = await import('@/lib/api/nursery-group')
-      const token = localStorage.getItem('accessToken')
+      const token = localStorage.getItem('nurseryAccessToken') || localStorage.getItem('accessToken')
 
       if (!token) {
         throw new Error('Please login again')

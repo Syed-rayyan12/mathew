@@ -42,6 +42,11 @@ export const TokenManager = {
       localStorage.removeItem('email');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
+      // If nursery is still logged in, restore accessToken so nursery API calls keep working
+      const nurseryToken = localStorage.getItem('nurseryAccessToken');
+      if (nurseryToken) {
+        localStorage.setItem('accessToken', nurseryToken);
+      }
     }
   },
 

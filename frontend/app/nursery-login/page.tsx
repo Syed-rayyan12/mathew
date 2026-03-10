@@ -28,8 +28,8 @@ export default function NurseryLoginPage() {
   // Check if already logged in and load saved email
   useEffect(() => {
     const checkLoginStatus = async () => {
-      const accessToken = localStorage.getItem('accessToken');
-      const email = localStorage.getItem('email');
+      const accessToken = localStorage.getItem('nurseryAccessToken');
+      const email = localStorage.getItem('nurseryEmail');
       
       if (accessToken && email) {
         try {
@@ -132,7 +132,9 @@ export default function NurseryLoginPage() {
       if (response.ok && data.success) {
         // Store email, accessToken, and user details
         localStorage.setItem("accessToken", data.data.accessToken);
+        localStorage.setItem("nurseryAccessToken", data.data.accessToken);
         localStorage.setItem("email", data.data.user.email);
+        localStorage.setItem("nurseryEmail", data.data.user.email);
         localStorage.setItem("firstName", data.data.user.firstName || "");
         localStorage.setItem("lastName", data.data.user.lastName || "");
         localStorage.setItem("phone", data.data.user.phone || "");

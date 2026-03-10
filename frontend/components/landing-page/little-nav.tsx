@@ -2,15 +2,19 @@
 
 import { Facebook, Twitter, Instagram, Youtube, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { authService } from "@/lib/api/auth";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function MiniNav() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { isAuthenticated, user } = useAuth();
 
-  useEffect(() => {
-    setIsLoggedIn(authService.isAuthenticated());
-  }, []);
+  const getDashboardPath = () => {
+    if (!user) return '/';
+    switch (user.role) {
+      case 'NURSERY_OWNER': return '/nursery-dashboard';
+      case 'PARENT': return '/parent-dashboard';
+      default: return '/';
+    }
+  };
 
   return (
     <div className="w-full h-12 border-b  bg-[#04B0D6] dark:bg-gray-900 flex items-center justify-between px-24 xl:px-24 lg:px-12 max-lg:px-10 text-sm">
@@ -34,9 +38,9 @@ export default function MiniNav() {
 
       {/* RIGHT LINKS */}
       <div className="flex items-center gap-5 text-gray-700 dark:text-gray-200">
-        {isLoggedIn && (
+        {isAuthenticated && user && (
           <Link 
-            href="/parent-dashboard" 
+            href={getDashboardPath()} 
             className="cursor-pointer text-white transition flex items-center gap-2 hover:opacity-80"
           >
             <LayoutDashboard size={17} /> 

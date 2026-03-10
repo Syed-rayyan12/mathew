@@ -22,9 +22,9 @@ const Page = () => {
 
   useEffect(() => {
     const accessToken = localStorage.getItem('accessToken')
-    const email = localStorage.getItem('email')
+    const userData = localStorage.getItem('user')
     
-    if (!accessToken || !email) {
+    if (!accessToken || !userData) {
       toast.error('Please login to access dashboard')
       window.location.href = '/nursery-login'
     }

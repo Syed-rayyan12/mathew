@@ -17,6 +17,11 @@ export function useAuth() {
       const currentUser = authService.getCurrentUser();
       const hasToken = authService.isAuthenticated();
       
+      // If token exists but user data is missing, clear the stale token
+      if (hasToken && !currentUser) {
+        TokenManager.clearTokens();
+      }
+
       // Exclude admin users from regular authentication
       if (currentUser && hasToken && currentUser.role !== 'ADMIN') {
         setUser(currentUser);

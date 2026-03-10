@@ -25,7 +25,8 @@ const UserSignInPage = () => {
 
   // Check if already authenticated, redirect to home
   useEffect(() => {
-    if (authService.isAuthenticated()) { 
+    const currentUser = authService.getCurrentUser();
+    if (authService.isAuthenticated() && currentUser) { 
       router.replace('/')
       return;
     }

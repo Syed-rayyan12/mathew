@@ -54,6 +54,8 @@ const UserSignInPage = () => {
         return '/nursery-dashboard'
       case 'PARENT':
         return '/parent-dashboard'
+      case 'USER':
+        return '/parent-dashboard'
       default:
         return '/'
     }

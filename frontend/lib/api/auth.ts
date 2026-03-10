@@ -77,6 +77,10 @@ export const authService = {
         response.data.refreshToken
       );
       TokenManager.setUser(response.data.user);
+      // Save email separately so nursery-dashboard auth check passes for NURSERY_OWNER
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('email', response.data.user.email);
+      }
     }
 
     return response;

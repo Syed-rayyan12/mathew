@@ -11,7 +11,7 @@ export default function MiniNav() {
     if (!user) return '/';
     switch (user.role) {
       case 'NURSERY_OWNER': return '/nursery-dashboard';
-      case 'PARENT': return '/parent-dashboard';
+      case 'USER': return '/parent-dashboard';
       default: return '/';
     }
   };

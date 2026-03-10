@@ -10,7 +10,6 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 import { nurseryDashboardService } from "@/lib/api/nursery";
-import { TokenManager } from "@/lib/api/client";
 
 export default function NurseryLoginPage() {
   const router = useRouter();
@@ -30,9 +29,9 @@ export default function NurseryLoginPage() {
   useEffect(() => {
     const checkLoginStatus = async () => {
       const accessToken = localStorage.getItem('accessToken');
-      const userData = localStorage.getItem('user');
+      const email = localStorage.getItem('email');
       
-      if (accessToken && userData) {
+      if (accessToken && email) {
         try {
           // Check if nursery exists
           const response = await nurseryDashboardService.getMyNursery();
@@ -131,16 +130,13 @@ export default function NurseryLoginPage() {
       console.log("LOGIN RESPONSE 👉", data);
 
       if (response.ok && data.success) {
-        // Store accessToken and user details
+        // Store email, accessToken, and user details
         localStorage.setItem("accessToken", data.data.accessToken);
-        localStorage.setItem("refreshToken", data.data.refreshToken || "");
         localStorage.setItem("email", data.data.user.email);
         localStorage.setItem("firstName", data.data.user.firstName || "");
         localStorage.setItem("lastName", data.data.user.lastName || "");
         localStorage.setItem("phone", data.data.user.phone || "");
         localStorage.setItem("nurseryName", data.data.user.nurseryName || "");
-        // Also save user JSON so the landing page header shows the profile avatar
-        TokenManager.setUser(data.data.user);
 
         // Handle Remember Me
         if (rememberMe) {

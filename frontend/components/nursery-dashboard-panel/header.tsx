@@ -88,13 +88,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
     } finally {
       // Clear all authentication data
       localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
       localStorage.removeItem('email');
-      localStorage.removeItem('firstName');
-      localStorage.removeItem('lastName');
-      localStorage.removeItem('phone');
-      localStorage.removeItem('nurseryName');
-      localStorage.removeItem('user');
       
       // Clear browser history and prevent back navigation
       window.history.go(-(window.history.length - 1));

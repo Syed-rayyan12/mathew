@@ -1,4 +1,4 @@
-import { apiClient, ApiResponse } from './client';
+import { apiClient, nurseryApiClient, ApiResponse } from './client';
 
 // Types
 export interface Nursery {
@@ -278,22 +278,22 @@ export const reviewService = {
 export const nurseryDashboardService = {
   // Get my nursery profile
   getMyNursery: async () => {
-    return apiClient.get<{ success: boolean; data: Nursery[] }>('/nursery-dashboard/my-nursery', true);
+    return nurseryApiClient.get<{ success: boolean; data: Nursery[] }>('/nursery-dashboard/my-nursery', true);
   },
 
   // Get all my nurseries (for manage-nursery page)
   getMyNurseries: async () => {
-    return apiClient.get<{ success: boolean; data: Nursery[] }>('/nursery-dashboard/my-nursery', true);
+    return nurseryApiClient.get<{ success: boolean; data: Nursery[] }>('/nursery-dashboard/my-nursery', true);
   },
 
   // Get my group details
   getMyGroup: async () => {
-    return apiClient.get<{ success: boolean; data: any }>('/nursery-dashboard/my-group', true);
+    return nurseryApiClient.get<{ success: boolean; data: any }>('/nursery-dashboard/my-group', true);
   },
 
   // Get my nursery reviews with stats
   getMyReviews: async () => {
-    return apiClient.get<NurseryReviewsResponse>(
+    return nurseryApiClient.get<NurseryReviewsResponse>(
       '/nursery-dashboard/my-reviews',
       true
     );
@@ -301,7 +301,7 @@ export const nurseryDashboardService = {
 
   // Create new nursery
   createNursery: async (data: NurseryUpdateData) => {
-    return apiClient.post<{ success: boolean; message: string; data: Nursery }>(
+    return nurseryApiClient.post<{ success: boolean; message: string; data: Nursery }>(
       '/nursery-dashboard/create',
       data,
       true
@@ -310,7 +310,7 @@ export const nurseryDashboardService = {
 
   // Update nursery profile
   updateNursery: async (data: NurseryUpdateData) => {
-    return apiClient.put<{ success: boolean; message: string; data: Nursery }>(
+    return nurseryApiClient.put<{ success: boolean; message: string; data: Nursery }>(
       '/nursery-dashboard/update',
       data,
       true
@@ -319,7 +319,7 @@ export const nurseryDashboardService = {
 
   // Delete nursery
   deleteNursery: async (id: string) => {
-    return apiClient.delete<{ success: boolean; message: string }>(
+    return nurseryApiClient.delete<{ success: boolean; message: string }>(
       `/nursery-dashboard/${id}`,
       true
     );
@@ -327,7 +327,7 @@ export const nurseryDashboardService = {
 
   // Approve review
   approveReview: async (reviewId: string) => {
-    return apiClient.put<{ success: boolean; message: string; data: Review }>(
+    return nurseryApiClient.put<{ success: boolean; message: string; data: Review }>(
       `/reviews/${reviewId}/approve`,
       {},
       true
@@ -336,7 +336,7 @@ export const nurseryDashboardService = {
 
   // Reject/Unapprove review
   rejectReview: async (reviewId: string) => {
-    return apiClient.put<{ success: boolean; message: string; data: Review }>(
+    return nurseryApiClient.put<{ success: boolean; message: string; data: Review }>(
       `/reviews/${reviewId}/unapprove`,
       {},
       true

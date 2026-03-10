@@ -1,6 +1,6 @@
 import { API_CONFIG } from './config';
 
-import { apiClient } from './client';
+import { apiClient, nurseryApiClient } from './client';
 
 export interface NurseryGroup {
   id: string;
@@ -48,11 +48,11 @@ export const nurseryGroupService = {
 
   // Get my group (for settings page - protected)
   getMyGroup: async (token: string) => {
-    return apiClient.get('/groups/my/group', true);
+    return nurseryApiClient.get('/groups/my/group', true);
   },
 
   // Update nursery group (for settings page - protected)
   updateGroup: async (data: NurseryGroupUpdateData, token: string) => {
-    return apiClient.put('/groups/update', data, true);
+    return nurseryApiClient.put('/groups/update', data, true);
   },
 };

@@ -42,11 +42,6 @@ export const TokenManager = {
       localStorage.removeItem('email');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
-      // If nursery is still logged in, restore accessToken so nursery API calls keep working
-      const nurseryToken = localStorage.getItem('nurseryAccessToken');
-      if (nurseryToken) {
-        localStorage.setItem('accessToken', nurseryToken);
-      }
     }
   },
 
@@ -247,3 +242,24 @@ class ApiClient {
 // Export singleton instances
 export const apiClient = new ApiClient(API_CONFIG.BASE_URL, TokenManager);
 export const adminApiClient = new ApiClient(API_CONFIG.BASE_URL, AdminTokenManager);
+
+// Nursery Token Manager — reads from nurseryAccessToken (separate from user session)
+export const NurseryTokenManager = {
+  getAccessToken: (): string | null => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('nurseryAccessToken');
+    }
+    return null;
+  },
+  getRefreshToken: (): string | null => null,
+  setTokens: (_a: string, _r: string): void => {},
+  clearTokens: (): void => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('nurseryAccessToken');
+      localStorage.removeItem('nurseryEmail');
+    }
+  },
+  getUser: () => null,
+  setUser: (_u: any): void => {},
+};
+export const nurseryApiClient = new ApiClient(API_CONFIG.BASE_URL, NurseryTokenManager);

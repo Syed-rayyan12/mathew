@@ -111,11 +111,8 @@ export default function NurseryLoginPage() {
     if (!validateForm()) {
       return;
     }
-    
-    // Delay showing loader by 300ms to avoid flashing for quick responses
-    const loaderTimeout = setTimeout(() => {
-      setShowLoader(true);
-    }, 300);
+
+    setShowLoader(true);
 
     try {
       const response = await fetch("https://mathew-production.up.railway.app/api/auth/nursery-signin", {
@@ -130,11 +127,10 @@ export default function NurseryLoginPage() {
       console.log("LOGIN RESPONSE 👉", data);
 
       if (response.ok && data.success) {
-        // Store email, accessToken, and user details
-        localStorage.setItem("accessToken", data.data.accessToken);
+        // Store nursery-specific tokens (separate from user session)
         localStorage.setItem("nurseryAccessToken", data.data.accessToken);
-        localStorage.setItem("email", data.data.user.email);
         localStorage.setItem("nurseryEmail", data.data.user.email);
+        localStorage.setItem("email", data.data.user.email);
         localStorage.setItem("firstName", data.data.user.firstName || "");
         localStorage.setItem("lastName", data.data.user.lastName || "");
         localStorage.setItem("phone", data.data.user.phone || "");
@@ -153,40 +149,23 @@ export default function NurseryLoginPage() {
           const nurseriesData = Array.isArray(nurseryResponse.data) ? nurseryResponse.data : [];
           
           if (nurseryResponse.success && nurseriesData.length > 0) {
-            // Nursery exists, redirect to dashboard
-            toast.success("Login successful! Redirecting to dashboard...");
-            setTimeout(() => {
-              router.push('/nursery-dashboard');
-              clearTimeout(loaderTimeout);
-              setShowLoader(false);
-            }, 2000);
+            toast.success("Login successful!");
+            router.replace('/nursery-dashboard');
           } else {
-            // No nursery, redirect to settings
-            toast.success("Login successful! Redirecting to settings...");
-            setTimeout(() => {
-              router.push('/settings');
-              clearTimeout(loaderTimeout);
-              setShowLoader(false);
-            }, 2000);
+            toast.success("Login successful!");
+            router.replace('/settings');
           }
         } catch (error) {
-          // If check fails, default to settings
-          toast.success("Login successful! Redirecting to settings...");
-          setTimeout(() => {
-            router.push('/settings');
-            clearTimeout(loaderTimeout);
-            setShowLoader(false);
-          }, 2000);
+          toast.success("Login successful!");
+          router.replace('/settings');
         }
       } else {
         toast.error(data.message || "Login failed. Please check your credentials.");
-        clearTimeout(loaderTimeout);
         setShowLoader(false);
       }
     } catch (error) {
       toast.error("An error occurred. Please try again later.");
       console.error("Login error:", error);
-      clearTimeout(loaderTimeout);
       setShowLoader(false);
     }
   };

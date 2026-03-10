@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { authService } from '@/lib/api/auth'
+import { TokenManager } from '@/lib/api/client'
 import { toast } from 'sonner'
 import { Eye, EyeOff } from 'lucide-react'
 
@@ -26,9 +27,16 @@ const UserSignInPage = () => {
   // Check if already authenticated, redirect to home
   useEffect(() => {
     const currentUser = authService.getCurrentUser();
-    if (authService.isAuthenticated() && currentUser) { 
-      router.replace('/')
-      return;
+    if (authService.isAuthenticated() && currentUser) {
+      // Only redirect if role belongs to this login page (USER or PARENT)
+      // If NURSERY_OWNER ended up here, clear their token so they can re-login correctly
+      if (currentUser.role === 'USER' || currentUser.role === 'PARENT') {
+        router.replace('/parent-dashboard');
+        return;
+      } else {
+        // Wrong role for this login — clear tokens so user can login fresh
+        TokenManager.clearTokens();
+      }
     }
 
     // Load saved email if remember me was checked

@@ -1,25 +1,15 @@
 'use client'
 
 import Link from "next/link";
-import { Menu, User, LogOut, LayoutDashboard } from "lucide-react";
+import { Menu, LayoutDashboard } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 
 export default function Header() {
   const [open, setOpen] = useState(false);
-  const { user, isAuthenticated, isLoading, logout, getUserInitials, getFullName } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   
-  // Don't show profile for admin users on landing page
-  const shouldShowProfile = isAuthenticated && user && user.role !== 'ADMIN';
+  const shouldShowDashboard = isAuthenticated && user && user.role !== 'ADMIN';
 
   const getDashboardPath = () => {
     if (!user) return '/';
@@ -51,57 +41,18 @@ export default function Header() {
           <Link href="/about" className="hover:text-primary transition">About</Link>
         </nav>
 
-        {/* RIGHT SECTION - Auth Button or Profile */}
+        {/* RIGHT SECTION - Auth Button or Dashboard */}
         <div className="hidden lg:flex items-center gap-4">
           {isLoading ? (
-            <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse" />
-          ) : shouldShowProfile ? (
-            <div className="flex items-center gap-3">
-              <Link
-                href={getDashboardPath()}
-                className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white rounded-[6px] px-4 py-2 text-sm font-medium transition-all duration-300"
-              >
-                <LayoutDashboard size={16} />
-                <span>My Dashboard</span>
-              </Link>
-              <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 outline-none cursor-pointer">
-                  <Avatar className="h-10 w-10 border-2 border-primary">
-                    <AvatarImage src={user.avatar} alt={getFullName()} />
-                    <AvatarFallback className="bg-primary text-white font-semibold">
-                      {getUserInitials()}
-                    </AvatarFallback>
-                  </Avatar>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{getFullName()}</p>
-                    <p className="text-xs leading-none text-muted-foreground">
-                      {user.email}
-                    </p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  {/* <Link href="/profile" className="cursor-pointer flex items-center">
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
-                  </Link> */}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={logout}
-                  className="cursor-pointer text-red-600 focus:text-red-600"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            </div>
+            <div className="w-24 h-10 rounded-[6px] bg-gray-200 animate-pulse" />
+          ) : shouldShowDashboard ? (
+            <Link
+              href={getDashboardPath()}
+              className="flex items-center gap-2 bg-primary hover:bg-transparent hover:text-primary border-2 transition-all duration-300 cursor-pointer border-primary text-white rounded-[6px] px-6 py-2 font-medium"
+            >
+              <LayoutDashboard size={18} />
+              <span>My Dashboard</span>
+            </Link>
           ) : (
             <Link 
               href="/signin" 

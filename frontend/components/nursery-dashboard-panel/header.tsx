@@ -51,7 +51,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
     // Load nursery data for count
     const loadUserData = async () => {
       try {
-        const token = localStorage.getItem('nurseryAccessToken') || localStorage.getItem('accessToken');
+        const token = localStorage.getItem('nurseryAccessToken');
         if (token) {
           // Load nurseries first
           const { nurseryDashboardService } = await import('@/lib/api/nursery');
@@ -73,7 +73,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
   const handleLogout = async () => {
     try {
       // Call backend logout API to update status
-      const token = localStorage.getItem('nurseryAccessToken') || localStorage.getItem('accessToken');
+      const token = localStorage.getItem('nurseryAccessToken');
       if (token) {
         await fetch('https://mathew-production.up.railway.app/api/auth/logout', {
           method: 'POST',
@@ -86,11 +86,9 @@ const Header = ({ onMenuClick }: HeaderProps) => {
     } catch (error) {
       console.error('Logout API error:', error);
     } finally {
-      // Clear nursery authentication data
+      // Clear ONLY nursery authentication data — do NOT touch user session
       localStorage.removeItem('nurseryAccessToken');
       localStorage.removeItem('nurseryEmail');
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('email');
       
       // Clear browser history and prevent back navigation
       window.history.go(-(window.history.length - 1));

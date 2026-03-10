@@ -181,31 +181,32 @@ export default function ReviewsOverview() {
         if (nurseriesData.length > 0) {
           setSelectedNurseryId(nurseriesData[0].id)
           
-          // Fetch ALL reviews (approved, pending, rejected) using the nursery dashboard API
+          // Fetch ALL reviews for ALL nurseries
           const reviewsResponse = await nurseryDashboardService.getMyReviews()
           
           if (reviewsResponse.success && reviewsResponse.data) {
-            const reviews = reviewsResponse.data.reviews
+            const reviewsByNursery = (reviewsResponse.data as any).reviewsByNursery as Record<string, Review[]>
             const stats = reviewsResponse.data.stats
             
-            // Group reviews by nursery ID
             const reviewsData: Record<string, { reviews: Review[], stats: ReviewStats }> = {}
             
-            // Initialize all nurseries with empty reviews
+            // Initialize all nurseries
             nurseriesData.forEach(nursery => {
+              const nurseryReviews = reviewsByNursery?.[nursery.id] || []
+              const approved = nurseryReviews.filter(r => r.isApproved && !r.isRejected)
+              const pending = nurseryReviews.filter(r => !r.isApproved && !r.isRejected)
+              const avg = approved.length > 0
+                ? approved.reduce((sum, r) => sum + r.overallRating, 0) / approved.length
+                : 0
               reviewsData[nursery.id] = {
-                reviews: [],
-                stats: { averageRating: 0, totalReviews: 0, pendingApproval: 0 }
+                reviews: nurseryReviews,
+                stats: {
+                  averageRating: Math.round(avg * 10) / 10,
+                  totalReviews: approved.length,
+                  pendingApproval: pending.length
+                }
               }
             })
-            
-            // Since backend returns reviews for first nursery only, assign to that nursery
-            if (nurseriesData.length > 0) {
-              reviewsData[nurseriesData[0].id] = {
-                reviews: reviews || [],
-                stats: stats || { averageRating: 0, totalReviews: 0, pendingApproval: 0 }
-              }
-            }
             
             setReviewsByNursery(reviewsData)
           }
@@ -292,17 +293,19 @@ export default function ReviewsOverview() {
 
       {/* Nursery Tabs */}
       <Tabs value={selectedNurseryId} onValueChange={setSelectedNurseryId}>
-        <TabsList className="w-full justify-start bg-gray-100 p-3 h-14 rounded-lg border border-gray-300">
-          {nurseries.map((nursery) => (
-            <TabsTrigger 
-              key={nursery.id} 
-              value={nursery.id}
-              className="data-[state=active]:bg-secondary cursor-pointer data-[state=active]:text-white rounded-md px-4 py-5"
-            >
-              {nursery.name}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+        <div className="overflow-x-auto">
+          <TabsList className="flex w-max min-w-full justify-start bg-gray-100 p-3 h-14 rounded-lg border border-gray-300">
+            {nurseries.map((nursery) => (
+              <TabsTrigger 
+                key={nursery.id} 
+                value={nursery.id}
+                className="whitespace-nowrap data-[state=active]:bg-secondary cursor-pointer data-[state=active]:text-white rounded-md px-4 py-5"
+              >
+                {nursery.name}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
 
         {nurseries.map((nursery) => (
           <TabsContent key={nursery.id} value={nursery.id} className="space-y-6 mt-6">

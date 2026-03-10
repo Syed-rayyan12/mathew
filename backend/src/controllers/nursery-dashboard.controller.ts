@@ -517,22 +517,28 @@ export const getMyNurseryReviews = async (
       throw new UnauthorizedError('User not authenticated');
     }
 
-    // Find first nursery by owner ID
-    const nursery = await prisma.nursery.findFirst({
+    // Find ALL nurseries owned by this user
+    const nurseries = await prisma.nursery.findMany({
       where: { ownerId: userId },
-      select: { id: true, reviewCount: true },
+      select: { id: true },
     });
 
-    if (!nursery) {
-      throw new NotFoundError('Nursery not found');
+    if (!nurseries.length) {
+      return res.json({
+        success: true,
+        data: { reviews: [], reviewsByNursery: {}, stats: { averageRating: 0, totalReviews: 0, pendingApproval: 0 } },
+      });
     }
 
-    // Get all reviews (approved, pending, and rejected)
+    const nurseryIds = nurseries.map((n: { id: string }) => n.id);
+
+    // Get all reviews for ALL nurseries
     const [allReviews, approvedCount, pendingCount] = await Promise.all([
       prisma.review.findMany({
-        where: { nurseryId: nursery.id },
+        where: { nurseryId: { in: nurseryIds } },
         select: {
           id: true,
+          nurseryId: true,
           overallRating: true,
           content: true,
           connection: true,
@@ -550,12 +556,21 @@ export const getMyNurseryReviews = async (
         orderBy: { createdAt: 'desc' },
       }),
       prisma.review.count({
-        where: { nurseryId: nursery.id, isApproved: true, isRejected: false },
+        where: { nurseryId: { in: nurseryIds }, isApproved: true, isRejected: false },
       }),
       prisma.review.count({
-        where: { nurseryId: nursery.id, isApproved: false, isRejected: false },
+        where: { nurseryId: { in: nurseryIds }, isApproved: false, isRejected: false },
       }),
     ]);
+
+    // Group reviews by nurseryId
+    const reviewsByNursery: Record<string, typeof allReviews> = {};
+    nurseryIds.forEach((id: string) => { reviewsByNursery[id] = []; });
+    allReviews.forEach((r: any) => {
+      if (reviewsByNursery[r.nurseryId]) {
+        reviewsByNursery[r.nurseryId].push(r);
+      }
+    });
 
     // Calculate average rating from approved reviews only
     const approvedReviews = allReviews.filter((r: any) => r.isApproved && !r.isRejected);
@@ -567,6 +582,7 @@ export const getMyNurseryReviews = async (
       success: true,
       data: {
         reviews: allReviews,
+        reviewsByNursery,
         stats: {
           averageRating: Math.round(averageRating * 10) / 10,
           totalReviews: approvedCount,

@@ -44,11 +44,6 @@ export const submitReview = async (
     console.log('  - User Object:', req.user);
     console.log('  - Extracted UserId:', userId);
 
-    // Validate required fields
-    if (!nurseryId || !overallRating || !content || !firstName || !lastName || !email) {
-      throw new BadRequestError('Missing required fields');
-    }
-
     // Check if nursery exists
     const nursery = await prisma.nursery.findUnique({
       where: { id: nurseryId },

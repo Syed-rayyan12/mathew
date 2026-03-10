@@ -25,6 +25,7 @@ export default function NurseryReviewForm() {
   const [searchResults, setSearchResults] = useState<NurserySearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Check for pre-filled nursery from URL params
   useEffect(() => {
@@ -108,6 +109,9 @@ export default function NurseryReviewForm() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type, checked } = e.target as HTMLInputElement;
     setForm({ ...form, [name]: type === "checkbox" ? checked : value });
+    if (errors[name]) {
+      setErrors(prev => { const next = { ...prev }; delete next[name]; return next; });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -120,7 +124,25 @@ export default function NurseryReviewForm() {
       return;
     }
 
-    // Calculate average rating from all filled ratings
+    // Validate all required fields
+    const newErrors: Record<string, string> = {};
+    if (!form.connection) newErrors.connection = 'Please select your connection to the nursery';
+    if (!form.date) newErrors.date = 'Review date is required';
+    if (!form.review.trim()) newErrors.review = 'Please write your review';
+    else if (form.review.trim().length < 200) newErrors.review = 'Review must be at least 200 characters';
+    if (!form.firstName.trim()) newErrors.firstName = 'First name is required';
+    if (!form.lastName.trim()) newErrors.lastName = 'Last name is required';
+    if (!form.email.trim()) newErrors.email = 'Email address is required';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) newErrors.email = 'Please enter a valid email address';
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    setErrors({});
+
+    // Calculate average rating from all ratings
     const ratings = [
       form.overall,
       form.facilities,
@@ -134,12 +156,7 @@ export default function NurseryReviewForm() {
       form.cleanliness,
       form.safeguarding,
       form.value,
-    ].filter(rating => rating > 0); // Only count ratings that were given
-
-    if (ratings.length === 0) {
-      toast.error('Please provide at least one rating');
-      return;
-    }
+    ];
 
     // Calculate average: sum of all ratings / number of ratings given
     const totalRating = ratings.reduce((sum, rating) => sum + rating, 0);
@@ -178,7 +195,7 @@ export default function NurseryReviewForm() {
         value: form.value || undefined,
         firstName: userData?.firstName || form.firstName,
         lastName: userData?.lastName || form.lastName,
-        email: userData?.email || form.email || form.firstName + '@review.com', // Use actual email if logged in
+        email: userData?.email || form.email,
         telephone: undefined,
         initialsOnly: form.initialsOnly,
       };
@@ -225,7 +242,7 @@ export default function NurseryReviewForm() {
     }
   };
 
-  const StarRating = ({ label, name }: { label: string; name: keyof typeof form }) => {
+  const StarRating = ({ label, name, error, required = true }: { label: string; name: keyof typeof form; error?: string; required?: boolean }) => {
     const value = form[name];
     const rating = typeof value === 'number' ? value : 0;
 
@@ -249,25 +266,31 @@ export default function NurseryReviewForm() {
     return (
       <div className="flex flex-col gap-2">
         <div className="flex flex-col gap-3">
-          <label className="font-medium min-w-fit">{label}</label>
+          <label className="font-medium min-w-fit">
+            {label} {required && <span className="text-red-500">*</span>}
+          </label>
           <div className="flex items-center gap-3">
             {[1, 2, 3, 4, 5].map((star) => (
               <Star
                 key={star}
                 size={26}
-                className={`cursor-pointer transition ${rating >= star ? "fill-primary text-primary" : "text-gray-400"
-                  }`}
-                onClick={() => setForm({ ...form, [name]: star })}
+                className={`cursor-pointer transition ${rating >= star ? "fill-primary text-primary" : "text-gray-400"}`}
+                onClick={() => {
+                  setForm({ ...form, [name]: star });
+                  if (errors[String(name)]) {
+                    setErrors(prev => { const next = { ...prev }; delete next[String(name)]; return next; });
+                  }
+                }}
               />
             ))}
-             {rating > 0 && (
-            <span className="text-sm font-medium text-secondary">
-              {getRatingStatus(rating)}
-            </span>
-          )}
+            {rating > 0 && (
+              <span className="text-sm font-medium text-secondary">
+                {getRatingStatus(rating)}
+              </span>
+            )}
           </div>
-         
         </div>
+        {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
       </div>
     );
   };
@@ -366,44 +389,47 @@ export default function NurseryReviewForm() {
           <CardContent className="p-6 space-y-6">
             <form className="space-y-6" onSubmit={handleSubmit}>
 
-            <StarRating label="Overall Experience" name="overall" />
+            <StarRating label="Overall Experience" name="overall" required={false} />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="font-medium">Connection to Nursery</label>
+                <label className="font-medium">Connection to Nursery <span className="text-red-500">*</span></label>
                 <select
                   name="connection"
                   value={form.connection}
                   onChange={handleChange}
-                  className="border p-2 rounded-xl w-full"
+                  className={`border p-2 rounded-xl w-full ${errors.connection ? 'border-red-500' : ''}`}
                 >
                   <option value="">Please Select...</option>
                   <option value="Parent">Parent</option>
                   <option value="Guardian">Guardian</option>
                   <option value="Carer">Carer</option>
                 </select>
+                {errors.connection && <p className="text-red-500 text-sm mt-1">{errors.connection}</p>}
               </div>
               <div>
-                <label className="font-medium">Review Date</label>
+                <label className="font-medium">Review Date <span className="text-red-500">*</span></label>
                 <input
                   type="date"
                   name="date"
                   value={form.date}
                   onChange={handleChange}
-                  className="border p-2 rounded-xl w-full"
+                  className={`border p-2 rounded-xl w-full ${errors.date ? 'border-red-500' : ''}`}
                 />
+                {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date}</p>}
               </div>
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="font-medium">Write your review</label>
+              <label className="font-medium">Write your review <span className="text-red-500">*</span></label>
               <textarea
                 name="review"
                 value={form.review}
                 onChange={handleChange}
-                className="border p-3 rounded-xl whitespace-pre-wrap break-words [overflow-wrap:anywhere] min-h-[150px]"
+                className={`border p-3 rounded-xl whitespace-pre-wrap break-words [overflow-wrap:anywhere] min-h-[150px] ${errors.review ? 'border-red-500' : ''}`}
                 placeholder="Please tell us about your experience (200–1000 characters)"
               ></textarea>
+              {errors.review && <p className="text-red-500 text-sm">{errors.review}</p>}
             </div>
 
             <div className="border rounded-md p-6">
@@ -411,47 +437,70 @@ export default function NurseryReviewForm() {
 
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <StarRating label="Facilities / Outside Space" name="facilities" />
-                  <StarRating label="Learning" name="learning" />
-                  <StarRating label="Resources / Equipment / ICT" name="resources" />
+                  <StarRating label="Facilities / Outside Space" name="facilities" required={false} />
+                  <StarRating label="Learning" name="learning" required={false} />
+                  <StarRating label="Resources / Equipment / ICT" name="resources" required={false} />
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <StarRating label="Care" name="care" />
-                  <StarRating label="Activities" name="activities" />
-                  <StarRating label="Staff" name="staff" />
+                  <StarRating label="Care" name="care" required={false} />
+                  <StarRating label="Activities" name="activities" required={false} />
+                  <StarRating label="Staff" name="staff" required={false} />
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <StarRating label="Food / Nutrition" name="food" />
-                  <StarRating label="Management" name="management" />
-                  <StarRating label="Cleanliness" name="cleanliness" />
+                  <StarRating label="Food / Nutrition" name="food" required={false} />
+                  <StarRating label="Management" name="management" required={false} />
+                  <StarRating label="Cleanliness" name="cleanliness" required={false} />
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <StarRating label="Safeguarding" name="safeguarding" />
-                  <StarRating label="Value for Money" name="value" />
+                  <StarRating label="Safeguarding" name="safeguarding" required={false} />
+                  <StarRating label="Value for Money" name="value" required={false} />
                 </div>
               </div>
             </div>
 
             <div className="space-y-3 border p-4 rounded-md">
-              <h2 className="text-xl font-medium">Your Name</h2>
+              <h2 className="text-xl font-medium">Your Details</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="font-medium text-sm">First Name <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={form.firstName}
+                    onChange={handleChange}
+                    placeholder="First Name"
+                    className={`border p-2 rounded-xl w-full ${errors.firstName ? 'border-red-500' : ''}`}
+                  />
+                  {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
+                </div>
+                <div>
+                  <label className="font-medium text-sm">Last Name <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={form.lastName}
+                    onChange={handleChange}
+                    placeholder="Last Name"
+                    className={`border p-2 rounded-xl w-full ${errors.lastName ? 'border-red-500' : ''}`}
+                  />
+                  {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
+                </div>
+              </div>
+
+              <div>
+                <label className="font-medium text-sm">Email Address <span className="text-red-500">*</span></label>
                 <input
-                  type="text"
-                  name="firstName"
+                  type="email"
+                  name="email"
+                  value={form.email}
                   onChange={handleChange}
-                  placeholder="First Name"
-                  className="border p-2 rounded-xl"
+                  placeholder="your@email.com"
+                  className={`border p-2 rounded-xl w-full ${errors.email ? 'border-red-500' : ''}`}
                 />
-                <input
-                  type="text"
-                  name="lastName"
-                  onChange={handleChange}
-                  placeholder="Last Name"
-                  className="border p-2 rounded-xl"
-                />
+                {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
               </div>
 
               <div className="flex items-center gap-2">

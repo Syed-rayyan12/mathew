@@ -9,17 +9,9 @@ export default function Header() {
   const [open, setOpen] = useState(false);
   const { user, isAuthenticated, isLoading } = useAuth();
   
-  const shouldShowDashboard = isAuthenticated && user && user.role !== 'ADMIN';
+  const shouldShowDashboard = isAuthenticated && user && user.role === 'USER';
 
-  const getDashboardPath = () => {
-    if (!user) return '/';
-    switch (user.role) {
-      case 'NURSERY_OWNER': return '/nursery-dashboard';
-      case 'PARENT': return '/parent-dashboard';
-      case 'USER': return '/parent-dashboard';
-      default: return '/';
-    }
-  };
+  const getDashboardPath = () => '/parent-dashboard';
 
   return (
     <>

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from "next/link";
-import { Menu, User, LogOut } from "lucide-react";
+import { Menu, User, LogOut, LayoutDashboard } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -20,6 +20,16 @@ export default function Header() {
   
   // Don't show profile for admin users on landing page
   const shouldShowProfile = isAuthenticated && user && user.role !== 'ADMIN';
+
+  const getDashboardPath = () => {
+    if (!user) return '/';
+    switch (user.role) {
+      case 'NURSERY_OWNER': return '/nursery-dashboard';
+      case 'PARENT': return '/parent-dashboard';
+      case 'USER': return '/parent-dashboard';
+      default: return '/';
+    }
+  };
 
   return (
     <>
@@ -46,7 +56,15 @@ export default function Header() {
           {isLoading ? (
             <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse" />
           ) : shouldShowProfile ? (
-            <DropdownMenu>
+            <div className="flex items-center gap-3">
+              <Link
+                href={getDashboardPath()}
+                className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white rounded-[6px] px-4 py-2 text-sm font-medium transition-all duration-300"
+              >
+                <LayoutDashboard size={16} />
+                <span>My Dashboard</span>
+              </Link>
+              <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-2 outline-none cursor-pointer">
                   <Avatar className="h-10 w-10 border-2 border-primary">
@@ -83,6 +101,7 @@ export default function Header() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            </div>
           ) : (
             <Link 
               href="/signin" 

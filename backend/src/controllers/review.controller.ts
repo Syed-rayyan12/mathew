@@ -277,6 +277,21 @@ export const approveReview = async (
       },
     });
 
+    // Notify the parent that their review has been published
+    if (review.userId) {
+      try {
+        const nursery = await prisma.nursery.findUnique({ where: { id: review.nurseryId }, select: { name: true } });
+        await createNotification(
+          'Review Published',
+          `Your review for "${nursery?.name}" has been published.`,
+          'USER',
+          review.userId
+        );
+      } catch (notificationError) {
+        console.error('Failed to create review approved notification:', notificationError);
+      }
+    }
+
     res.json({
       success: true,
       message: 'Review approved successfully',
@@ -370,6 +385,21 @@ export const rejectReview = async (
         reviewCount: reviews.length,
       },
     });
+
+    // Notify the parent that their review has been rejected
+    if (review.userId) {
+      try {
+        const nursery = await prisma.nursery.findUnique({ where: { id: review.nurseryId }, select: { name: true } });
+        await createNotification(
+          'Review Not Approved',
+          `Your review for "${nursery?.name}" was not approved. Reason: ${reason || 'No reason provided'}`,
+          'USER',
+          review.userId
+        );
+      } catch (notificationError) {
+        console.error('Failed to create review rejected notification:', notificationError);
+      }
+    }
 
     res.json({
       success: true,

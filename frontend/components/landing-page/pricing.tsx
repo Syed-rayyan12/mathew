@@ -168,10 +168,10 @@ export default function PricingSection() {
 
                             <tbody className="divide-y">
                                 {/* -------- Profile & Visibility -------- */}
-                                <tr className="">
-                                    <td className="p-4 font-bold text-gray-700">Profile & Visibility</td>
+                                {/* <tr className="">
+                                  
                                     <td></td><td></td><td></td>
-                                </tr>
+                                </tr> */}
 
                                 <tr>
                                     <td className="p-4">Basic profile page</td>

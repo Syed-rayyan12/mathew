@@ -264,6 +264,66 @@ export const getNotificationStats = async (
   }
 };
 
+// ─── User (Parent) specific handler ─────────────────────────────────────────
+// Shows only USER entity notifications where entityId = logged-in user's own ID
+export const getUserNotifications = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user!.userId;
+    const { limit = 10 } = req.query;
+
+    const where = {
+      entity: 'USER' as any,
+      entityId: userId,
+    };
+
+    const [notifications, unreadCount] = await Promise.all([
+      prisma.notification.findMany({
+        where,
+        take: Number(limit),
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.notification.count({ where: { ...where, isRead: false } }),
+    ]);
+
+    res.json({
+      success: true,
+      data: { notifications, unreadCount },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Mark user notification as read (only own notifications)
+export const markUserNotificationAsRead = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user!.userId;
+    const { id } = req.params;
+
+    const notification = await prisma.notification.findFirst({
+      where: { id, entity: 'USER' as any, entityId: userId },
+    });
+
+    if (!notification) {
+      return res.status(404).json({ success: false, message: 'Notification not found' });
+    }
+
+    await prisma.notification.update({ where: { id }, data: { isRead: true } });
+
+    res.json({ success: true, message: 'Notification marked as read' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // ─── Nursery-specific handlers ───────────────────────────────────────────────
 // Notifications for nursery dashboard: only REVIEW and NURSERY entities
 // where entityId is one of the nurseries owned by the logged-in nursery owner.

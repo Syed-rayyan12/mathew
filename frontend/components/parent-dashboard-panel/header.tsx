@@ -14,7 +14,7 @@ import { Bell, CheckCircle, X, Menu, Search } from 'lucide-react';
 import { Separator } from '@/components/ui/separator'; // ✅ correct import
 import { Button } from '@/components/ui/button';
 import { authService } from '@/lib/api/auth';
-import { notificationService, Notification } from '@/lib/api/notification';
+import { userNotificationService, Notification } from '@/lib/api/notification';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
@@ -40,7 +40,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
   const fetchNotifications = async () => {
     try {
       setLoadingNotifications(true);
-      const response = await notificationService.getRecentNotifications(10);
+      const response = await userNotificationService.getUserNotifications(20);
       if (response && response.data) {
         setNotifications(response.data.notifications || []);
         setUnreadCount(response.data.unreadCount || 0);
@@ -54,7 +54,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {
-      await notificationService.markAsRead(notificationId);
+      await userNotificationService.markAsRead(notificationId);
       setNotifications(prev => prev.map(n => 
         n.id === notificationId ? { ...n, isRead: true } : n
       ));
@@ -66,7 +66,9 @@ const Header = ({ onMenuClick }: HeaderProps) => {
 
   const handleMarkAllAsRead = async () => {
     try {
-      await notificationService.markAllAsRead();
+      // Mark all locally — no single endpoint needed for parent
+      const unread = notifications.filter(n => !n.isRead);
+      await Promise.all(unread.map(n => userNotificationService.markAsRead(n.id)));
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       setUnreadCount(0);
       toast.success('All notifications marked as read');
@@ -78,7 +80,8 @@ const Header = ({ onMenuClick }: HeaderProps) => {
 
   const handleDeleteNotification = async (notificationId: string) => {
     try {
-      await notificationService.deleteNotification(notificationId);
+      // Just hide it locally — mark as read and remove from list
+      await userNotificationService.markAsRead(notificationId);
       setNotifications(prev => prev.filter(n => n.id !== notificationId));
       toast.success('Notification removed');
     } catch (error) {
@@ -262,15 +265,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
               )}
             </div>
 
-            {notifications.length > 0 && (
-              <div className="p-3 border-t border-gray-200 sticky bottom-0 bg-white">
-                <Link href="/parent-dashboard/notifications">
-                  <Button className="bg-secondary w-full hover:bg-secondary/90">
-                    View All Notifications
-                  </Button>
-                </Link>
-              </div>
-            )}
+
           </DropdownMenuContent>
         </DropdownMenu>
 

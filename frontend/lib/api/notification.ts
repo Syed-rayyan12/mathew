@@ -88,6 +88,24 @@ export const notificationService = {
   },
 };
 
+// User (Parent) notification service — uses user accessToken
+export const userNotificationService = {
+  getUserNotifications: async (limit = 10) => {
+    return apiClient.get<NotificationResponse>(
+      `/notifications/user?limit=${limit}`,
+      true
+    );
+  },
+
+  markAsRead: async (notificationId: string) => {
+    return apiClient.put<{ success: boolean }>(
+      `/notifications/user/${notificationId}/read`,
+      {},
+      true
+    );
+  },
+};
+
 // Nursery-specific notification service (uses nursery token)
 export const nurseryNotificationService = {
   // Get notifications for the nursery dashboard bell (only REVIEW + NURSERY for owned nurseries)

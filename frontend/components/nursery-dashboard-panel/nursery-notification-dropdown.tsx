@@ -32,7 +32,7 @@ export default function NurseryNotificationDropdown() {
   const fetchNotifications = async () => {
     try {
       setIsLoading(true);
-      const response = await nurseryNotificationService.getNurseryNotifications(10);
+      const response = await nurseryNotificationService.getNurseryNotifications(20);
       if (response.success && response.data) {
         setNotifications(response.data.notifications || []);
         setUnreadCount(response.data.unreadCount || 0);
@@ -138,10 +138,6 @@ export default function NurseryNotificationDropdown() {
           ))
         )}
 
-        <DropdownMenuSeparator />
-        <div className="px-4 py-2 text-center text-xs text-gray-400">
-          Only reviews and shortlist notifications are shown here
-        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );

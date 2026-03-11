@@ -10,10 +10,16 @@ import {
   submitSupportRequest,
   getNurseryNotifications,
   markNurseryNotificationAsRead,
+  getUserNotifications,
+  markUserNotificationAsRead,
 } from '../controllers/notification.controller';
 import { authenticate } from '../middleware';
 
 const router = Router();
+
+// User (parent) specific routes
+router.get('/user', authenticate, getUserNotifications);
+router.put('/user/:id/read', authenticate, markUserNotificationAsRead);
 
 // Nursery-specific routes (must be before /:id routes)
 router.get('/nursery', authenticate, getNurseryNotifications);

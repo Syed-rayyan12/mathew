@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
-    "start": "prisma migrate resolve --rolled-back 20260311000000_add_user_address_fields; prisma migrate deploy && node dist/server.js",
+    "start": "prisma db push --accept-data-loss && node dist/server.js",
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",

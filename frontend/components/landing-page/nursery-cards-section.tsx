@@ -218,7 +218,7 @@ const NurseryCardsSection = () => {
                                                     (e.target as HTMLImageElement).src = '/images/nursery-placeholder.png';
                                                 }}
                                             />
-                                            <div className="mt-[-60px] left-0 right-0 px-4 py-6 mx-4 shadow-lg bg-white rounded-lg relative">
+                                            <div className="mt-[-160px] left-0 right-0 px-4 py-6 mx-4 shadow-lg bg-white rounded-lg relative">
                                                 <div className="flex items-center justify-between gap-2 mb-2">
                                                     <h3 className="font-heading text-[24px] font-medium text-[#044A55]">{nursery.name}</h3>
                                                     {(nursery.city || nursery.town) && (

@@ -16,12 +16,12 @@ const pricingPlans = [
         subtitle: "Start your journey at no cost",
         price: "0",
         features: [
-            "Basic profile page",
-            "Reviews enabled",
-            "Contact information",
-            "Search visibility",
-            "Extra photos",
-            "Priority in search",
+            "Nursery Name",
+            "Address",
+            "Telephone",
+            "Photo Gallery",
+            "Staff Profiles",
+            "Nursery Updates / News",
             "Featured placement",
             "Analytics dashboard",
         ],
@@ -31,7 +31,7 @@ const pricingPlans = [
 
     {
         id: "standard",
-        title: "Standard",
+        title: "Nursery Listing (Paid)",
         subtitle: "Perfect for growing businesses",
         price: "29",
         features: [
@@ -51,7 +51,7 @@ const pricingPlans = [
 
     {
         id: "premium",
-        title: "Premium",
+        title: "Group Listing (Paid – MultiNursery)",
         subtitle: "Best for maximum visibility",
         price: "59",
         features: [
@@ -160,9 +160,9 @@ export default function PricingSection() {
                                     <th className="p-4  font-medium font-heading text-[28px] text-secondary rounded-l-xl">Features</th>
                                     <th className="p-4  font-medium font-heading text-[28px] text-secondary ">Free</th>
                                     <th className="p-4  font-medium font-heading text-[28px] text-secondary ">
-                                        Standard
+                                        Nursery Listing (Paid)
                                     </th>
-                                    <th className="p-4  font-medium font-heading text-[28px] text-secondary rounded-r-xl">Premium</th>
+                                    <th className="p-4  font-medium font-heading text-[28px] text-secondary rounded-r-xl">Group Listing (Paid – Multi Nursery)</th>
                                 </tr>
                             </thead>
 
@@ -174,154 +174,141 @@ export default function PricingSection() {
                                 </tr> */}
 
                                 <tr>
-                                    <td className="p-4">Basic profile page</td>
+                                    <td className="p-4">Nursery Name</td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
                                 <tr>
-                                    <td className="p-4">Custom profile URL</td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
+                                    <td className="p-4">Address</td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
-                                </tr>
-
-                                <tr>
-                                    <td className="p-4">Enhanced profile design</td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
                                 <tr>
-                                    <td className="p-4">Featured on homepage</td>
+                                    <td className="p-4">Telephone</td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
+                                </tr>
+
+                                <tr>
+                                    <td className="p-4">Photo Gallery</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
+                                </tr>
+
+                                <tr>
+                                    <td className="p-4">Staff Profiles</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
                                 {/* -------- Photos & Media -------- */}
-                                <tr>
-                                    <td className="p-4 font-bold text-foreground font-sans bg-gray-100">Photos & Media</td>
-                                    <td  className="bg-gray-100"></td><td className="bg-gray-100"></td><td className="bg-gray-100"></td>
-                                </tr>
+
 
                                 <tr>
-                                    <td className="p-4">Up to 5 photos</td>
-                                    <td className="text-center"><Check className="text-secondary" /></td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
-                                </tr>
-
-                                <tr>
-                                    <td className="p-4">Video integration</td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
-                                    <td className="text-center"><Check className="text-secondary" /></td>
-                                    <td className="text-center"><Check className="text-secondary" /></td>
-                                </tr>
-
-                                {/* -------- Search & Discovery -------- */}
-                                <tr>
-                                    <td className="p-4 font-bold text-foreground font-sans bg-gray-100">Search & Discovery</td>
-                                    <td  className="bg-gray-100"></td><td className="bg-gray-100"></td><td className="bg-gray-100"></td>
-                                </tr>
-
-                                <tr>
-                                    <td className="p-4">Appear in search results</td>
-                                    <td className="text-center"><Check className="text-secondary" /></td>
-                                    <td className="text-center"><Check className="text-secondary" /></td>
-                                    <td className="text-center"><Check className="text-secondary" /></td>
-                                </tr>
-
-                                <tr>
-                                    <td className="p-4">Priority in search</td>
+                                    <td className="p-4">Nursery Updates / News</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
                                 <tr>
-                                    <td className="p-4">Featured placement</td>
+                                    <td className="p-4">Job Vacancies</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
                                 <tr>
-                                    <td className="p-4">Promotion boosts</td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
-                                    <td className="text-center"><Check className="text-secondary" /></td>
-                                    <td className="text-center"><Check className="text-secondary" /></td>
-                                </tr>
-
-                                {/* -------- Reviews & Trust -------- */}
-                                <tr>
-                                    <td className="p-4 font-bold text-foreground font-sans bg-gray-100">Reviews & Trust</td>
-                                    <td  className="bg-gray-100"></td><td className="bg-gray-100"></td><td className="bg-gray-100"></td>
-                                </tr>
-
-                                <tr>
-                                    <td className="p-4">Parent reviews</td>
-                                    <td className="text-center"><Check className="text-secondary" /></td>
-                                    <td className="text-center"><Check className="text-secondary" /></td>
-                                    <td className="text-center"><Check className="text-secondary" /></td>
-                                </tr>
-
-                                <tr>
-                                    <td className="p-4">Response time badge</td>
+                                    <td className="p-4">Qualifications Display</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
                                 <tr>
-                                    <td className="p-4">Verified nursery badge</td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
-                                    <td className="text-center"><Check className="text-secondary" /></td>
-                                </tr>
-
-                                <tr>
-                                    <td className="p-4">Testimonial highlights</td>
+                                    <td className="p-4">Facilities Breakdown</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
-
-                                {/* -------- Analytics & Insights -------- */}
                                 <tr>
-                                    <td className="p-4 font-bold text-foreground font-sans bg-gray-100">Analytics & Insights</td>
-                                    <td  className="bg-gray-100"></td><td className="bg-gray-100"></td><td className="bg-gray-100"></td>
-                                </tr>
-
-                                <tr>
-                                    <td className="p-4">Basic view stats</td>
-                                    <td className="text-center"><Check className="text-secondary" /></td>
-                                    <td className="text-center"><Check className="text-secondary" /></td>
+                                    <td className="p-4">Client Reviews & Testimonials</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
-
                                 <tr>
-                                    <td className="p-4">Enquiry tracking</td>
+                                    <td className="p-4">Opening Times</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
                                 <tr>
-                                    <td className="p-4">Advanced analytics</td>
+                                    <td className="p-4">Location Listing / Map</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
+
+
                                 <tr>
-                                    <td className="p-4">Monthly reports</td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
+                                    <td className="p-4">About Us Section</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
+                                <tr>
+                                    <td className="p-4">Fee Structure Display</td>
+                                    <td className="text-center"><X className="text-red-500" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
+                                </tr>
+
+
+                                <tr>
+                                    <td className="p-4">Multiple Nursery Accounts</td>
+                                    <td className="text-center"><X className="text-red-500" /></td>
+                                    <td className="text-center"><X className="text-red-500" /></td>
+
+                                    <td className="text-center"><Check className="text-secondary" /></td>
+                                </tr>
+                                    <tr>
+                                    <td className="p-4">Centralised Group Management</td>
+                                    <td className="text-center"><X className="text-red-500" /></td>
+                                    <td className="text-center"><X className="text-red-500" /></td>
+
+                                    <td className="text-center"><Check className="text-secondary" /></td>
+                                </tr>
+                                    <tr>
+                                    <td className="p-4">Group Level</td>
+                                    <td className="text-center"><X className="text-red-500" /></td>
+                                    <td className="text-center"><X className="text-red-500" /></td>
+
+                                    <td className="text-center"><Check className="text-secondary" /></td>
+                                </tr>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
                             </tbody>
                         </table>

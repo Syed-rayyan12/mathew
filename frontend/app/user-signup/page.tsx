@@ -16,10 +16,14 @@ const SignupPage = () => {
     firstName: '',
     lastName: '',
     email: '',
-    phone: '',
+    phone: '',         // Mobile
+    landline: '',      // Landline
     password: '',
     confirmPassword: '',
-    address: '',
+    address: '',       // Address Line 1
+    addressLine2: '',  // Address Line 2
+    town: '',          // Town/City
+    postcode: '',
   })
   const [loading, setLoading] = useState(false)
   const [showLoader, setShowLoader] = useState(false)
@@ -204,6 +208,11 @@ const getLocation = async () => {
         phone: formData.phone,
         password: formData.password,
         role: 'USER',
+        landline: formData.landline || undefined,
+        address: formData.address || undefined,
+        addressLine2: formData.addressLine2 || undefined,
+        town: formData.town || undefined,
+        postcode: formData.postcode || undefined,
       })
 
       if (!response.success) {
@@ -298,28 +307,41 @@ const getLocation = async () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone">Phone Number (UK Only)</Label>
+            <Label htmlFor="phone">Mobile (UK)</Label>
             <Input
               id="phone"
               name="phone"
               type="tel"
-              placeholder="+44 7123 456789 or 07123 456789"
+              placeholder="07123 456789 or +44 7123 456789"
               value={formData.phone}
               onChange={handleChange}
               maxLength={17}
               required
             />
-            <p className="text-xs text-gray-500">UK phone numbers only</p>
+            <p className="text-xs text-gray-500">UK mobile numbers only</p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="address">Address</Label>
+            <Label htmlFor="landline">Landline (UK)</Label>
+            <Input
+              id="landline"
+              name="landline"
+              type="tel"
+              placeholder="01652 675228"
+              value={formData.landline}
+              onChange={handleChange}
+              maxLength={20}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="address">Address Line 1</Label>
             <div className="relative">
               <Input
                 id="address"
                 name="address"
                 type="text"
-                placeholder="Enter your address or use location"
+                placeholder="House number and street name"
                 value={formData.address}
                 onChange={handleChange}
                 className="pr-10"
@@ -335,6 +357,43 @@ const getLocation = async () => {
               </button>
             </div>
             <p className="text-xs text-gray-500">Click the location icon to auto-fill your address</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="addressLine2">Address Line 2</Label>
+            <Input
+              id="addressLine2"
+              name="addressLine2"
+              type="text"
+              placeholder="Apartment, suite, flat, etc. (optional)"
+              value={formData.addressLine2}
+              onChange={handleChange}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="town">Town/City</Label>
+              <Input
+                id="town"
+                name="town"
+                type="text"
+                placeholder="Lincoln"
+                value={formData.town}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="postcode">Postcode</Label>
+              <Input
+                id="postcode"
+                name="postcode"
+                type="text"
+                placeholder="DN20 9RG"
+                value={formData.postcode}
+                onChange={handleChange}
+              />
+            </div>
           </div>
 
           <div className="space-y-2">

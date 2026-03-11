@@ -13,8 +13,12 @@ model User {
   password    String
   firstName   String
   lastName    String
-  phone       String?
-  address     String?
+  phone       String?     // Mobile
+  landline    String?     // Landline (UK)
+  address     String?     // Address Line 1
+  addressLine2 String?    // Address Line 2
+  town        String?     // Town/City
+  postcode    String?     // Postcode
   role        Role        @default(PARENT)
   avatar      String?
   isVerified  Boolean     @default(false)

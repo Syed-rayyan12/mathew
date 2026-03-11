@@ -12,7 +12,7 @@ export const signup = async (
   next: NextFunction
 ) => {
   try {
-    const { email, password, firstName, lastName, phone, role, address } = req.body;
+    const { email, password, firstName, lastName, phone, landline, role, address, addressLine2, town, postcode } = req.body;
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -42,7 +42,11 @@ export const signup = async (
         firstName,
         lastName,
         phone,
+        landline,
         address,
+        addressLine2,
+        town,
+        postcode,
         role: userRole,
         isActive: false,
       },
@@ -52,7 +56,11 @@ export const signup = async (
         firstName: true,
         lastName: true,
         phone: true,
+        landline: true,
         address: true,
+        addressLine2: true,
+        town: true,
+        postcode: true,
         role: true,
         createdAt: true,
       },
@@ -165,7 +173,7 @@ export const updateProfile = async (
   next: NextFunction
 ) => {
   try {
-    const { firstName, lastName, phone, avatar, address } = req.body;
+    const { firstName, lastName, phone, landline, avatar, address, addressLine2, town, postcode } = req.body;
 
     const user = await prisma.user.update({
       where: { id: req.user?.userId },
@@ -173,8 +181,12 @@ export const updateProfile = async (
         firstName,
         lastName,
         phone,
+        landline,
         avatar,
         address,
+        addressLine2,
+        town,
+        postcode,
       },
       select: {
         id: true,
@@ -182,8 +194,12 @@ export const updateProfile = async (
         firstName: true,
         lastName: true,
         phone: true,
+        landline: true,
         avatar: true,
         address: true,
+        addressLine2: true,
+        town: true,
+        postcode: true,
         role: true,
       },
     });

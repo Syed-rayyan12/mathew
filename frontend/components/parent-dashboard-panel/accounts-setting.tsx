@@ -20,9 +20,11 @@ const AccountsSetting = () => {
         firstName: '',
         lastName: '',
         email: '',
-        phone: '',
-        address: '',
-        city: '',
+        phone: '',        // Mobile
+        landline: '',     // Landline
+        address: '',      // Address Line 1
+        addressLine2: '', // Address Line 2
+        town: '',         // Town/City
         postcode: ''
     });
     const [passwordData, setPasswordData] = useState({
@@ -40,9 +42,11 @@ const AccountsSetting = () => {
                 lastName: userData.lastName || '',
                 email: userData.email || '',
                 phone: userData.phone || '',
+                landline: userData.landline || '',
                 address: userData.address || '',
-                city: '',
-                postcode: ''
+                addressLine2: userData.addressLine2 || '',
+                town: userData.town || '',
+                postcode: userData.postcode || ''
             });
         }
     }, []);
@@ -101,13 +105,13 @@ const AccountsSetting = () => {
         // Extract city (try multiple field names used by nominatim)
         city = addressData.city || addressData.town || addressData.suburb || '';
 
-        // Extract postcode
+        // Parse address components from nominatim
         postcode = addressData.postcode || '';
 
         setFormData(prev => ({
             ...prev,
             address: address || prev.address,
-            city: city || prev.city,
+            town: city || prev.town,
             postcode: postcode || prev.postcode
         }));
     };
@@ -212,7 +216,11 @@ const AccountsSetting = () => {
                 lastName: formData.lastName,
                 email: formData.email,
                 phone: formData.phone,
-                address: formData.address
+                landline: formData.landline,
+                address: formData.address,
+                addressLine2: formData.addressLine2,
+                town: formData.town,
+                postcode: formData.postcode,
             });
 
             if (response.success && response.data) {
@@ -314,9 +322,11 @@ const AccountsSetting = () => {
                                         lastName: user?.lastName || '',
                                         email: user?.email || '',
                                         phone: user?.phone || '',
+                                        landline: user?.landline || '',
                                         address: user?.address || '',
-                                        city: '',
-                                        postcode: ''
+                                        addressLine2: user?.addressLine2 || '',
+                                        town: user?.town || '',
+                                        postcode: user?.postcode || ''
                                     });
                                 }} variant="outline" className='px-4 py-2'>
                                     Cancel
@@ -384,13 +394,13 @@ const AccountsSetting = () => {
                                 />
                             </div>
 
-                            {/* Phone */}
+                            {/* Phone (Mobile) */}
                             <div className="flex flex-col">
                                 <label
                                     htmlFor="phone"
                                     className="mb-1 text-[16px] font-medium font-sans text-foreground"
                                 >
-                                    Phone (UK Only)
+                                    Mobile (UK)
                                 </label>
                                 <input
                                     type="tel"
@@ -398,20 +408,41 @@ const AccountsSetting = () => {
                                     name="phone"
                                     value={formData.phone}
                                     onChange={handleChange}
-                                    placeholder="+44 7123 456789 or 07123 456789"
+                                    placeholder="07123 456789 or +44 7123 456789"
                                     disabled={!isEditingProfile}
                                     maxLength={17}
                                     className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none disabled:bg-gray-50 disabled:cursor-not-allowed"
                                 />
                             </div>
 
-                            {/* Address */}
+                            {/* Landline */}
+                            <div className="flex flex-col">
+                                <label
+                                    htmlFor="landline"
+                                    className="mb-1 text-[16px] font-medium font-sans text-foreground"
+                                >
+                                    Landline (UK)
+                                </label>
+                                <input
+                                    type="tel"
+                                    id="landline"
+                                    name="landline"
+                                    value={formData.landline}
+                                    onChange={handleChange}
+                                    placeholder="01652 675228"
+                                    disabled={!isEditingProfile}
+                                    maxLength={20}
+                                    className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none disabled:bg-gray-50 disabled:cursor-not-allowed"
+                                />
+                            </div>
+
+                            {/* Address Line 1 */}
                             <div className="flex flex-col">
                                 <label
                                     htmlFor="address"
                                     className="mb-1 text-[16px] font-medium font-sans text-foreground"
                                 >
-                                    Address
+                                    Address Line 1
                                 </label>
                                 <div className="relative">
                                     <input
@@ -420,7 +451,7 @@ const AccountsSetting = () => {
                                         name="address"
                                         value={formData.address}
                                         onChange={handleChange}
-                                        placeholder="Enter your address or use location"
+                                        placeholder="House number and street name"
                                         disabled={!isEditingProfile}
                                         className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 pr-10 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none disabled:bg-gray-50 disabled:cursor-not-allowed"
                                     />
@@ -438,21 +469,41 @@ const AccountsSetting = () => {
                                 </div>
                             </div>
 
-                            {/* City */}
+                            {/* Address Line 2 */}
                             <div className="flex flex-col">
                                 <label
-                                    htmlFor="city"
+                                    htmlFor="addressLine2"
                                     className="mb-1 text-[16px] font-medium font-sans text-foreground"
                                 >
-                                    City
+                                    Address Line 2
                                 </label>
                                 <input
                                     type="text"
-                                    id="city"
-                                    name="city"
-                                    value={formData.city}
+                                    id="addressLine2"
+                                    name="addressLine2"
+                                    value={formData.addressLine2}
                                     onChange={handleChange}
-                                    placeholder="Enter your city"
+                                    placeholder="Apartment, suite, flat, etc. (optional)"
+                                    disabled={!isEditingProfile}
+                                    className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none disabled:bg-gray-50 disabled:cursor-not-allowed"
+                                />
+                            </div>
+
+                            {/* Town/City */}
+                            <div className="flex flex-col">
+                                <label
+                                    htmlFor="town"
+                                    className="mb-1 text-[16px] font-medium font-sans text-foreground"
+                                >
+                                    Town/City
+                                </label>
+                                <input
+                                    type="text"
+                                    id="town"
+                                    name="town"
+                                    value={formData.town}
+                                    onChange={handleChange}
+                                    placeholder="Enter your town or city"
                                     disabled={!isEditingProfile}
                                     className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none disabled:bg-gray-50 disabled:cursor-not-allowed"
                                 />
@@ -472,7 +523,7 @@ const AccountsSetting = () => {
                                     name="postcode"
                                     value={formData.postcode}
                                     onChange={handleChange}
-                                    placeholder="Enter your postcode"
+                                    placeholder="DN20 9RG"
                                     disabled={!isEditingProfile}
                                     className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none disabled:bg-gray-50 disabled:cursor-not-allowed"
                                 />

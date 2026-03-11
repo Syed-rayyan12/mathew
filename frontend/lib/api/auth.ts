@@ -7,8 +7,13 @@ export interface SignupData {
   lastName: string;
   email: string;
   phone: string;
+  landline?: string;
   password: string;
   role?: 'USER' | 'PARENT' | 'NURSERY_OWNER';
+  address?: string;
+  addressLine2?: string;
+  town?: string;
+  postcode?: string;
 }
 
 export interface SigninData {
@@ -22,7 +27,11 @@ export interface User {
   firstName: string;
   lastName: string;
   phone?: string;
+  landline?: string;
   address?: string;
+  addressLine2?: string;
+  town?: string;
+  postcode?: string;
   nurseryName?: string;
   role: string;
   avatar?: string;
@@ -41,9 +50,13 @@ export interface UpdateProfileData {
   firstName?: string;
   lastName?: string;
   email?: string;
-  phone?: string;
+  phone?: string;       // Mobile
+  landline?: string;    // Landline
   avatar?: string;
-  address?: string;
+  address?: string;     // Address Line 1
+  addressLine2?: string;
+  town?: string;        // Town/City
+  postcode?: string;
 }
 
 export interface ChangePasswordData {

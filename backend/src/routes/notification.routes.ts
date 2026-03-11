@@ -8,10 +8,16 @@ import {
   clearAllNotifications,
   getNotificationStats,
   submitSupportRequest,
+  getNurseryNotifications,
+  markNurseryNotificationAsRead,
 } from '../controllers/notification.controller';
 import { authenticate } from '../middleware';
 
 const router = Router();
+
+// Nursery-specific routes (must be before /:id routes)
+router.get('/nursery', authenticate, getNurseryNotifications);
+router.put('/nursery/:id/read', authenticate, markNurseryNotificationAsRead);
 
 // Specific routes first (before parameter routes)
 router.get('/recent', authenticate, getRecentNotifications);

@@ -111,13 +111,13 @@ export const submitReview = async (
 
     console.log(`✅ Updated review count for nursery ${nurseryId}: ${updateResult.reviewCount}`);
 
-    // Create notification for new review
+    // Create notification for new review — entityId = nurseryId so nursery dashboard can filter it
     try {
       const notification = await createNotification(
         'New Review Received',
         `${firstName} ${lastName} has submitted a review for "${nursery.name}" with ${overallRating} star(s)`,
         'REVIEW',
-        reviewId
+        nurseryId
       );
       console.log(`🔔 Notification created with ID: ${notification.id}`);
     } catch (notificationError) {

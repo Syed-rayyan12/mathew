@@ -3,6 +3,7 @@ import prisma from '../config/database';
 import { AuthRequest } from '../middleware';
 import { NotFoundError } from '../utils';
 import { generateRandomId } from '../utils/id-generator';
+import { createNotification } from './notification.controller';
 
 // GET /shortlist — get logged-in user's shortlisted nurseries
 export const getMyShortlist = async (
@@ -71,6 +72,10 @@ export const addToShortlist = async (
     if (!nursery) throw new NotFoundError('Nursery not found');
 
     // Upsert — silently succeeds if already in shortlist
+    const wasAlreadyShortlisted = await prisma.shortlist.findUnique({
+      where: { userId_nurseryId: { userId, nurseryId } },
+    });
+
     const entry = await prisma.shortlist.upsert({
       where: { userId_nurseryId: { userId, nurseryId } },
       update: {},
@@ -90,6 +95,20 @@ export const addToShortlist = async (
         },
       },
     });
+
+    // Only notify the nursery when it is newly added to a shortlist
+    if (!wasAlreadyShortlisted) {
+      try {
+        await createNotification(
+          'Added to Shortlist',
+          `Your nursery "${nursery.name}" was added to a parent's shortlist`,
+          'NURSERY',
+          nurseryId
+        );
+      } catch (notificationError) {
+        console.error('❌ Failed to create shortlist notification:', notificationError);
+      }
+    }
 
     res.status(201).json({
       success: true,

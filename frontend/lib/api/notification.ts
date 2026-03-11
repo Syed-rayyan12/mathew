@@ -1,5 +1,5 @@
 import { API_CONFIG } from './config';
-import { apiClient, ApiResponse } from './client';
+import { apiClient, nurseryApiClient, ApiResponse } from './client';
 
 export interface Notification {
   id: string;
@@ -84,6 +84,26 @@ export const notificationService = {
     return apiClient.delete<{ success: boolean }>(
       '/notifications',
       true  // requireAuth = true
+    );
+  },
+};
+
+// Nursery-specific notification service (uses nursery token)
+export const nurseryNotificationService = {
+  // Get notifications for the nursery dashboard bell (only REVIEW + NURSERY for owned nurseries)
+  getNurseryNotifications: async (limit = 10) => {
+    return nurseryApiClient.get<NotificationResponse>(
+      `/notifications/nursery?limit=${limit}`,
+      true
+    );
+  },
+
+  // Mark a single nursery notification as read
+  markAsRead: async (notificationId: string) => {
+    return nurseryApiClient.put<{ success: boolean }>(
+      `/notifications/nursery/${notificationId}/read`,
+      {},
+      true
     );
   },
 };

@@ -263,3 +263,94 @@ export const getNotificationStats = async (
     next(error);
   }
 };
+
+// ─── Nursery-specific handlers ───────────────────────────────────────────────
+// Notifications for nursery dashboard: only REVIEW and NURSERY entities
+// where entityId is one of the nurseries owned by the logged-in nursery owner.
+
+// Get nursery notifications (for nursery dashboard bell / dropdown)
+export const getNurseryNotifications = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user!.userId;
+    const { limit = 10 } = req.query;
+
+    // Get all nursery IDs owned by this user
+    const ownedNurseries = await prisma.nursery.findMany({
+      where: { ownerId: userId },
+      select: { id: true },
+    });
+    const nurseryIds = ownedNurseries.map((n) => n.id);
+
+    console.log('🔔 getNurseryNotifications → userId:', userId);
+    console.log('🔔 getNurseryNotifications → nurseryIds:', nurseryIds);
+
+    if (nurseryIds.length === 0) {
+      return res.json({
+        success: true,
+        data: { notifications: [], unreadCount: 0 },
+      });
+    }
+
+    const where = {
+      entity: { in: ['NURSERY', 'REVIEW'] as any },
+      entityId: { in: nurseryIds },
+    };
+
+    const [notifications, unreadCount] = await Promise.all([
+      prisma.notification.findMany({
+        where,
+        take: Number(limit),
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.notification.count({ where: { ...where, isRead: false } }),
+    ]);
+
+    res.json({
+      success: true,
+      data: { notifications, unreadCount },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Mark nursery notification as read (only if it belongs to one of the owner's nurseries)
+export const markNurseryNotificationAsRead = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user!.userId;
+    const { id } = req.params;
+
+    // Verify this notification belongs to one of the owner's nurseries
+    const ownedNurseries = await prisma.nursery.findMany({
+      where: { ownerId: userId },
+      select: { id: true },
+    });
+    const nurseryIds = ownedNurseries.map((n) => n.id);
+
+    const notification = await prisma.notification.findFirst({
+      where: {
+        id,
+        entity: { in: ['NURSERY', 'REVIEW'] as any },
+        entityId: { in: nurseryIds },
+      },
+    });
+
+    if (!notification) {
+      return res.status(404).json({ success: false, message: 'Notification not found' });
+    }
+
+    await prisma.notification.update({ where: { id }, data: { isRead: true } });
+
+    res.json({ success: true, message: 'Notification marked as read' });
+  } catch (error) {
+    next(error);
+  }
+};

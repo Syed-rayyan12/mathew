@@ -1,6 +1,6 @@
 'use client'
 
-import { Facebook, Twitter, Instagram, Youtube } from "lucide-react";
+import { Facebook, Twitter, Instagram, Youtube, Linkedin } from "lucide-react";
 
 export default function MiniNav() {
 
@@ -14,7 +14,7 @@ export default function MiniNav() {
         </div>
         <div className="bg-primary text-white rounded-full p-2 w-8 h-8 flex items-center justify-center">
 
-        <Twitter size={18} className="cursor-pointer hover:text-primary transition" />
+        <Linkedin size={18} className="cursor-pointer hover:text-primary transition" />
         </div >
         <div className="bg-primary text-white rounded-full p-2 w-8 h-8 flex items-center justify-center">
         <Instagram size={18} className="cursor-pointer hover:text-primary transition" />

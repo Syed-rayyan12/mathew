@@ -48,13 +48,13 @@ export default function SignInPage() {
                   <Building2 className="w-12 h-12 text-secondary group-hover:text-white transition-colors duration-300" />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-3">
-                  Group Login
+                  Nursery / Group Login
                 </h2>
                 <p className="text-gray-600 mb-6">
-                  Manage your nursery profile, respond to reviews, and update your information
+                  Manage your Nursery / Group profile, respond to reviews, and update your information
                 </p>
                 <div className="inline-flex items-center text-secondary font-semibold group-hover:gap-3 gap-2 transition-all">
-                  Continue as Nursery
+                  Continue as Nursery / Group
                   <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>

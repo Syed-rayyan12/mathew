@@ -6,8 +6,11 @@ import { Input } from '../ui/input'
 import { Textarea } from '../ui/textarea'
 import { Button } from '../ui/button'
 import { Label } from '../ui/label'
-import { Upload, X, Plus, Trash2, Star } from 'lucide-react'
+import { Upload, X, Plus, Trash2, Star, UserPlus } from 'lucide-react'
 import { toast } from 'sonner'
+import WeeklyTimings, { getDefaultTimings, parseTimingsFromOpeningHours, formatTimingsForAPI } from './weekly-timings'
+import type { DayTiming } from './weekly-timings'
+import { teamMemberService } from '@/lib/api/nursery'
 
 const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
     const router = useRouter();
@@ -19,6 +22,13 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
     const [videoPreview, setVideoPreview] = useState<string>('');
     const [facilities, setFacilities] = useState<string[]>(['']);
     const [nurseryId, setNurseryId] = useState<string>('');
+    const [careTypes, setCareTypes] = useState<string[]>([]);
+    const [services, setServices] = useState<string[]>([]);
+    const [weeklyTimings, setWeeklyTimings] = useState<DayTiming[]>(getDefaultTimings());
+    const [teamMembers, setTeamMembers] = useState<any[]>([]);
+    const [newTeamMember, setNewTeamMember] = useState({ name: '', experience: '', qualifications: '', crbChecked: false, image: '' });
+    const [editingMember, setEditingMember] = useState<any | null>(null);
+    const [teamLoading, setTeamLoading] = useState(false);
     const [formData, setFormData] = useState({
         nurseryName: '',
         ageGroup: '',
@@ -26,12 +36,11 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
         phone: '',
         address: '',
         city: '',
+        town: '',
         postcode: '',
         aboutUs: '',
         philosophy: '',
         videoUrl: '',
-        openingTime: '',
-        closingTime: '',
         fees0to2Full: '',
         fees0to2Part: '',
         fees2to3Full: '',
@@ -75,6 +84,7 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
                     // Store nursery ID for updates (only in edit mode)
                     if (!nurserySlug && nursery.id) {
                         (window as any).__currentNurseryId = nursery.id;
+                        setNurseryId(nursery.id);
                     }
 
                     setFormData({
@@ -84,12 +94,11 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
                         phone: nursery.phone || '',
                         address: nursery.address || '',
                         city: nursery.city || '',
+                        town: nursery.town || '',
                         postcode: nursery.postcode || '',
                         aboutUs: nursery.aboutUs || nursery.description || '',
                         philosophy: nursery.philosophy || '',
                         videoUrl: nursery.videoUrl || '',
-                        openingTime: nursery.openingHours?.openingTime || '',
-                        closingTime: nursery.openingHours?.closingTime || '',
                         fees0to2Full: nursery.fees?.['0-2 years']?.fullTime || '',
                         fees0to2Part: nursery.fees?.['0-2 years']?.partTime || '',
                         fees2to3Full: nursery.fees?.['2-3 years']?.fullTime || '',
@@ -99,7 +108,27 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
                     });
 
                     if (nursery.facilities && Array.isArray(nursery.facilities)) {
-                        setFacilities(nursery.facilities.length > 0 ? nursery.facilities : ['']);
+                        const careTypeOptions = [
+                            'Daycare', 'Holiday Club', 'Key Worker Childcare', 'Pre-School',
+                            '2 Year Old Funded Childcare', '9 Months Old Funded Childcare',
+                            'After School Care', '3 and 4 Year Old Funded Childcare', 'Before School Care'
+                        ];
+                        const serviceOptions = ['Ofsted Registered', 'Tax-Free Childcare', 'Available Space'];
+                        const allFacs = nursery.facilities as string[];
+                        setCareTypes(allFacs.filter((f: string) => careTypeOptions.includes(f)));
+                        setServices(allFacs.filter((f: string) => serviceOptions.includes(f)));
+                        const otherFacs = allFacs.filter((f: string) => !careTypeOptions.includes(f) && !serviceOptions.includes(f));
+                        setFacilities(otherFacs.length > 0 ? otherFacs : ['']);
+                    }
+
+                    if (nursery.openingHours && typeof nursery.openingHours === 'object') {
+                        setWeeklyTimings(parseTimingsFromOpeningHours(nursery.openingHours));
+                    }
+
+                    if (!nurserySlug && nursery.id) {
+                        teamMemberService.getAll(nursery.id)
+                            .then(res => { if (res.success) setTeamMembers((res as any).data || []); })
+                            .catch(() => {});
                     }
 
                     if (nursery.cardImage) {
@@ -171,6 +200,50 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
         setFacilities(newFacilities);
     };
 
+    const toggleCareType = (ct: string) =>
+        setCareTypes(prev => prev.includes(ct) ? prev.filter(c => c !== ct) : [...prev, ct]);
+
+    const toggleService = (s: string) =>
+        setServices(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
+
+    const handleAddTeamMember = async () => {
+        if (!newTeamMember.name.trim()) { toast.error('Name is required'); return; }
+        setTeamLoading(true);
+        try {
+            const res = await teamMemberService.add(nurseryId, newTeamMember);
+            if (res.success) {
+                setTeamMembers(prev => [...prev, (res as any).data]);
+                setNewTeamMember({ name: '', experience: '', qualifications: '', crbChecked: false, image: '' });
+                toast.success('Team member added');
+            }
+        } catch { toast.error('Failed to add team member'); }
+        finally { setTeamLoading(false); }
+    };
+
+    const handleUpdateTeamMember = async () => {
+        if (!editingMember?.name.trim()) return;
+        setTeamLoading(true);
+        try {
+            const res = await teamMemberService.update(nurseryId, editingMember.id, editingMember);
+            if (res.success) {
+                setTeamMembers(prev => prev.map(m => m.id === editingMember.id ? (res as any).data : m));
+                setEditingMember(null);
+                toast.success('Team member updated');
+            }
+        } catch { toast.error('Failed to update team member'); }
+        finally { setTeamLoading(false); }
+    };
+
+    const handleDeleteTeamMember = async (memberId: string) => {
+        setTeamLoading(true);
+        try {
+            await teamMemberService.remove(nurseryId, memberId);
+            setTeamMembers(prev => prev.filter(m => m.id !== memberId));
+            toast.success('Team member removed');
+        } catch { toast.error('Failed to remove team member'); }
+        finally { setTeamLoading(false); }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
@@ -203,12 +276,12 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
                 email: formData.email,
                 address: formData.address,
                 city: formData.city,
+                town: formData.town || undefined,
                 postcode: formData.postcode,
                 ageRange: formData.ageGroup,
-                facilities: facilities.filter(f => f.trim() !== ''),
+                facilities: [...careTypes, ...services, ...facilities.filter(f => f.trim() !== '')],
                 fees: feesData,
-                openingTime: formData.openingTime,
-                closingTime: formData.closingTime,
+                openingHours: formatTimingsForAPI(weeklyTimings),
                 aboutUs: formData.aboutUs,
                 philosophy: formData.philosophy,
                 cardImage: cardImagePreview,
@@ -364,6 +437,22 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
                                     )}
                                 </div>
                             </div>
+                            {careTypes.length > 0 && (
+                                <div>
+                                    <Label className="block mb-2">Care Types</Label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {careTypes.map(ct => <span key={ct} className="px-2 py-1 bg-secondary/10 text-secondary text-xs rounded-full">{ct}</span>)}
+                                    </div>
+                                </div>
+                            )}
+                            {services.length > 0 && (
+                                <div>
+                                    <Label className="block mb-2">Services</Label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {services.map(s => <span key={s} className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">{s}</span>)}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -418,9 +507,9 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
                         </div>
                     </div>
 
-                    {/* Location & Timing */}
+                    {/* Location */}
                     <div>
-                        <h3 className="text-2xl font-medium mb-4 text-foreground">Location & Opening Hours</h3>
+                        <h3 className="text-2xl font-medium mb-4 text-foreground">Location</h3>
                         <div className="space-y-4">
                             <div>
                                 <Label className="block mb-2">Address</Label>
@@ -432,22 +521,31 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
                                     <p className="text-foreground font-medium">{formData.city || 'Not provided'}</p>
                                 </div>
                                 <div>
-                                    <Label className="block mb-2">Postcode</Label>
-                                    <p className="text-foreground font-medium">{formData.postcode || 'Not provided'}</p>
+                                    <Label className="block mb-2">Town</Label>
+                                    <p className="text-foreground font-medium">{formData.town || 'Not provided'}</p>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <Label className="block mb-2">Opening Time</Label>
-                                    <p className="text-foreground font-medium">{formData.openingTime || 'Not specified'}</p>
-                                </div>
-                                <div>
-                                    <Label className="block mb-2">Closing Time</Label>
-                                    <p className="text-foreground font-medium">{formData.closingTime || 'Not specified'}</p>
-                                </div>
+                            <div>
+                                <Label className="block mb-2">Postcode</Label>
+                                <p className="text-foreground font-medium">{formData.postcode || 'Not provided'}</p>
                             </div>
                         </div>
                     </div>
+                    {teamMembers.length > 0 && (
+                        <div>
+                            <h3 className="text-2xl font-medium mb-4 text-foreground">Meet the Team</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {teamMembers.map(member => (
+                                    <div key={member.id} className="bg-gray-50 rounded-lg p-4 border">
+                                        <p className="font-medium">{member.name}</p>
+                                        {member.experience && <p className="text-sm text-gray-600">{member.experience}</p>}
+                                        {member.qualifications && <p className="text-sm text-gray-600">{member.qualifications}</p>}
+                                        {member.crbChecked && <p className="text-xs text-green-600 mt-1">✓ CRB/DBS Verified</p>}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </Card>
             ) : (
                 <form onSubmit={handleSubmit}>
@@ -508,6 +606,38 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
                                     disabled={isLoading}
                                 />
                             </div>
+                        </div>
+                    </div>
+
+                    {/* Care Types */}
+                    <div>
+                        <h3 className="text-2xl font-medium mb-4 text-foreground">Care Types</h3>
+                        <p className="text-sm text-muted-foreground mb-4">Select all care types that your nursery provides</p>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            {[
+                                'Daycare', 'Holiday Club', 'Key Worker Childcare', 'Pre-School',
+                                '2 Year Old Funded Childcare', '9 Months Old Funded Childcare',
+                                'After School Care', '3 and 4 Year Old Funded Childcare', 'Before School Care'
+                            ].map((ct) => (
+                                <label key={ct} className="flex items-center gap-2 cursor-pointer p-3 border rounded-lg hover:bg-gray-50">
+                                    <input type="checkbox" checked={careTypes.includes(ct)} onChange={() => toggleCareType(ct)} className="w-4 h-4" />
+                                    <span className="text-sm">{ct}</span>
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Services */}
+                    <div>
+                        <h3 className="text-2xl font-medium mb-4 text-foreground">Services</h3>
+                        <p className="text-sm text-muted-foreground mb-4">Select all services that apply to your nursery</p>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            {['Ofsted Registered', 'Tax-Free Childcare', 'Available Space'].map((s) => (
+                                <label key={s} className="flex items-center gap-2 cursor-pointer p-3 border rounded-lg hover:bg-gray-50">
+                                    <input type="checkbox" checked={services.includes(s)} onChange={() => toggleService(s)} className="w-4 h-4" />
+                                    <span className="text-sm">{s}</span>
+                                </label>
+                            ))}
                         </div>
                     </div>
 
@@ -859,19 +989,18 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
                         </div>
                     </div>
 
-                    {/* Location & Timing */}
+                    {/* Location & Opening Hours */}
                     <div>
-                        <h3 className="text-2xl font-medium mb-4 text-foreground">Location & Opening Hours</h3>
+                        <h3 className="text-2xl font-medium mb-4 text-foreground">Location</h3>
                         <div className="space-y-4">
                             <div>
-                                <Label htmlFor="address" className="block mb-2">Address *</Label>
+                                <Label htmlFor="address" className="block mb-2">Address</Label>
                                 <Input
                                     id="address"
                                     name="address"
                                     value={formData.address}
                                     onChange={handleInputChange}
                                     placeholder="123 High Street"
-                                    required
                                     disabled={isLoading}
                                 />
                             </div>
@@ -889,44 +1018,144 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
                                     />
                                 </div>
                                 <div>
-                                    <Label htmlFor="postcode" className="block mb-2">Postcode *</Label>
+                                    <Label htmlFor="town" className="block mb-2">Town</Label>
                                     <Input
-                                        id="postcode"
-                                        name="postcode"
-                                        value={formData.postcode}
+                                        id="town"
+                                        name="town"
+                                        value={formData.town}
                                         onChange={handleInputChange}
-                                        placeholder="SW1A 1AA"
-                                        required
+                                        placeholder="e.g. Hackney"
                                         disabled={isLoading}
                                     />
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <Label htmlFor="openingTime" className="block mb-2">Opening Time *</Label>
-                                    <Input
-                                        id="openingTime"
-                                        name="openingTime"
-                                        type="time"
-                                        value={formData.openingTime}
-                                        onChange={handleInputChange}
-                                        required
-                                        disabled={isLoading}
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="closingTime" className="block mb-2">Closing Time *</Label>
-                                    <Input
-                                        id="closingTime"
-                                        name="closingTime"
-                                        type="time"
-                                        value={formData.closingTime}
-                                        onChange={handleInputChange}
-                                        required
-                                        disabled={isLoading}
-                                    />
-                                </div>
+                            <div>
+                                <Label htmlFor="postcode" className="block mb-2">Postcode</Label>
+                                <Input
+                                    id="postcode"
+                                    name="postcode"
+                                    value={formData.postcode}
+                                    onChange={handleInputChange}
+                                    placeholder="SW1A 1AA"
+                                    disabled={isLoading}
+                                />
                             </div>
+                        </div>
+                    </div>
+
+                    {/* Weekly Timings */}
+                    <WeeklyTimings timings={weeklyTimings} onChange={setWeeklyTimings} />
+
+                    {/* Team Members */}
+                    <div>
+                        <h3 className="text-2xl font-medium mb-4 text-foreground">Meet the Team</h3>
+                        {teamMembers.length > 0 && (
+                            <div className="space-y-3 mb-4">
+                                {teamMembers.map((member) => (
+                                    <div key={member.id} className="border rounded-lg p-3 bg-gray-50">
+                                        {editingMember?.id === member.id ? (
+                                            <div className="space-y-2">
+                                                <Input value={editingMember.name} onChange={(e) => setEditingMember({ ...editingMember, name: e.target.value })} placeholder="Name" />
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <Input value={editingMember.experience || ''} onChange={(e) => setEditingMember({ ...editingMember, experience: e.target.value })} placeholder="Experience" />
+                                                    <Input value={editingMember.qualifications || ''} onChange={(e) => setEditingMember({ ...editingMember, qualifications: e.target.value })} placeholder="Qualifications" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm mb-1">Photo (optional)</label>
+                                                    {editingMember.image ? (
+                                                        <div className="flex items-center gap-3">
+                                                            <img src={editingMember.image} alt="preview" className="w-10 h-10 rounded-full object-cover border" />
+                                                            <button type="button" onClick={() => setEditingMember({ ...editingMember, image: '' })} className="text-xs text-red-500 underline">Remove</button>
+                                                        </div>
+                                                    ) : (
+                                                        <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+                                                            <UserPlus size={14} />
+                                                            Upload photo
+                                                            <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                                                                const file = e.target.files?.[0];
+                                                                if (file) {
+                                                                    const reader = new FileReader();
+                                                                    reader.onloadend = () => setEditingMember({ ...editingMember, image: reader.result as string });
+                                                                    reader.readAsDataURL(file);
+                                                                }
+                                                            }} />
+                                                        </label>
+                                                    )}
+                                                </div>
+                                                <label className="flex items-center gap-2 cursor-pointer">
+                                                    <input type="checkbox" checked={editingMember.crbChecked} onChange={(e) => setEditingMember({ ...editingMember, crbChecked: e.target.checked })} className="w-4 h-4" />
+                                                    <span className="text-sm">CRB / DBS Checked</span>
+                                                </label>
+                                                <div className="flex gap-2">
+                                                    <Button type="button" size="sm" onClick={handleUpdateTeamMember} disabled={teamLoading}>Save</Button>
+                                                    <Button type="button" size="sm" variant="outline" onClick={() => setEditingMember(null)}>Cancel</Button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex items-start gap-3">
+                                                    {member.image ? (
+                                                        <img src={member.image} alt={member.name} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+                                                    ) : (
+                                                        <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
+                                                            <span className="text-white text-sm font-medium">{member.name.charAt(0).toUpperCase()}</span>
+                                                        </div>
+                                                    )}
+                                                    <div>
+                                                    <p className="font-medium">{member.name}</p>
+                                                    {member.experience && <p className="text-sm text-gray-600">{member.experience}</p>}
+                                                    {member.qualifications && <p className="text-sm text-gray-600">{member.qualifications}</p>}
+                                                    {member.crbChecked && <p className="text-xs text-green-600 mt-1">✓ CRB/DBS Verified</p>}
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2 ml-2">
+                                                    <Button type="button" size="sm" variant="outline" onClick={() => setEditingMember({ ...member })}>Edit</Button>
+                                                    <Button type="button" size="sm" variant="destructive" onClick={() => handleDeleteTeamMember(member.id)} disabled={teamLoading}>
+                                                        <Trash2 className="h-3 w-3" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        <div className="border rounded-lg p-4 space-y-3 bg-blue-50/50">
+                            <p className="text-sm font-medium text-gray-700">Add New Team Member</p>
+                            <div className="grid grid-cols-2 gap-3">
+                                <Input value={newTeamMember.name} onChange={(e) => setNewTeamMember({ ...newTeamMember, name: e.target.value })} placeholder="Name *" />
+                                <Input value={newTeamMember.experience} onChange={(e) => setNewTeamMember({ ...newTeamMember, experience: e.target.value })} placeholder="Experience" />
+                            </div>
+                            <Input value={newTeamMember.qualifications} onChange={(e) => setNewTeamMember({ ...newTeamMember, qualifications: e.target.value })} placeholder="Qualifications" />
+                            <div>
+                                <label className="block text-sm mb-1">Photo (optional)</label>
+                                {newTeamMember.image ? (
+                                    <div className="flex items-center gap-3">
+                                        <img src={newTeamMember.image} alt="preview" className="w-10 h-10 rounded-full object-cover border" />
+                                        <button type="button" onClick={() => setNewTeamMember({ ...newTeamMember, image: '' })} className="text-xs text-red-500 underline">Remove</button>
+                                    </div>
+                                ) : (
+                                    <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+                                        <UserPlus size={14} />
+                                        Upload photo
+                                        <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                const reader = new FileReader();
+                                                reader.onloadend = () => setNewTeamMember({ ...newTeamMember, image: reader.result as string });
+                                                reader.readAsDataURL(file);
+                                            }
+                                        }} />
+                                    </label>
+                                )}
+                            </div>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" checked={newTeamMember.crbChecked} onChange={(e) => setNewTeamMember({ ...newTeamMember, crbChecked: e.target.checked })} className="w-4 h-4" />
+                                <span className="text-sm">CRB / DBS Checked</span>
+                            </label>
+                            <Button type="button" variant="outline" onClick={handleAddTeamMember} disabled={teamLoading || !nurseryId} className="w-full">
+                                <UserPlus className="h-4 w-4 mr-2" /> Add Team Member
+                            </Button>
                         </div>
                     </div>
 

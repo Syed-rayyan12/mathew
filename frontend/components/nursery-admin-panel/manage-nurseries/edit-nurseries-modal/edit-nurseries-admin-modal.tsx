@@ -37,7 +37,7 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [videoPreview, setVideoPreview] = useState<string>("");
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
-  const [newMember, setNewMember] = useState({ name: '', experience: '', qualifications: '', crbChecked: false });
+  const [newMember, setNewMember] = useState({ name: '', experience: '', qualifications: '', crbChecked: false, image: '' });
   const [editingMember, setEditingMember] = useState<any | null>(null);
   const [teamLoading, setTeamLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -267,7 +267,7 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
       const res = await getTeamService().add(nursery.id, newMember);
       if (res.success) {
         setTeamMembers(prev => [...prev, res.data]);
-        setNewMember({ name: '', experience: '', qualifications: '', crbChecked: false });
+        setNewMember({ name: '', experience: '', qualifications: '', crbChecked: false, image: '' });
         toast.success('Team member added');
       }
     } catch {
@@ -782,6 +782,28 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
                           onChange={(e) => setEditingMember({ ...editingMember, qualifications: e.target.value })}
                           placeholder="Qualifications"
                         />
+                        <div>
+                          <label className="block text-sm mb-1">Photo (optional)</label>
+                          {editingMember.image ? (
+                            <div className="flex items-center gap-3">
+                              <img src={editingMember.image} alt="preview" className="w-10 h-10 rounded-full object-cover border" />
+                              <button type="button" onClick={() => setEditingMember({ ...editingMember, image: '' })} className="text-xs text-red-500 underline">Remove</button>
+                            </div>
+                          ) : (
+                            <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+                              <Upload size={14} />
+                              Upload photo
+                              <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onloadend = () => setEditingMember({ ...editingMember, image: reader.result as string });
+                                  reader.readAsDataURL(file);
+                                }
+                              }} />
+                            </label>
+                          )}
+                        </div>
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input
                             type="checkbox"
@@ -798,11 +820,20 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
                       </div>
                     ) : (
                       <div className="flex items-start justify-between">
-                        <div>
+                        <div className="flex items-start gap-3">
+                          {member.image ? (
+                            <img src={member.image} alt={member.name} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
+                              <span className="text-white text-sm font-medium">{member.name.charAt(0).toUpperCase()}</span>
+                            </div>
+                          )}
+                          <div>
                           <p className="font-medium">{member.name}</p>
                           {member.experience && <p className="text-sm text-gray-600">{member.experience}</p>}
                           {member.qualifications && <p className="text-sm text-gray-600">{member.qualifications}</p>}
                           {member.crbChecked && <p className="text-xs text-green-600 mt-1">✓ CRB/DBS Verified</p>}
+                          </div>
                         </div>
                         <div className="flex gap-2 ml-2">
                           <Button size="sm" variant="outline" onClick={() => setEditingMember({ ...member })}>Edit</Button>
@@ -837,6 +868,28 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
                 onChange={(e) => setNewMember({ ...newMember, qualifications: e.target.value })}
                 placeholder="Qualifications"
               />
+              <div>
+                <label className="block text-sm mb-1">Photo (optional)</label>
+                {newMember.image ? (
+                  <div className="flex items-center gap-3">
+                    <img src={newMember.image} alt="preview" className="w-10 h-10 rounded-full object-cover border" />
+                    <button type="button" onClick={() => setNewMember({ ...newMember, image: '' })} className="text-xs text-red-500 underline">Remove</button>
+                  </div>
+                ) : (
+                  <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+                    <Upload size={14} />
+                    Upload photo
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => setNewMember({ ...newMember, image: reader.result as string });
+                        reader.readAsDataURL(file);
+                      }
+                    }} />
+                  </label>
+                )}
+              </div>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"

@@ -77,21 +77,19 @@ const nurseryGroup = () => {
                                 key={group.id}
                                 className="relative bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 h-80"
                             >
-
                                 <Link href={`/nursery-group/${group.slug}`}>
-                                <img src={group.cardImage || group.logo || '/images/nursery-1.png'} alt={group.name} className="w-full h-full object-cover rounded-xl" />
+                                    <img src={group.cardImage || group.logo || '/images/nursery-1.png'} alt={group.name} className="w-full h-full object-cover rounded-xl" />
                                 </Link>
-                                <div className="absolute top-60 left-0 right-0 px-4 py-6 mx-4 shadow-lg bg-white rounded-lg">
+                                <div className="absolute bottom-4 left-4 right-4 px-4 py-6 shadow-lg bg-white rounded-lg">
                                     <h3 className="font-heading text-[24px] font-medium text-[#044A55]">{group.name}</h3>
                                     {group.description && (
                                         <p className="text-sm text-gray-600 mt-2 line-clamp-2">{group.description}</p>
                                     )}
-               
-                                <Link href={`/nursery-group/${group.slug}`}>
-                                    <div className='mt-4 flex items-center gap-2 pt-2'>
-                                        <span className='text-secondary font-heading text-[20px] uppercase'>VIEW GROUP</span>
-                                        <ArrowRight className='text-secondary size-5' />
-                                    </div>
+                                    <Link href={`/nursery-group/${group.slug}`}>
+                                        <div className='mt-4 flex items-center gap-2 pt-2'>
+                                            <span className='text-secondary font-heading text-[20px] uppercase'>VIEW GROUP</span>
+                                            <ArrowRight className='text-secondary size-5' />
+                                        </div>
                                     </Link>
                                 </div>
                             </div>

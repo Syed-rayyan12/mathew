@@ -44,8 +44,8 @@ export default function AddNurseryModal({
   const [services, setServices] = useState<string[]>([]);
   const [facilities, setFacilities] = useState<string[]>(['']);
   const [weeklyTimings, setWeeklyTimings] = useState(getDefaultTimings());
-  const [teamMembers, setTeamMembers] = useState<{ name: string; experience: string; qualifications: string; crbChecked: boolean }[]>([]);
-  const [newMember, setNewMember] = useState({ name: '', experience: '', qualifications: '', crbChecked: false });
+  const [teamMembers, setTeamMembers] = useState<{ name: string; experience: string; qualifications: string; crbChecked: boolean; image?: string }[]>([]);
+  const [newMember, setNewMember] = useState({ name: '', experience: '', qualifications: '', crbChecked: false, image: '' });
   const [formData, setFormData] = useState({
     nurseryName: "",
     ageGroup: "",
@@ -213,7 +213,7 @@ export default function AddNurseryModal({
         setFacilities(['']);
         setWeeklyTimings(getDefaultTimings());
         setTeamMembers([]);
-        setNewMember({ name: '', experience: '', qualifications: '', crbChecked: false });
+        setNewMember({ name: '', experience: '', qualifications: '', crbChecked: false, image: '' });
         
         onOpenChange(false);
         if (onSuccess) {
@@ -769,11 +769,20 @@ export default function AddNurseryModal({
               <div className="space-y-2 mb-4">
                 {teamMembers.map((m, i) => (
                   <div key={i} className="flex items-start justify-between bg-gray-50 rounded-lg p-3 border">
-                    <div className="space-y-0.5">
-                      <p className="font-medium text-sm">{m.name}</p>
-                      {m.experience && <p className="text-xs text-gray-500">Experience: {m.experience}</p>}
-                      {m.qualifications && <p className="text-xs text-gray-500">Qualifications: {m.qualifications}</p>}
-                      {m.crbChecked && <p className="text-xs text-green-600 font-medium">✓ DBS / CRB Checked</p>}
+                    <div className="flex items-start gap-3">
+                      {m.image ? (
+                        <img src={m.image} alt={m.name} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
+                          <span className="text-white text-sm font-medium">{m.name.charAt(0).toUpperCase()}</span>
+                        </div>
+                      )}
+                      <div className="space-y-0.5">
+                        <p className="font-medium text-sm">{m.name}</p>
+                        {m.experience && <p className="text-xs text-gray-500">Experience: {m.experience}</p>}
+                        {m.qualifications && <p className="text-xs text-gray-500">Qualifications: {m.qualifications}</p>}
+                        {m.crbChecked && <p className="text-xs text-green-600 font-medium">✓ DBS / CRB Checked</p>}
+                      </div>
                     </div>
                     <Button
                       type="button"
@@ -815,6 +824,39 @@ export default function AddNurseryModal({
                     placeholder="e.g. Level 3 CACHE Diploma"
                   />
                 </div>
+                <div className="col-span-2">
+                  <Label className="block mb-1">Photo (optional)</Label>
+                  {newMember.image ? (
+                    <div className="flex items-center gap-3">
+                      <img src={newMember.image} alt="preview" className="w-12 h-12 rounded-full object-cover border" />
+                      <button
+                        type="button"
+                        onClick={() => setNewMember(p => ({ ...p, image: '' }))}
+                        className="text-xs text-red-500 underline"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+                      <Upload size={14} />
+                      Upload photo
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => setNewMember(p => ({ ...p, image: reader.result as string }));
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
               </div>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -832,7 +874,7 @@ export default function AddNurseryModal({
                 onClick={() => {
                   if (!newMember.name.trim()) { toast.error('Team member name is required'); return; }
                   setTeamMembers(prev => [...prev, { ...newMember }]);
-                  setNewMember({ name: '', experience: '', qualifications: '', crbChecked: false });
+                  setNewMember({ name: '', experience: '', qualifications: '', crbChecked: false, image: '' });
                 }}
               >
                 <Plus className="h-4 w-4 mr-2" /> Add Team Member

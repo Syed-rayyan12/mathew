@@ -272,6 +272,7 @@ model TeamMember {
   experience     String?
   qualifications String?
   crbChecked     Boolean  @default(false)
+  image          String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   nurseryId      String   @db.VarChar(15)

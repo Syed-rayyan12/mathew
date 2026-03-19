@@ -469,11 +469,19 @@ export default function NurseryDetailsPage() {
                     {nursery.teamMembers.map((member: any) => (
                       <div key={member.id} className="bg-[#F9F9F9] rounded-[6px] p-4 shadow-sm border border-gray-100">
                         <div className="flex items-center gap-3 mb-3">
-                          <div className="flex justify-center items-center bg-secondary rounded-full w-12 h-12 flex-shrink-0">
-                            <span className="text-lg text-white font-heading font-medium">
-                              {member.name.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
+                          {member.image ? (
+                            <img
+                              src={member.image}
+                              alt={member.name}
+                              className="w-12 h-12 rounded-full object-cover flex-shrink-0 border border-gray-200"
+                            />
+                          ) : (
+                            <div className="flex justify-center items-center bg-secondary rounded-full w-12 h-12 flex-shrink-0">
+                              <span className="text-lg text-white font-heading font-medium">
+                                {member.name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                          )}
                           <div>
                             <h3 className="font-medium text-lg text-[#044A55] font-heading">{member.name}</h3>
                           </div>

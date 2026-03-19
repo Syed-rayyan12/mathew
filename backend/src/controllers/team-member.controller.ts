@@ -55,7 +55,7 @@ export const addTeamMember = async (
   try {
     const { nurseryId } = req.params;
     const userId = req.user?.userId;
-    const { name, experience, qualifications, crbChecked } = req.body;
+    const { name, experience, qualifications, crbChecked, image } = req.body;
 
     const nursery = await prisma.nursery.findFirst({
       where: { id: nurseryId, ownerId: userId },
@@ -69,6 +69,7 @@ export const addTeamMember = async (
         experience: experience || null,
         qualifications: qualifications || null,
         crbChecked: !!crbChecked,
+        image: image || null,
         nurseryId,
       },
     });
@@ -88,7 +89,7 @@ export const updateTeamMember = async (
   try {
     const { nurseryId, memberId } = req.params;
     const userId = req.user?.userId;
-    const { name, experience, qualifications, crbChecked } = req.body;
+    const { name, experience, qualifications, crbChecked, image } = req.body;
 
     const nursery = await prisma.nursery.findFirst({
       where: { id: nurseryId, ownerId: userId },
@@ -102,7 +103,7 @@ export const updateTeamMember = async (
 
     const updated = await (prisma as any).teamMember.update({
       where: { id: memberId },
-      data: { name, experience, qualifications, crbChecked: !!crbChecked },
+      data: { name, experience, qualifications, crbChecked: !!crbChecked, image: image !== undefined ? image : member.image },
     });
 
     res.json({ success: true, data: updated });

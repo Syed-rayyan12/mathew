@@ -389,3 +389,17 @@ export const adminService = {
     }>(`/admin/analytics/monthly-reviews?months=${months}`, true);
   },
 };
+
+export const adminTeamMemberService = {
+  getAll: async (nurseryId: string) =>
+    adminApiClient.get<{ success: boolean; data: any[] }>(`/nursery-dashboard/${nurseryId}/team`, true),
+
+  add: async (nurseryId: string, data: { name: string; experience?: string; qualifications?: string; crbChecked: boolean; image?: string }) =>
+    adminApiClient.post<{ success: boolean; data: any }>(`/nursery-dashboard/${nurseryId}/team`, data, true),
+
+  update: async (nurseryId: string, memberId: string, data: { name: string; experience?: string; qualifications?: string; crbChecked: boolean; image?: string }) =>
+    adminApiClient.put<{ success: boolean; data: any }>(`/nursery-dashboard/${nurseryId}/team/${memberId}`, data, true),
+
+  remove: async (nurseryId: string, memberId: string) =>
+    adminApiClient.delete<{ success: boolean }>(`/nursery-dashboard/${nurseryId}/team/${memberId}`, true),
+};

@@ -31,7 +31,7 @@ export const getTeamMembers = async (
     const userId = req.user?.userId;
 
     const nursery = await prisma.nursery.findFirst({
-      where: { id: nurseryId, ownerId: userId },
+      where: req.user?.role === 'ADMIN' ? { id: nurseryId } : { id: nurseryId, ownerId: userId },
     });
     if (!nursery) throw new UnauthorizedError('Not authorised');
 
@@ -58,7 +58,7 @@ export const addTeamMember = async (
     const { name, experience, qualifications, crbChecked, image } = req.body;
 
     const nursery = await prisma.nursery.findFirst({
-      where: { id: nurseryId, ownerId: userId },
+      where: req.user?.role === 'ADMIN' ? { id: nurseryId } : { id: nurseryId, ownerId: userId },
     });
     if (!nursery) throw new UnauthorizedError('Not authorised');
 
@@ -92,7 +92,7 @@ export const updateTeamMember = async (
     const { name, experience, qualifications, crbChecked, image } = req.body;
 
     const nursery = await prisma.nursery.findFirst({
-      where: { id: nurseryId, ownerId: userId },
+      where: req.user?.role === 'ADMIN' ? { id: nurseryId } : { id: nurseryId, ownerId: userId },
     });
     if (!nursery) throw new UnauthorizedError('Not authorised');
 
@@ -123,7 +123,7 @@ export const deleteTeamMember = async (
     const userId = req.user?.userId;
 
     const nursery = await prisma.nursery.findFirst({
-      where: { id: nurseryId, ownerId: userId },
+      where: req.user?.role === 'ADMIN' ? { id: nurseryId } : { id: nurseryId, ownerId: userId },
     });
     if (!nursery) throw new UnauthorizedError('Not authorised');
 

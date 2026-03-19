@@ -12,11 +12,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, X, Upload, ImageIcon } from "lucide-react";
+import { Plus, X, Upload, ImageIcon, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
-import { adminService } from "@/lib/api/admin";
+import { adminService, adminTeamMemberService } from "@/lib/api/admin";
+import { teamMemberService } from "@/lib/api/nursery";
 import WeeklyTimings, { getDefaultTimings, parseTimingsFromOpeningHours, formatTimingsForAPI } from "@/components/sharedComponents/weekly-timings";
 import type { DayTiming } from "@/components/sharedComponents/weekly-timings";
+
+function getTeamService() {
+  if (typeof window !== 'undefined' && localStorage.getItem('adminAccessToken')) {
+    return adminTeamMemberService;
+  }
+  return teamMemberService;
+}
 
 export default function EditNurseryAdminModal({ open, nursery, onClose, onSuccess }: any) {
   const [loading, setLoading] = useState(false);
@@ -28,6 +36,10 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
   const [cardImagePreview, setCardImagePreview] = useState<string>("");
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [videoPreview, setVideoPreview] = useState<string>("");
+  const [teamMembers, setTeamMembers] = useState<any[]>([]);
+  const [newMember, setNewMember] = useState({ name: '', experience: '', qualifications: '', crbChecked: false });
+  const [editingMember, setEditingMember] = useState<any | null>(null);
+  const [teamLoading, setTeamLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     ageGroup: "",
@@ -118,6 +130,11 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
       setCareTypes(extractedCareTypes);
       setServices(extractedServices);
       setFacilities(extractedFacilities.length > 0 ? extractedFacilities : ['']);
+
+      // Load team members
+      getTeamService().getAll(nursery.id)
+        .then((tmRes) => { if (tmRes.success) setTeamMembers((tmRes as any).data || []); })
+        .catch(() => setTeamMembers([]));
     }
   }, [nursery, open]);
 
@@ -238,6 +255,56 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
   const removeVideo = () => {
     setFormData({ ...formData, videoUrl: "" });
     setVideoPreview("");
+  };
+
+  const handleAddTeamMember = async () => {
+    if (!newMember.name.trim()) {
+      toast.error('Member name is required');
+      return;
+    }
+    setTeamLoading(true);
+    try {
+      const res = await getTeamService().add(nursery.id, newMember);
+      if (res.success) {
+        setTeamMembers(prev => [...prev, res.data]);
+        setNewMember({ name: '', experience: '', qualifications: '', crbChecked: false });
+        toast.success('Team member added');
+      }
+    } catch {
+      toast.error('Failed to add team member');
+    } finally {
+      setTeamLoading(false);
+    }
+  };
+
+  const handleUpdateTeamMember = async () => {
+    if (!editingMember || !editingMember.name.trim()) return;
+    setTeamLoading(true);
+    try {
+      const res = await getTeamService().update(nursery.id, editingMember.id, editingMember);
+      if (res.success) {
+        setTeamMembers(prev => prev.map(m => m.id === editingMember.id ? res.data : m));
+        setEditingMember(null);
+        toast.success('Team member updated');
+      }
+    } catch {
+      toast.error('Failed to update team member');
+    } finally {
+      setTeamLoading(false);
+    }
+  };
+
+  const handleDeleteTeamMember = async (memberId: string) => {
+    setTeamLoading(true);
+    try {
+      await getTeamService().remove(nursery.id, memberId);
+      setTeamMembers(prev => prev.filter(m => m.id !== memberId));
+      toast.success('Team member removed');
+    } catch {
+      toast.error('Failed to remove team member');
+    } finally {
+      setTeamLoading(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -686,6 +753,108 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
                   />
                 </label>
               )}
+            </div>
+          </div>
+
+          {/* Team Members */}
+          <div>
+            <h3 className="font-medium text-lg mb-4">Team Members</h3>
+
+            {/* Existing members */}
+            {teamMembers.length > 0 && (
+              <div className="space-y-3 mb-4">
+                {teamMembers.map((member) => (
+                  <div key={member.id} className="border rounded-lg p-3 bg-gray-50">
+                    {editingMember?.id === member.id ? (
+                      <div className="space-y-2">
+                        <Input
+                          value={editingMember.name}
+                          onChange={(e) => setEditingMember({ ...editingMember, name: e.target.value })}
+                          placeholder="Name"
+                        />
+                        <Input
+                          value={editingMember.experience || ''}
+                          onChange={(e) => setEditingMember({ ...editingMember, experience: e.target.value })}
+                          placeholder="Experience (e.g. 5 years)"
+                        />
+                        <Input
+                          value={editingMember.qualifications || ''}
+                          onChange={(e) => setEditingMember({ ...editingMember, qualifications: e.target.value })}
+                          placeholder="Qualifications"
+                        />
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={editingMember.crbChecked}
+                            onChange={(e) => setEditingMember({ ...editingMember, crbChecked: e.target.checked })}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm">CRB / DBS Checked</span>
+                        </label>
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={handleUpdateTeamMember} disabled={teamLoading}>Save</Button>
+                          <Button size="sm" variant="outline" onClick={() => setEditingMember(null)}>Cancel</Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="font-medium">{member.name}</p>
+                          {member.experience && <p className="text-sm text-gray-600">{member.experience}</p>}
+                          {member.qualifications && <p className="text-sm text-gray-600">{member.qualifications}</p>}
+                          {member.crbChecked && <p className="text-xs text-green-600 mt-1">✓ CRB/DBS Verified</p>}
+                        </div>
+                        <div className="flex gap-2 ml-2">
+                          <Button size="sm" variant="outline" onClick={() => setEditingMember({ ...member })}>Edit</Button>
+                          <Button size="sm" variant="destructive" onClick={() => handleDeleteTeamMember(member.id)} disabled={teamLoading}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Add new member form */}
+            <div className="border rounded-lg p-4 space-y-3 bg-blue-50/50">
+              <p className="text-sm font-medium text-gray-700">Add New Team Member</p>
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  value={newMember.name}
+                  onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
+                  placeholder="Name *"
+                />
+                <Input
+                  value={newMember.experience}
+                  onChange={(e) => setNewMember({ ...newMember, experience: e.target.value })}
+                  placeholder="Experience (e.g. 5 years)"
+                />
+              </div>
+              <Input
+                value={newMember.qualifications}
+                onChange={(e) => setNewMember({ ...newMember, qualifications: e.target.value })}
+                placeholder="Qualifications"
+              />
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={newMember.crbChecked}
+                  onChange={(e) => setNewMember({ ...newMember, crbChecked: e.target.checked })}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm">CRB / DBS Checked</span>
+              </label>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleAddTeamMember}
+                disabled={teamLoading}
+                className="w-full"
+              >
+                <UserPlus className="h-4 w-4 mr-2" /> Add Team Member
+              </Button>
             </div>
           </div>
         </div>

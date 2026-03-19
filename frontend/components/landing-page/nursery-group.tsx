@@ -65,7 +65,7 @@ const nurseryGroup = () => {
                         />
                     </div>
                     </div>
-                <div className="grid grid-cols-3  max-lg:grid-cols-1 max-lg:gap-34  gap-6">
+                <div className="grid grid-cols-3  max-lg:grid-cols-1 max-lg:gap-34  gap-12">
                   
                     {loading ? (
                         <div className="col-span-3 text-center py-20">
@@ -80,7 +80,7 @@ const nurseryGroup = () => {
                                 <Link href={`/nursery-group/${group.slug}`}>
                                     <img src={group.cardImage || group.logo || '/images/nursery-1.png'} alt={group.name} className="w-full h-full object-cover rounded-xl" />
                                 </Link>
-                                <div className="absolute bottom-4 left-4 right-4 px-4 py-6 shadow-lg bg-white rounded-lg">
+                                <div className="absolute -bottom-7code updated left-4 right-4 px-4 py-6 shadow-lg bg-white rounded-lg">
                                     <h3 className="font-heading text-[24px] font-medium text-[#044A55]">{group.name}</h3>
                                     {group.description && (
                                         <p className="text-sm text-gray-600 mt-2 line-clamp-2">{group.description}</p>

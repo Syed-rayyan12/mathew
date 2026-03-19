@@ -18,6 +18,7 @@ import { adminService, adminTeamMemberService } from "@/lib/api/admin";
 import { teamMemberService } from "@/lib/api/nursery";
 import WeeklyTimings, { getDefaultTimings, parseTimingsFromOpeningHours, formatTimingsForAPI } from "@/components/sharedComponents/weekly-timings";
 import type { DayTiming } from "@/components/sharedComponents/weekly-timings";
+import { QualificationCheckboxes } from "@/components/sharedComponents/QualificationCheckboxes";
 
 function getTeamService() {
   if (typeof window !== 'undefined' && localStorage.getItem('adminAccessToken')) {
@@ -37,7 +38,7 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [videoPreview, setVideoPreview] = useState<string>("");
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
-  const [newMember, setNewMember] = useState({ name: '', experience: '', qualifications: '', crbChecked: false, image: '' });
+  const [newMember, setNewMember] = useState({ name: '', experience: '', qualifications: [] as string[], crbChecked: false, image: '' });
   const [editingMember, setEditingMember] = useState<any | null>(null);
   const [teamLoading, setTeamLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -267,7 +268,7 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
       const res = await getTeamService().add(nursery.id, newMember);
       if (res.success) {
         setTeamMembers(prev => [...prev, res.data]);
-        setNewMember({ name: '', experience: '', qualifications: '', crbChecked: false, image: '' });
+        setNewMember({ name: '', experience: '', qualifications: [] as string[], crbChecked: false, image: '' });
         toast.success('Team member added');
       }
     } catch {
@@ -777,11 +778,13 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
                           onChange={(e) => setEditingMember({ ...editingMember, experience: e.target.value })}
                           placeholder="Experience (e.g. 5 years)"
                         />
-                        <Input
-                          value={editingMember.qualifications || ''}
-                          onChange={(e) => setEditingMember({ ...editingMember, qualifications: e.target.value })}
-                          placeholder="Qualifications"
-                        />
+                        <div>
+                          <label className="block text-sm mb-1">Qualifications</label>
+                          <QualificationCheckboxes
+                            selected={Array.isArray(editingMember.qualifications) ? editingMember.qualifications : []}
+                            onChange={(val) => setEditingMember({ ...editingMember, qualifications: val })}
+                          />
+                        </div>
                         <div>
                           <label className="block text-sm mb-1">Photo (optional)</label>
                           {editingMember.image ? (
@@ -831,7 +834,9 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
                           <div>
                           <p className="font-medium">{member.name}</p>
                           {member.experience && <p className="text-sm text-gray-600">{member.experience}</p>}
-                          {member.qualifications && <p className="text-sm text-gray-600">{member.qualifications}</p>}
+                          {member.qualifications && (member.qualifications as string[]).length > 0 && (
+                            <p className="text-xs text-gray-500">{(member.qualifications as string[]).length} qualification{(member.qualifications as string[]).length > 1 ? 's' : ''}</p>
+                          )}
                           {member.crbChecked && <p className="text-xs text-green-600 mt-1">✓ CRB/DBS Verified</p>}
                           </div>
                         </div>
@@ -863,11 +868,13 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
                   placeholder="Experience (e.g. 5 years)"
                 />
               </div>
-              <Input
-                value={newMember.qualifications}
-                onChange={(e) => setNewMember({ ...newMember, qualifications: e.target.value })}
-                placeholder="Qualifications"
-              />
+              <div>
+                <label className="block text-sm mb-1">Qualifications</label>
+                <QualificationCheckboxes
+                  selected={newMember.qualifications}
+                  onChange={(val) => setNewMember({ ...newMember, qualifications: val })}
+                />
+              </div>
               <div>
                 <label className="block text-sm mb-1">Photo (optional)</label>
                 {newMember.image ? (

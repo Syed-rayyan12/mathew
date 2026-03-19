@@ -18,6 +18,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { QualificationCheckboxes } from "@/components/sharedComponents/QualificationCheckboxes";
 import { nurseryDashboardService, teamMemberService } from "@/lib/api/nursery";
 import { authService } from "@/lib/api/auth";
 import { UK_CITIES } from "@/lib/data/uk-cities";
@@ -44,8 +45,8 @@ export default function AddNurseryModal({
   const [services, setServices] = useState<string[]>([]);
   const [facilities, setFacilities] = useState<string[]>(['']);
   const [weeklyTimings, setWeeklyTimings] = useState(getDefaultTimings());
-  const [teamMembers, setTeamMembers] = useState<{ name: string; experience: string; qualifications: string; crbChecked: boolean; image?: string }[]>([]);
-  const [newMember, setNewMember] = useState({ name: '', experience: '', qualifications: '', crbChecked: false, image: '' });
+  const [teamMembers, setTeamMembers] = useState<{ name: string; experience: string; qualifications: string[]; crbChecked: boolean; image?: string }[]>([]);
+  const [newMember, setNewMember] = useState({ name: '', experience: '', qualifications: [] as string[], crbChecked: false, image: '' });
   const [formData, setFormData] = useState({
     nurseryName: "",
     ageGroup: "",
@@ -213,7 +214,7 @@ export default function AddNurseryModal({
         setFacilities(['']);
         setWeeklyTimings(getDefaultTimings());
         setTeamMembers([]);
-        setNewMember({ name: '', experience: '', qualifications: '', crbChecked: false, image: '' });
+        setNewMember({ name: '', experience: '', qualifications: [] as string[], crbChecked: false, image: '' });
         
         onOpenChange(false);
         if (onSuccess) {
@@ -780,7 +781,7 @@ export default function AddNurseryModal({
                       <div className="space-y-0.5">
                         <p className="font-medium text-sm">{m.name}</p>
                         {m.experience && <p className="text-xs text-gray-500">Experience: {m.experience}</p>}
-                        {m.qualifications && <p className="text-xs text-gray-500">Qualifications: {m.qualifications}</p>}
+                      {m.qualifications && m.qualifications.length > 0 && <p className="text-xs text-gray-500">{m.qualifications.length} qualification{m.qualifications.length > 1 ? 's' : ''} selected</p>}
                         {m.crbChecked && <p className="text-xs text-green-600 font-medium">✓ DBS / CRB Checked</p>}
                       </div>
                     </div>
@@ -818,10 +819,9 @@ export default function AddNurseryModal({
                 </div>
                 <div className="col-span-2">
                   <Label className="block mb-1">Qualifications</Label>
-                  <Input
-                    value={newMember.qualifications}
-                    onChange={e => setNewMember(p => ({ ...p, qualifications: e.target.value }))}
-                    placeholder="e.g. Level 3 CACHE Diploma"
+                  <QualificationCheckboxes
+                    selected={newMember.qualifications}
+                    onChange={(val) => setNewMember(p => ({ ...p, qualifications: val }))}
                   />
                 </div>
                 <div className="col-span-2">
@@ -874,7 +874,7 @@ export default function AddNurseryModal({
                 onClick={() => {
                   if (!newMember.name.trim()) { toast.error('Team member name is required'); return; }
                   setTeamMembers(prev => [...prev, { ...newMember }]);
-                  setNewMember({ name: '', experience: '', qualifications: '', crbChecked: false, image: '' });
+                  setNewMember({ name: '', experience: '', qualifications: [] as string[], crbChecked: false, image: '' });
                 }}
               >
                 <Plus className="h-4 w-4 mr-2" /> Add Team Member

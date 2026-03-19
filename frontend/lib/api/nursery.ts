@@ -349,10 +349,10 @@ export const teamMemberService = {
   getAll: async (nurseryId: string) =>
     nurseryApiClient.get<{ success: boolean; data: any[] }>(`/nursery-dashboard/${nurseryId}/team`, true),
 
-  add: async (nurseryId: string, data: { name: string; experience?: string; qualifications?: string; crbChecked: boolean; image?: string }) =>
+  add: async (nurseryId: string, data: { name: string; experience?: string; qualifications?: string[]; crbChecked: boolean; image?: string }) =>
     nurseryApiClient.post<{ success: boolean; data: any }>(`/nursery-dashboard/${nurseryId}/team`, data, true),
 
-  update: async (nurseryId: string, memberId: string, data: { name: string; experience?: string; qualifications?: string; crbChecked: boolean; image?: string }) =>
+  update: async (nurseryId: string, memberId: string, data: { name: string; experience?: string; qualifications?: string[]; crbChecked: boolean; image?: string }) =>
     nurseryApiClient.put<{ success: boolean; data: any }>(`/nursery-dashboard/${nurseryId}/team/${memberId}`, data, true),
 
   remove: async (nurseryId: string, memberId: string) =>

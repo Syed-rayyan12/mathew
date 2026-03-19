@@ -11,6 +11,7 @@ import { toast } from 'sonner'
 import WeeklyTimings, { getDefaultTimings, parseTimingsFromOpeningHours, formatTimingsForAPI } from './weekly-timings'
 import type { DayTiming } from './weekly-timings'
 import { teamMemberService } from '@/lib/api/nursery'
+import { QualificationCheckboxes } from '@/components/sharedComponents/QualificationCheckboxes'
 
 const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
     const router = useRouter();
@@ -26,7 +27,7 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
     const [services, setServices] = useState<string[]>([]);
     const [weeklyTimings, setWeeklyTimings] = useState<DayTiming[]>(getDefaultTimings());
     const [teamMembers, setTeamMembers] = useState<any[]>([]);
-    const [newTeamMember, setNewTeamMember] = useState({ name: '', experience: '', qualifications: '', crbChecked: false, image: '' });
+    const [newTeamMember, setNewTeamMember] = useState({ name: '', experience: '', qualifications: [] as string[], crbChecked: false, image: '' });
     const [editingMember, setEditingMember] = useState<any | null>(null);
     const [teamLoading, setTeamLoading] = useState(false);
     const [formData, setFormData] = useState({
@@ -213,7 +214,7 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
             const res = await teamMemberService.add(nurseryId, newTeamMember);
             if (res.success) {
                 setTeamMembers(prev => [...prev, (res as any).data]);
-                setNewTeamMember({ name: '', experience: '', qualifications: '', crbChecked: false, image: '' });
+                setNewTeamMember({ name: '', experience: '', qualifications: [] as string[], crbChecked: false, image: '' });
                 toast.success('Team member added');
             }
         } catch { toast.error('Failed to add team member'); }
@@ -539,7 +540,9 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
                                     <div key={member.id} className="bg-gray-50 rounded-lg p-4 border">
                                         <p className="font-medium">{member.name}</p>
                                         {member.experience && <p className="text-sm text-gray-600">{member.experience}</p>}
-                                        {member.qualifications && <p className="text-sm text-gray-600">{member.qualifications}</p>}
+                                        {member.qualifications && (member.qualifications as string[]).length > 0 && (
+                                            <p className="text-xs text-gray-500">{(member.qualifications as string[]).length} qualification{(member.qualifications as string[]).length > 1 ? 's' : ''} selected</p>
+                                        )}
                                         {member.crbChecked && <p className="text-xs text-green-600 mt-1">✓ CRB/DBS Verified</p>}
                                     </div>
                                 ))}
@@ -1058,7 +1061,13 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
                                                 <Input value={editingMember.name} onChange={(e) => setEditingMember({ ...editingMember, name: e.target.value })} placeholder="Name" />
                                                 <div className="grid grid-cols-2 gap-2">
                                                     <Input value={editingMember.experience || ''} onChange={(e) => setEditingMember({ ...editingMember, experience: e.target.value })} placeholder="Experience" />
-                                                    <Input value={editingMember.qualifications || ''} onChange={(e) => setEditingMember({ ...editingMember, qualifications: e.target.value })} placeholder="Qualifications" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm mb-1">Qualifications</label>
+                                                    <QualificationCheckboxes
+                                                        selected={Array.isArray(editingMember.qualifications) ? editingMember.qualifications : []}
+                                                        onChange={(val) => setEditingMember({ ...editingMember, qualifications: val })}
+                                                    />
                                                 </div>
                                                 <div>
                                                     <label className="block text-sm mb-1">Photo (optional)</label>
@@ -1126,7 +1135,13 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
                                 <Input value={newTeamMember.name} onChange={(e) => setNewTeamMember({ ...newTeamMember, name: e.target.value })} placeholder="Name *" />
                                 <Input value={newTeamMember.experience} onChange={(e) => setNewTeamMember({ ...newTeamMember, experience: e.target.value })} placeholder="Experience" />
                             </div>
-                            <Input value={newTeamMember.qualifications} onChange={(e) => setNewTeamMember({ ...newTeamMember, qualifications: e.target.value })} placeholder="Qualifications" />
+                            <div>
+                                <label className="block text-sm mb-1">Qualifications</label>
+                                <QualificationCheckboxes
+                                    selected={newTeamMember.qualifications}
+                                    onChange={(val) => setNewTeamMember({ ...newTeamMember, qualifications: val })}
+                                />
+                            </div>
                             <div>
                                 <label className="block text-sm mb-1">Photo (optional)</label>
                                 {newTeamMember.image ? (

@@ -67,7 +67,7 @@ export const addTeamMember = async (
         id: await generateTeamMemberId(),
         name,
         experience: experience || null,
-        qualifications: qualifications || null,
+        qualifications: Array.isArray(qualifications) ? qualifications : [],
         crbChecked: !!crbChecked,
         image: image || null,
         nurseryId,
@@ -103,7 +103,13 @@ export const updateTeamMember = async (
 
     const updated = await (prisma as any).teamMember.update({
       where: { id: memberId },
-      data: { name, experience, qualifications, crbChecked: !!crbChecked, image: image !== undefined ? image : member.image },
+      data: {
+        name,
+        experience,
+        qualifications: Array.isArray(qualifications) ? qualifications : (member.qualifications || []),
+        crbChecked: !!crbChecked,
+        image: image !== undefined ? image : member.image,
+      },
     });
 
     res.json({ success: true, data: updated });

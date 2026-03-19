@@ -270,7 +270,7 @@ model TeamMember {
   id             String   @id @db.VarChar(10)
   name           String
   experience     String?
-  qualifications String?
+  qualifications String[]
   crbChecked     Boolean  @default(false)
   image          String?
   createdAt      DateTime @default(now())

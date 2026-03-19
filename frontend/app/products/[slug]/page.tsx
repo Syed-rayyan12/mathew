@@ -13,6 +13,7 @@ import { authService } from "@/lib/api/auth";
 import { recentlyViewedService } from "@/lib/api/recently-viewed";
 import { toast } from "sonner";
 import { useParams } from "next/navigation";
+import { QUALIFICATION_GROUPS } from "@/lib/data/qualifications";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Autoplay } from 'swiper/modules';
 import type { Swiper as SwiperType } from 'swiper';
@@ -493,10 +494,16 @@ export default function NurseryDetailsPage() {
                               <span>{member.experience}</span>
                             </div>
                           )}
-                          {member.qualifications && (
-                            <div className="flex gap-2">
-                              <span className="font-semibold text-gray-700 min-w-[100px]">Qualifications:</span>
-                              <span>{member.qualifications}</span>
+                          {member.qualifications && Array.isArray(member.qualifications) && member.qualifications.length > 0 && (
+                            <div className="mt-2">
+                              <span className="font-semibold text-gray-700 text-sm block mb-1">Qualifications:</span>
+                              <div className="flex flex-wrap gap-1">
+                                {(member.qualifications as string[]).map((q: string) => (
+                                  <span key={q} className="inline-flex items-center gap-1 text-xs bg-[#e6f4f6] text-[#044A55] px-2 py-0.5 rounded-full border border-[#044A55]/20">
+                                    <Check className="w-3 h-3 flex-shrink-0" />{q}
+                                  </span>
+                                ))}
+                              </div>
                             </div>
                           )}
                           <div className="flex items-center gap-2 mt-2">

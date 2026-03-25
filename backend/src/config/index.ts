@@ -29,5 +29,6 @@ export const config = {
     secretKey: process.env.STRIPE_SECRET_KEY || '',
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
     priceId: process.env.STRIPE_PRICE_ID || '',
+    productId: process.env.STRIPE_PRODUCT_ID || 'prod_UDIfG1ovyR9FV7',
   },
 };

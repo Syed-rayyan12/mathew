@@ -48,10 +48,7 @@ export const createCheckoutSession = async (
         {
           price_data: {
             currency: 'gbp',
-            product_data: {
-              name: 'Nursery Premium Plan',
-              description: 'Annual premium listing for your nursery on the platform.',
-            },
+            product: config.stripe.productId || 'prod_UDIfG1ovyR9FV7',
             unit_amount: 14995, // £149.95 in pence
           },
           quantity: 1,

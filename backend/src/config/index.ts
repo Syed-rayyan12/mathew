@@ -23,4 +23,11 @@ export const config = {
 
   // CORS
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
+
+  // Stripe
+  stripe: {
+    secretKey: process.env.STRIPE_SECRET_KEY || '',
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
+    priceId: process.env.STRIPE_PRICE_ID || '',
+  },
 };

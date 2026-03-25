@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import {
     Carousel,
     CarouselContent,
@@ -65,6 +66,12 @@ const pricingPlans = [
 ];
 
 export default function PricingSection() {
+    const router = useRouter();
+
+    const handlePlanSelect = (planId: string) => {
+        router.push(`/nursery-signup?plan=${planId}`);
+    };
+
     const renderPricingCard = (plan: typeof pricingPlans[0]) => (
         <div
             key={plan.id}
@@ -107,6 +114,7 @@ export default function PricingSection() {
             </ul>
 
             <button
+                onClick={() => handlePlanSelect(plan.id)}
                 className={`mt-8 w-full border rounded-xl font-semibold ${plan.buttonClasses}`}
             >
                 {plan.buttonText}

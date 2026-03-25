@@ -11,6 +11,7 @@ import notificationRoutes from './notification.routes';
 import shortlistRoutes from './shortlist.routes';
 import recentlyViewedRoutes from './recently-viewed.routes';
 import teamMemberRoutes from './team-member.routes';
+import stripeRoutes from './stripe.routes';
 
 const router = Router();
 
@@ -26,5 +27,6 @@ router.use('/notifications', notificationRoutes);  // Notification routes
 router.use('/shortlist', shortlistRoutes);
 router.use('/recently-viewed', recentlyViewedRoutes);
 router.use('/nursery-dashboard/:nurseryId/team', teamMemberRoutes);  // Team members
+router.use('/stripe', stripeRoutes);  // Stripe checkout
 
 export default router;

@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,10 +13,15 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { UK_CITIES } from "@/lib/data/uk-cities";
 import { UK_TOWNS } from "@/lib/data/uk-towns";
+import { API_CONFIG } from "@/lib/api/config";
 
-export default function NurserySignupPage() {
+function NurserySignupContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const selectedPlan = searchParams.get('plan') || 'free';
+  const isPaidPlan = selectedPlan === 'premium';
   const [isLoading, setIsLoading] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [cityOpen, setCityOpen] = useState(false);
   const [townOpen, setTownOpen] = useState(false);
@@ -175,56 +180,71 @@ export default function NurserySignupPage() {
     return isValid;
   };
 
+  // Handle payment result from URL params
+  useEffect(() => {
+    const payment = searchParams.get('payment');
+    if (payment === 'success') {
+      setPaymentSuccess(true);
+      toast.success("Payment successful! Your nursery account has been created and is pending admin approval.");
+      setTimeout(() => {
+        router.replace('/nursery-login');
+      }, 5000);
+    } else if (payment === 'cancelled') {
+      toast.error("Payment was cancelled. Please try again to complete your registration.");
+    }
+  }, [searchParams, router]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log("Form submitted", formData);
+    if (!validateForm()) return;
     
-    if (!validateForm()) {
-      console.log("Validation failed");
-      return;
-    }
-    
-    console.log("Validation passed");
     setIsLoading(true);
 
     try {
-      console.log("Sending request to backend");
-      const response = await fetch("https://mathew-production.up.railway.app/api/auth/nursery-signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
+      // Save selected city and town to localStorage
+      localStorage.setItem("selectedCity", formData.city);
+      if (formData.town) {
+        localStorage.setItem("selectedTown", formData.town);
+      }
 
-      const data = await response.json();
+      if (isPaidPlan) {
+        // Paid plan → redirect to Stripe Checkout
+        const response = await fetch(`${API_CONFIG.BASE_URL}/stripe/create-checkout-session`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        });
 
-      if (response.ok) {
-        // Save selected city and town to localStorage
-        localStorage.setItem("selectedCity", formData.city);
-        if (formData.town) {
-          localStorage.setItem("selectedTown", formData.town);
-        }
-        
-        // Check if account needs approval
-        if (data.pendingApproval) {
-          toast.success("Nursery account created successfully! Your account is pending admin approval. You will be notified once approved.");
+        const data = await response.json();
+
+        if (response.ok && data.url) {
+          window.location.href = data.url;
         } else {
-          toast.success("Nursery registered successfully! Redirecting to login...");
+          toast.error(data.message || "Failed to initiate payment. Please try again.");
         }
-        
-        // Prevent back navigation
-        window.history.pushState(null, "", window.location.href);
-        window.onpopstate = function () {
-          window.history.pushState(null, "", window.location.href);
-        };
-
-        setTimeout(() => {
-          router.replace("/nursery-login");
-        }, 3000);
       } else {
-        toast.error(data.message || "Registration failed. Please try again.");
+        // Free plan → create account directly (no payment)
+        const response = await fetch(`${API_CONFIG.BASE_URL}/auth/nursery-signup`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          if (data.pendingApproval) {
+            toast.success("Nursery account created successfully! Your account is pending admin approval.");
+          } else {
+            toast.success("Nursery registered successfully! Redirecting to login...");
+          }
+          setTimeout(() => {
+            router.replace("/nursery-login");
+          }, 3000);
+        } else {
+          toast.error(data.message || "Registration failed. Please try again.");
+        }
       }
     } catch (error) {
       toast.error("An error occurred. Please try again later.");
@@ -233,6 +253,36 @@ export default function NurserySignupPage() {
       setIsLoading(false);
     }
   };
+
+  if (paymentSuccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 to-cyan-100 px-4 py-12">
+        <Card className="w-full max-w-lg shadow-2xl text-center">
+          <CardHeader className="space-y-1">
+            <div className="flex justify-center items-center">
+              <img src="/images/logo.png" className="w-60 object-cover" alt="Nursery Logo" />
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+              <Check className="w-8 h-8 text-green-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-green-700">Payment Successful!</h2>
+            <p className="text-gray-600">
+              Your nursery account has been created and is pending admin approval.
+              You will be notified once your account is approved.
+            </p>
+            <p className="text-sm text-gray-500">Redirecting to login page in a few seconds...</p>
+            <Link href="/nursery-login">
+              <Button className="w-full bg-secondary hover:bg-secondary/90 text-white mt-4">
+                Go to Login
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 to-cyan-100 px-4 py-12">
@@ -483,13 +533,31 @@ export default function NurserySignupPage() {
             </div>
 
             {/* Submit Button */}
-            <Button
-              type="submit"
-              className="w-full bg-secondary hover:bg-secondary/90 cursor-pointer text-white py-6 text-base font-semibold"
-              disabled={isLoading}
-            >
-              {isLoading ? "Creating Account..." : "Register Nursery"}
-            </Button>
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              {isPaidPlan ? (
+                <p className="text-sm text-gray-600 mb-3 text-center">
+                  Registration fee: <span className="font-bold text-lg text-secondary">£149.95</span>
+                  <span className="block text-xs text-gray-400 mt-1">
+                    Plan: Group Listing (Multi Nursery)
+                  </span>
+                </p>
+              ) : (
+                <p className="text-sm text-gray-600 mb-3 text-center">
+                  <span className="font-bold text-lg text-secondary">Free Listing</span>
+                  <span className="block text-xs text-gray-400 mt-1">No payment required</span>
+                </p>
+              )}
+              <Button
+                type="submit"
+                className="w-full bg-secondary hover:bg-secondary/90 cursor-pointer text-white py-6 text-base font-semibold"
+                disabled={isLoading}
+              >
+                {isLoading
+                  ? (isPaidPlan ? "Redirecting to Payment..." : "Creating Account...")
+                  : (isPaidPlan ? "Proceed to Payment" : "Register Nursery")
+                }
+              </Button>
+            </div>
 
             {/* Login Link */}
             <div className="text-center text-sm text-muted-foreground">
@@ -505,5 +573,17 @@ export default function NurserySignupPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function NurserySignupPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 to-cyan-100">
+        <p className="text-gray-500">Loading...</p>
+      </div>
+    }>
+      <NurserySignupContent />
+    </Suspense>
   );
 }

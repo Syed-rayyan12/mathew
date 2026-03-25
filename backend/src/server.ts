@@ -23,6 +23,10 @@ app.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Stripe webhook needs raw body for signature verification
+import { stripeWebhook } from './controllers/stripe.controller';
+app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), stripeWebhook);
+
 // API Routes
 app.use('/api', routes);
 

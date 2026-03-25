@@ -60,7 +60,10 @@ export const createCheckoutSession = async (
         {
           price_data: {
             currency: 'gbp',
-            product: config.stripe.productId || 'prod_UDIfG1ovyR9FV7',
+            product_data: {
+              name: 'Nursery Premium Plan',
+              description: 'Group Listing (Multi Nursery) - Annual Premium',
+            },
             unit_amount: 14995, // £149.95 in pence
           },
           quantity: 1,
@@ -84,9 +87,13 @@ export const createCheckoutSession = async (
       success: true,
       url: session.url,
     });
-  } catch (error) {
-    console.error('❌ createCheckoutSession error:', error);
-    next(error);
+  } catch (error: any) {
+    console.error('❌ createCheckoutSession error:', error?.message || error);
+    // Return structured error so frontend can display a message
+    return res.status(500).json({
+      success: false,
+      message: error?.message || 'Failed to create checkout session. Please try again.',
+    });
   }
 };
 

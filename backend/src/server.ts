@@ -28,6 +28,11 @@ app.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// ── POST echo (diagnostics) — remove once 503 is resolved ────────────────────
+app.post('/health', (req: Request, res: Response) => {
+  res.json({ status: 'ok', method: 'POST', body: req.body });
+});
+
 // ── API Routes ────────────────────────────────────────────────────────────────
 app.use('/api', routes);
 

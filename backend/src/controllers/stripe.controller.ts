@@ -12,7 +12,7 @@ function getStripe(): Stripe {
     throw new Error('STRIPE_SECRET_KEY environment variable is not set');
   }
   if (!_stripe) {
-    _stripe = new Stripe(config.stripe.secretKey);
+    _stripe = new Stripe(config.stripe.secretKey, { timeout: 10000 });
   }
   return _stripe;
 }

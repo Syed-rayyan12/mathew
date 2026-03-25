@@ -10,8 +10,19 @@ const app = express();
 const prisma = new PrismaClient();
 
 // Middleware
+const allowedOrigins = [
+  config.frontendUrl,
+  'http://localhost:3000',
+  'http://localhost:3001',
+].filter(Boolean);
+
 app.use(cors({
-  origin: config.frontendUrl,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (e.g. Postman, curl, server-to-server)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
   credentials: true,
 }));
 app.use(express.json({ limit: '50mb' }));

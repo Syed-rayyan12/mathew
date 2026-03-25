@@ -4,7 +4,18 @@ import prisma from '../config/database';
 import { config } from '../config';
 import { hashPassword, ConflictError } from '../utils';
 import { generateShortId } from '../utils/id-generator';
-const stripe = new Stripe(config.stripe.secretKey);
+
+// Lazy Stripe instance — avoids crash on startup if env var is missing
+let _stripe: Stripe | null = null;
+function getStripe(): Stripe {
+  if (!config.stripe.secretKey) {
+    throw new Error('STRIPE_SECRET_KEY environment variable is not set');
+  }
+  if (!_stripe) {
+    _stripe = new Stripe(config.stripe.secretKey);
+  }
+  return _stripe;
+}
 
 /**
  * POST /api/stripe/create-checkout-session
@@ -40,6 +51,7 @@ export const createCheckoutSession = async (
     // Hash the password now so we can store the hash in metadata
     const hashedPassword = await hashPassword(password);
 
+    const stripe = getStripe();
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment',
@@ -93,7 +105,7 @@ export const stripeWebhook = async (
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(
+    event = getStripe().webhooks.constructEvent(
       req.body, // raw body (Buffer)
       sig,
       config.stripe.webhookSecret

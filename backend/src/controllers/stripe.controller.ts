@@ -67,8 +67,8 @@ export const createCheckoutSession = async (
         town: town || '',
         hashedPassword,
       },
-      success_url: `${config.frontendUrl}/nursery-signup?payment=success`,
-      cancel_url: `${config.frontendUrl}/nursery-signup?payment=cancelled`,
+      success_url: `${config.frontendUrl}/payment-success`,
+      cancel_url: `${config.frontendUrl}/payment-cancelled`,
     });
 
     res.json({

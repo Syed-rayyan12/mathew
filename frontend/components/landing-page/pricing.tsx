@@ -51,7 +51,7 @@ const pricingPlans = [
 
     {
         id: "premium",
-        title: "Group Listing (Paid – MultiNursery)",
+        title: "Group Listing (Paid – Multi Nursery)",
         subtitle: "Best for maximum visibility",
         price: "59",
         features: [
@@ -91,7 +91,7 @@ export default function PricingSection() {
             )}
 
             <h3
-                className={`text-2xl font-bold ${plan.popular ? "text-secondary" : ""
+                className={`text-2xl font-bold £{plan.popular ? "text-secondary" : ""
                     }`}
             >
                 {plan.title}
@@ -100,7 +100,7 @@ export default function PricingSection() {
             <p className="text-gray-500 mt-1">{plan.subtitle}</p>
 
             <p className="text-4xl font-bold mt-6">
-                ${plan.price}
+                £{plan.price}
                 <span className="text-base font-medium text-gray-500">/mo</span>
             </p>
 

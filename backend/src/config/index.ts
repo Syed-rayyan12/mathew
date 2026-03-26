@@ -31,4 +31,13 @@ export const config = {
     priceId: process.env.STRIPE_PRICE_ID || '',
     productId: process.env.STRIPE_PRODUCT_ID || 'prod_UDIfG1ovyR9FV7',
   },
+
+  // Cloudflare R2
+  r2: {
+    accountId: process.env.R2_ACCOUNT_ID || '',
+    accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
+    bucketName: process.env.R2_BUCKET_NAME || 'my-nursery',
+    publicUrl: process.env.R2_PUBLIC_URL || 'https://pub-4ddb89df5eac43d8addf14a2d27d29be.r2.dev',
+  },
 };

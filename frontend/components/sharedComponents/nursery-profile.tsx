@@ -6,12 +6,13 @@ import { Input } from '../ui/input'
 import { Textarea } from '../ui/textarea'
 import { Button } from '../ui/button'
 import { Label } from '../ui/label'
-import { Upload, X, Plus, Trash2, Star, UserPlus } from 'lucide-react'
+import { Upload, X, Plus, Trash2, Star, UserPlus, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import WeeklyTimings, { getDefaultTimings, parseTimingsFromOpeningHours, formatTimingsForAPI } from './weekly-timings'
 import type { DayTiming } from './weekly-timings'
 import { teamMemberService } from '@/lib/api/nursery'
 import { QualificationCheckboxes } from '@/components/sharedComponents/QualificationCheckboxes'
+import { uploadService } from '@/lib/api/upload'
 
 const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
     const router = useRouter();
@@ -30,6 +31,7 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
     const [newTeamMember, setNewTeamMember] = useState({ name: '', experience: '', qualifications: [] as string[], crbChecked: false, image: '' });
     const [editingMember, setEditingMember] = useState<any | null>(null);
     const [teamLoading, setTeamLoading] = useState(false);
+    const [uploading, setUploading] = useState(false);
     const [formData, setFormData] = useState({
         nurseryName: '',
         ageGroup: '',
@@ -162,22 +164,19 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
         });
     };
 
-    const handleMultipleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleMultipleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
-        if (files) {
-            const fileArray = Array.from(files);
-            const newPreviews: string[] = [];
-
-            fileArray.forEach((file) => {
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    newPreviews.push(reader.result as string);
-                    if (newPreviews.length === fileArray.length) {
-                        setImagePreviews([...imagePreviews, ...newPreviews]);
-                    }
-                };
-                reader.readAsDataURL(file);
-            });
+        if (files && files.length > 0) {
+            setUploading(true);
+            try {
+                const urls = await uploadService.uploadImages(Array.from(files));
+                setImagePreviews(prev => [...prev, ...urls]);
+                toast.success(`${urls.length} image(s) uploaded`);
+            } catch (error: any) {
+                toast.error(error.message || 'Failed to upload images');
+            } finally {
+                setUploading(false);
+            }
         }
     };
 
@@ -667,43 +666,55 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
                                             <X size={14} />
                                         </button>
                                     </div>
-                                    <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 border-2 border-primary text-foreground rounded-lg hover:bg-primary hover:text-white transition-colors">
-                                        <Upload size={18} />
-                                        <span>Change Card Image</span>
+                                    <label className={`cursor-pointer inline-flex items-center gap-2 px-4 py-2 border-2 border-primary text-foreground rounded-lg hover:bg-primary hover:text-white transition-colors ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                                        {uploading ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} />}
+                                        <span>{uploading ? 'Uploading...' : 'Change Card Image'}</span>
                                         <input
                                             type="file"
-                                            accept="image/*"
+                                            accept="image/jpeg,image/png,image/gif,image/webp"
                                             className="hidden"
-                                            onChange={(e) => {
+                                            disabled={uploading}
+                                            onChange={async (e) => {
                                                 const file = e.target.files?.[0];
                                                 if (file) {
-                                                    const reader = new FileReader();
-                                                    reader.onloadend = () => {
-                                                        setCardImagePreview(reader.result as string);
-                                                    };
-                                                    reader.readAsDataURL(file);
+                                                    setUploading(true);
+                                                    try {
+                                                        const url = await uploadService.uploadImage(file);
+                                                        setCardImagePreview(url);
+                                                        toast.success('Card image uploaded');
+                                                    } catch (err: any) {
+                                                        toast.error(err.message || 'Failed to upload image');
+                                                    } finally {
+                                                        setUploading(false);
+                                                    }
                                                 }
                                             }}
                                         />
                                     </label>
                                 </div>
                             ) : (
-                                <label className="cursor-pointer flex flex-col items-center justify-center h-48">
-                                    <Upload className="text-gray-400 mb-2" size={48} />
-                                    <span className="text-lg text-gray-600 mb-1">Upload Card Image</span>
-                                    <span className="text-sm text-gray-500">Click to select a single image for cards</span>
+                                <label className={`cursor-pointer flex flex-col items-center justify-center h-48 ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                                    {uploading ? <Loader2 className="text-gray-400 mb-2 animate-spin" size={48} /> : <Upload className="text-gray-400 mb-2" size={48} />}
+                                    <span className="text-lg text-gray-600 mb-1">{uploading ? 'Uploading...' : 'Upload Card Image'}</span>
+                                    <span className="text-sm text-gray-500">JPEG, PNG, GIF, WebP — max 10 MB</span>
                                     <input
                                         type="file"
-                                        accept="image/*"
+                                        accept="image/jpeg,image/png,image/gif,image/webp"
                                         className="hidden"
-                                        onChange={(e) => {
+                                        disabled={uploading}
+                                        onChange={async (e) => {
                                             const file = e.target.files?.[0];
                                             if (file) {
-                                                const reader = new FileReader();
-                                                reader.onloadend = () => {
-                                                    setCardImagePreview(reader.result as string);
-                                                };
-                                                reader.readAsDataURL(file);
+                                                setUploading(true);
+                                                try {
+                                                    const url = await uploadService.uploadImage(file);
+                                                    setCardImagePreview(url);
+                                                    toast.success('Card image uploaded');
+                                                } catch (err: any) {
+                                                    toast.error(err.message || 'Failed to upload image');
+                                                } finally {
+                                                    setUploading(false);
+                                                }
                                             }
                                         }}
                                     />
@@ -715,7 +726,7 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
                     {/* Gallery Images Upload */}
                     <div>
                         <h3 className="text-2xl font-medium mb-4 text-foreground">Gallery Images</h3>
-                        <p className="text-sm text-muted-foreground mb-4">Upload multiple images for the slider on your nursery page</p>
+                        <p className="text-sm text-muted-foreground mb-4">Upload multiple images for the slider on your nursery page (max 10 MB each)</p>
                         <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 hover:border-primary transition-colors">
                             {imagePreviews.length > 0 ? (
                                 <div className="space-y-4">
@@ -752,15 +763,16 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
                                     </label>
                                 </div>
                             ) : (
-                                <label className="cursor-pointer flex flex-col items-center justify-center h-48">
-                                    <Upload className="text-gray-400 mb-2" size={48} />
-                                    <span className="text-lg text-gray-600 mb-1">Upload Gallery Images</span>
-                                    <span className="text-sm text-gray-500">Click to select multiple images</span>
+                                <label className={`cursor-pointer flex flex-col items-center justify-center h-48 ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                                    {uploading ? <Loader2 className="text-gray-400 mb-2 animate-spin" size={48} /> : <Upload className="text-gray-400 mb-2" size={48} />}
+                                    <span className="text-lg text-gray-600 mb-1">{uploading ? 'Uploading...' : 'Upload Gallery Images'}</span>
+                                    <span className="text-sm text-gray-500">JPEG, PNG, GIF, WebP — max 10 MB each</span>
                                     <input
                                         type="file"
-                                        accept="image/*"
+                                        accept="image/jpeg,image/png,image/gif,image/webp"
                                         multiple
                                         className="hidden"
+                                        disabled={uploading}
                                         onChange={handleMultipleImageUpload}
                                     />
                                 </label>
@@ -771,7 +783,7 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
                     {/* Video Upload */}
                     <div>
                         <h3 className="text-2xl font-medium mb-4 text-foreground">Video</h3>
-                        <p className="text-sm text-muted-foreground mb-4">Upload a video to showcase your nursery</p>
+                        <p className="text-sm text-muted-foreground mb-4">Upload an MP4 video to showcase your nursery (max 10 MB)</p>
                         <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 hover:border-primary transition-colors">
                             {videoPreview ? (
                                 <div className="space-y-4">
@@ -792,39 +804,57 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
                                             <X size={14} />
                                         </button>
                                     </div>
-                                    <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 border-2 border-primary text-foreground rounded-lg hover:bg-primary hover:text-white transition-colors">
-                                        <Upload size={18} />
-                                        <span>Change Video</span>
+                                    <label className={`cursor-pointer inline-flex items-center gap-2 px-4 py-2 border-2 border-primary text-foreground rounded-lg hover:bg-primary hover:text-white transition-colors ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                                        {uploading ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} />}
+                                        <span>{uploading ? 'Uploading...' : 'Change Video'}</span>
                                         <input
                                             type="file"
-                                            accept="video/*"
+                                            accept="video/mp4"
                                             className="hidden"
-                                            onChange={(e) => {
+                                            disabled={uploading}
+                                            onChange={async (e) => {
                                                 const file = e.target.files?.[0]
                                                 if (file) {
-                                                    const objectUrl = URL.createObjectURL(file)
-                                                    setVideoPreview(objectUrl)
-                                                    setFormData({ ...formData, videoUrl: objectUrl })
+                                                    setUploading(true);
+                                                    try {
+                                                        const url = await uploadService.uploadVideo(file);
+                                                        setVideoPreview(url);
+                                                        setFormData({ ...formData, videoUrl: url });
+                                                        toast.success('Video uploaded');
+                                                    } catch (err: any) {
+                                                        toast.error(err.message || 'Failed to upload video');
+                                                    } finally {
+                                                        setUploading(false);
+                                                    }
                                                 }
                                             }}
                                         />
                                     </label>
                                 </div>
                             ) : (
-                                <label className="cursor-pointer flex flex-col items-center justify-center h-48">
-                                    <Upload className="text-gray-400 mb-2" size={48} />
-                                    <span className="text-lg text-gray-600 mb-1">Upload Video</span>
-                                    <span className="text-sm text-gray-500">Click to select a video file</span>
+                                <label className={`cursor-pointer flex flex-col items-center justify-center h-48 ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                                    {uploading ? <Loader2 className="text-gray-400 mb-2 animate-spin" size={48} /> : <Upload className="text-gray-400 mb-2" size={48} />}
+                                    <span className="text-lg text-gray-600 mb-1">{uploading ? 'Uploading...' : 'Upload Video'}</span>
+                                    <span className="text-sm text-gray-500">MP4 only — max 10 MB</span>
                                     <input
                                         type="file"
-                                        accept="video/*"
+                                        accept="video/mp4"
                                         className="hidden"
-                                        onChange={(e) => {
+                                        disabled={uploading}
+                                        onChange={async (e) => {
                                             const file = e.target.files?.[0]
                                             if (file) {
-                                                const objectUrl = URL.createObjectURL(file)
-                                                setVideoPreview(objectUrl)
-                                                setFormData({ ...formData, videoUrl: objectUrl })
+                                                setUploading(true);
+                                                try {
+                                                    const url = await uploadService.uploadVideo(file);
+                                                    setVideoPreview(url);
+                                                    setFormData({ ...formData, videoUrl: url });
+                                                    toast.success('Video uploaded');
+                                                } catch (err: any) {
+                                                    toast.error(err.message || 'Failed to upload video');
+                                                } finally {
+                                                    setUploading(false);
+                                                }
                                             }
                                         }}
                                     />

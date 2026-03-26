@@ -12,6 +12,7 @@ import shortlistRoutes from './shortlist.routes';
 import recentlyViewedRoutes from './recently-viewed.routes';
 import teamMemberRoutes from './team-member.routes';
 import stripeRoutes from './stripe.routes';
+import uploadRoutes from './upload.routes';
 
 const router = Router();
 
@@ -28,5 +29,6 @@ router.use('/shortlist', shortlistRoutes);
 router.use('/recently-viewed', recentlyViewedRoutes);
 router.use('/nursery-dashboard/:nurseryId/team', teamMemberRoutes);  // Team members
 router.use('/stripe', stripeRoutes);  // Stripe checkout
+router.use('/upload', uploadRoutes);  // File uploads (R2 CDN)
 
 export default router;

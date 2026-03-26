@@ -2,10 +2,11 @@
 
 import React, { useState, useRef } from "react";
 import { Input } from "../ui/input";
-import { Upload, Trash2 } from "lucide-react";
+import { Upload, Trash2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { uploadService } from "@/lib/api/upload";
 
 export default function UploadGallery() {
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [galleryImages, setGalleryImages] = useState<string[]>([
     "/images/list 1.png",
     "/images/list 2.png",
@@ -14,15 +15,28 @@ export default function UploadGallery() {
   ]);
 
   const [isDragging, setIsDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const handleFiles = (files: FileList) => {
-    const newFiles = Array.from(files);
-    setSelectedFiles((prev) => [...prev, ...newFiles]);
+  const handleFiles = async (files: FileList) => {
+    const imageFiles = Array.from(files).filter((f) =>
+      f.type.startsWith("image/")
+    );
+    if (imageFiles.length === 0) {
+      toast.error("Only image files are allowed.");
+      return;
+    }
 
-    // Add to gallery preview
-    const newImageUrls = newFiles.map((file) => URL.createObjectURL(file));
-    setGalleryImages((prev) => [...prev, ...newImageUrls]);
+    setUploading(true);
+    try {
+      const urls = await uploadService.uploadImages(imageFiles);
+      setGalleryImages((prev) => [...prev, ...urls]);
+      toast.success(`${urls.length} image(s) uploaded`);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to upload images");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -34,7 +48,7 @@ export default function UploadGallery() {
   };
 
   const handleClickUpload = () => {
-    fileInputRef.current?.click();
+    if (!uploading) fileInputRef.current?.click();
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -63,24 +77,34 @@ export default function UploadGallery() {
       <div className="bg-white mt-6 rounded-md p-6 border border-gray-300 flex flex-col items-center gap-4">
         <div
           className={`border-2 border-dashed rounded-md p-12 flex flex-col items-center justify-center gap-4 w-full cursor-pointer
-            ${isDragging ? "border-green-400 bg-gray-100" : "border-gray-400 bg-white"}`}
+            ${isDragging ? "border-green-400 bg-gray-100" : "border-gray-400 bg-white"}
+            ${uploading ? "opacity-50 pointer-events-none" : ""}`}
           onClick={handleClickUpload}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
         >
-          <Upload className="w-10 h-10 text-gray-500" />
+          {uploading ? (
+            <Loader2 className="w-10 h-10 text-gray-500 animate-spin" />
+          ) : (
+            <Upload className="w-10 h-10 text-gray-500" />
+          )}
           <h3 className="text-lg font-sans font-semibold">
-            Drop images here or click to browse
+            {uploading
+              ? "Uploading..."
+              : "Drop images here or click to browse"}
           </h3>
-          <p className="text-sm text-gray-500">Supported formats: JPG, PNG, GIF</p>
+          <p className="text-sm text-gray-500">
+            Supported formats: JPG, PNG, GIF, WebP — max 10 MB each
+          </p>
           <Input
             type="file"
             ref={fileInputRef}
             className="hidden"
             onChange={handleFileChange}
             multiple
-            accept="image/png, image/jpeg, image/gif"
+            accept="image/jpeg,image/png,image/gif,image/webp"
+            disabled={uploading}
           />
         </div>
       </div>

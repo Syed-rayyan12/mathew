@@ -237,6 +237,76 @@ class ApiClient {
   ): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: 'PATCH', body, requireAuth });
   }
+
+  // Upload a single file via FormData
+  async uploadFile<T>(
+    endpoint: string,
+    file: File,
+    fieldName = 'file'
+  ): Promise<ApiResponse<T>> {
+    const formData = new FormData();
+    formData.append(fieldName, file);
+
+    const headers: Record<string, string> = {};
+    const token = this.tokenManager.getAccessToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    try {
+      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new ApiException(data.message || 'Upload failed', response.status);
+      }
+      return data;
+    } catch (error) {
+      if (error instanceof ApiException) throw error;
+      throw new ApiException(
+        error instanceof Error ? error.message : 'Network error',
+        500
+      );
+    }
+  }
+
+  // Upload multiple files via FormData
+  async uploadFiles<T>(
+    endpoint: string,
+    files: File[],
+    fieldName = 'files'
+  ): Promise<ApiResponse<T>> {
+    const formData = new FormData();
+    files.forEach((file) => formData.append(fieldName, file));
+
+    const headers: Record<string, string> = {};
+    const token = this.tokenManager.getAccessToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    try {
+      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new ApiException(data.message || 'Upload failed', response.status);
+      }
+      return data;
+    } catch (error) {
+      if (error instanceof ApiException) throw error;
+      throw new ApiException(
+        error instanceof Error ? error.message : 'Network error',
+        500
+      );
+    }
+  }
 }
 
 // Export singleton instances

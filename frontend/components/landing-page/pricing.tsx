@@ -91,7 +91,7 @@ export default function PricingSection() {
             )}
 
             <h3
-                className={`text-2xl font-bold £{plan.popular ? "text-secondary" : ""
+                className={`text-2xl font-bold ${plan.popular ? "text-secondary" : ""
                     }`}
             >
                 {plan.title}

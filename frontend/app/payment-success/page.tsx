@@ -1,12 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2, ArrowRight, Mail, Clock, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
-export default function PaymentSuccessPage() {
+function PaymentSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<"verifying" | "success" | "error">("verifying");
@@ -140,5 +140,17 @@ export default function PaymentSuccessPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 to-cyan-100">
+        <Loader2 className="w-12 h-12 text-secondary animate-spin" />
+      </div>
+    }>
+      <PaymentSuccessContent />
+    </Suspense>
   );
 }

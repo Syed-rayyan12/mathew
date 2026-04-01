@@ -11,19 +11,7 @@ import {
 } from "@/components/ui/carousel";
 
 const pricingPlans = [
-    {
-        id: "free",
-        title: "Free Listing",
-        subtitle: "Start your journey at no cost",
-        price: "0",
-        features: [
-            "Nursery Name",
-            "Address",
-            "Telephone",
-        ],
-        buttonText: "Get Started",
-        buttonClasses: "bg-transparent border-secondary py-4 px-6",
-    },
+   
 
     {
         id: "standard",
@@ -31,18 +19,16 @@ const pricingPlans = [
         subtitle: "Perfect for growing businesses",
         price: "29",
         features: [
-            "Everything in Free",
-            "Photo Gallery",
-            "Staff Profiles",
-            "Nursery Updates / News",
-            "Job Vacancies",
-            "Qualifications Display",
-            "Facilities Breakdown",
-            "Client Reviews & Testimonials",
-            "Opening Times",
-            "Location Listing / Map",
-            "About Us Section",
-            "Fee Structure Display",
+            "Full Nursery Profile Page",
+            "About Us, Philosophy, Fees, Opening Hours",
+            "Age Range, Facilities & Services",
+            "Card Image + Gallery Images",
+            "Appear in City & Search Results",
+            "Parent Reviews & Ratings",
+            "Review Notifications",
+            "Contact Enquiries from Parents",
+            "Basic Nursery Dashboard",
+            "Standard Search Visibility",
         ],
         buttonText: "Start Standard",
         buttonClasses: "bg-transparent border-secondary py-4 px-6",
@@ -50,17 +36,22 @@ const pricingPlans = [
     },
 
     {
-        id: "premium",
-        title: "Group Listing (Paid – Multi Nursery)",
+        id: "platinum",
+        title: "Platinum",
         subtitle: "Best for maximum visibility",
         price: "59",
         features: [
-            "Everything in Nursery Listing",
-            "Multiple Nursery Accounts",
-            "Centralised Group Management",
-            "Group Level",
+            "Unlimited Nursery Locations",
+            "Nursery Group Page (for multiple branches)",
+            "Unlimited Image Gallery",
+            "Video on Nursery Profile",
+            "Team Member Profiles (including qualifications & badges)",
+            "Review Management (approve, reject, respond)",
+            "Full Notification System",
+            "Priority Placement in Search Results",
+            "Dashboard Analytics (ratings, reviews, performance)",
         ],
-        buttonText: "Start Premium",
+        buttonText: "Start Platinum",
         buttonClasses: "bg-transparent border-secondary py-4 px-6",
     },
 ];
@@ -198,104 +189,127 @@ export default function PricingSection() {
                                 </tr>
 
                                 <tr>
-                                    <td className="p-4">Photo Gallery</td>
+                                    <td className="p-4">Full Nursery Profile Page</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
                                 <tr>
-                                    <td className="p-4">Staff Profiles</td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
-                                    <td className="text-center"><Check className="text-secondary" /></td>
-                                    <td className="text-center"><Check className="text-secondary" /></td>
-                                </tr>
-
-                                {/* -------- Photos & Media -------- */}
-
-
-                                <tr>
-                                    <td className="p-4">Nursery Updates / News</td>
+                                    <td className="p-4">About Us, Philosophy, Fees, Opening Hours</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
                                 <tr>
-                                    <td className="p-4">Job Vacancies</td>
+                                    <td className="p-4">Age Range, Facilities &amp; Services</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
                                 <tr>
-                                    <td className="p-4">Qualifications Display</td>
+                                    <td className="p-4">Card Image + Gallery Images</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
                                 <tr>
-                                    <td className="p-4">Facilities Breakdown</td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
-                                    <td className="text-center"><Check className="text-secondary" /></td>
-                                    <td className="text-center"><Check className="text-secondary" /></td>
-                                </tr>
-                                <tr>
-                                    <td className="p-4">Client Reviews & Testimonials</td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
-                                    <td className="text-center"><Check className="text-secondary" /></td>
-                                    <td className="text-center"><Check className="text-secondary" /></td>
-                                </tr>
-                                <tr>
-                                    <td className="p-4">Opening Times</td>
+                                    <td className="p-4">Appear in City &amp; Search Results</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
                                 <tr>
-                                    <td className="p-4">Location Listing / Map</td>
+                                    <td className="p-4">Parent Reviews &amp; Ratings</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
-
-
 
                                 <tr>
-                                    <td className="p-4">About Us Section</td>
+                                    <td className="p-4">Review Notifications</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
+                                </tr>
+
+                                <tr>
+                                    <td className="p-4">Contact Enquiries from Parents</td>
+                                    <td className="text-center"><X className="text-red-500" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
+                                </tr>
+
+                                <tr>
+                                    <td className="p-4">Basic Nursery Dashboard</td>
+                                    <td className="text-center"><X className="text-red-500" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
+                                </tr>
+
+                                <tr>
+                                    <td className="p-4">Standard Search Visibility</td>
+                                    <td className="text-center"><X className="text-red-500" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
+                                </tr>
+
+                                <tr>
+                                    <td className="p-4">Unlimited Nursery Locations</td>
+                                    <td className="text-center"><X className="text-red-500" /></td>
+                                    <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
                                 <tr>
-                                    <td className="p-4">Fee Structure Display</td>
+                                    <td className="p-4">Nursery Group Page (for multiple branches)</td>
+                                    <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
-                                    <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
-
-
                                 <tr>
-                                    <td className="p-4">Multiple Nursery Accounts</td>
+                                    <td className="p-4">Unlimited Image Gallery</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><X className="text-red-500" /></td>
-
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
-                                    <tr>
-                                    <td className="p-4">Centralised Group Management</td>
+                                <tr>
+                                    <td className="p-4">Video on Nursery Profile</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><X className="text-red-500" /></td>
-
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
-                                    <tr>
-                                    <td className="p-4">Group Level</td>
+                                <tr>
+                                    <td className="p-4">Team Member Profiles (including qualifications &amp; badges)</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><X className="text-red-500" /></td>
-
+                                    <td className="text-center"><Check className="text-secondary" /></td>
+                                </tr>
+                                <tr>
+                                    <td className="p-4">Review Management (approve, reject, respond)</td>
+                                    <td className="text-center"><X className="text-red-500" /></td>
+                                    <td className="text-center"><X className="text-red-500" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
+                                </tr>
+                                <tr>
+                                    <td className="p-4">Full Notification System</td>
+                                    <td className="text-center"><X className="text-red-500" /></td>
+                                    <td className="text-center"><X className="text-red-500" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
+                                </tr>
+                                <tr>
+                                    <td className="p-4">Priority Placement in Search Results</td>
+                                    <td className="text-center"><X className="text-red-500" /></td>
+                                    <td className="text-center"><X className="text-red-500" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
+                                </tr>
+                                <tr>
+                                    <td className="p-4">Dashboard Analytics (ratings, reviews, performance)</td>
+                                    <td className="text-center"><X className="text-red-500" /></td>
+                                    <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 

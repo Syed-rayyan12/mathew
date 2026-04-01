@@ -87,7 +87,7 @@ export const createCheckoutSession = async (
         hashedPassword,
         plan: plan || 'standard',
       },
-      success_url: `${config.frontendUrl}/payment-success`,
+      success_url: `${config.frontendUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${config.frontendUrl}/payment-cancelled`,
     });
 
@@ -205,4 +205,92 @@ export const stripeWebhook = async (
   }
 
   res.json({ received: true });
+};
+
+/**
+ * POST /api/stripe/verify-session
+ * Called by the payment-success page with the Stripe session_id.
+ * Retrieves the session from Stripe, then creates the user + group.
+ * This is the PRIMARY account-creation path (webhooks are unreliable in some envs).
+ */
+export const verifySession = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { sessionId } = req.body;
+
+    if (!sessionId) {
+      return res.status(400).json({ success: false, message: 'Session ID is required.' });
+    }
+
+    const stripe = getStripe();
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+    if (!session || session.payment_status !== 'paid') {
+      return res.status(400).json({ success: false, message: 'Payment not completed.' });
+    }
+
+    const meta = session.metadata;
+    if (!meta || !meta.email) {
+      return res.status(400).json({ success: false, message: 'Session metadata missing.' });
+    }
+
+    // Idempotent — skip if already created (e.g. webhook already ran)
+    const existingUser = await prisma.user.findUnique({ where: { email: meta.email } });
+    if (existingUser) {
+      return res.json({ success: true, alreadyExists: true });
+    }
+
+    const userId = await generateShortId('USR');
+    const groupId = await generateShortId('GRP');
+
+    await prisma.$transaction(async (tx: any) => {
+      await tx.user.create({
+        data: {
+          id: userId,
+          email: meta.email,
+          password: meta.hashedPassword,
+          firstName: meta.firstName,
+          lastName: meta.lastName,
+          phone: meta.phone,
+          nurseryName: meta.nurseryName,
+          role: 'NURSERY_OWNER',
+          plan: meta.plan || 'standard',
+          isActive: false,
+          isOnline: true,
+        },
+      });
+
+      const slug = meta.nurseryName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+-$/g, '');
+
+      await tx.group.create({
+        data: {
+          id: groupId,
+          name: meta.nurseryName,
+          slug,
+          email: meta.email,
+          phone: meta.phone,
+          firstName: meta.firstName,
+          lastName: meta.lastName,
+          city: meta.city || null,
+          town: meta.town || null,
+          ownerId: userId,
+        },
+      });
+    });
+
+    console.log(`✅ Account created via session verification for ${meta.email}`);
+    return res.json({ success: true, alreadyExists: false });
+  } catch (error: any) {
+    console.error('❌ verifySession error:', error?.message || error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to verify payment. Please contact support.',
+    });
+  }
 };

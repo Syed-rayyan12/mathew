@@ -19,6 +19,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { QualificationCheckboxes } from "@/components/sharedComponents/QualificationCheckboxes";
+import { usePlanFeatures } from "@/hooks/use-nursery-plan";
 import { nurseryDashboardService, teamMemberService } from "@/lib/api/nursery";
 import { authService } from "@/lib/api/auth";
 import { UK_CITIES } from "@/lib/data/uk-cities";
@@ -35,6 +36,7 @@ export default function AddNurseryModal({
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
 }) {
+  const { canUploadVideo, canManageTeamMembers } = usePlanFeatures();
   const [loading, setLoading] = useState(false);
   const [cityPopoverOpen, setCityPopoverOpen] = useState(false);
   const [townPopoverOpen, setTownPopoverOpen] = useState(false);
@@ -603,6 +605,11 @@ export default function AddNurseryModal({
           {/* Video Upload */}
           <div>
             <h3 className="font-medium text-lg mb-4">Video</h3>
+            {!canUploadVideo ? (
+              <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center bg-gray-50">
+                <p className="text-sm text-muted-foreground">Video upload is available on the <strong>Platinum plan</strong>.</p>
+              </div>
+            ) : (
             <div className="border-2 border-dashed rounded-lg p-6">
               {videoPreview ? (
                 <div className="space-y-4">
@@ -661,8 +668,7 @@ export default function AddNurseryModal({
                   />
                 </label>
               )}
-            </div>
-          </div>
+            </div>            )}          </div>
 
           {/* Facilities */}
           <div>
@@ -762,7 +768,12 @@ export default function AddNurseryModal({
 
           {/* Meet the Team */}
           <div>
-            <h3 className="font-medium text-lg mb-2">Meet the Team <span className="text-sm font-normal text-muted-foreground"></span></h3>
+            <h3 className="font-medium text-lg mb-2">Meet the Team</h3>
+            {!canManageTeamMembers ? (
+              <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center bg-gray-50">
+                <p className="text-sm text-muted-foreground">Team Member Profiles are available on the <strong>Platinum plan</strong>.</p>
+              </div>
+            ) : (<>
          
 
             {/* Existing members list */}
@@ -880,6 +891,7 @@ export default function AddNurseryModal({
                 <Plus className="h-4 w-4 mr-2" /> Add Team Member
               </Button>
             </div>
+            </>)}
           </div>
 
         <DialogFooter className="mt-6">

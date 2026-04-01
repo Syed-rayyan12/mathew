@@ -19,7 +19,13 @@ function NurserySignupContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const selectedPlan = searchParams.get('plan') || 'free';
-  const isPaidPlan = selectedPlan === 'premium';
+  const isPaidPlan = selectedPlan === 'standard' || selectedPlan === 'platinum';
+
+  const PLAN_CONFIG: Record<string, { label: string; price: string }> = {
+    standard: { label: "Nursery Listing (Paid)", price: "£23.95" },
+    platinum: { label: "Platinum", price: "£38.60" },
+  };
+  const planInfo = PLAN_CONFIG[selectedPlan];
   const [isLoading, setIsLoading] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -213,7 +219,7 @@ function NurserySignupContent() {
         const response = await fetch(`${API_CONFIG.BASE_URL}/stripe/create-checkout-session`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
+          body: JSON.stringify({ ...formData, plan: selectedPlan }),
         });
 
         const data = await response.json();
@@ -536,9 +542,9 @@ function NurserySignupContent() {
             <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
               {isPaidPlan ? (
                 <p className="text-sm text-gray-600 mb-3 text-center">
-                  Registration fee: <span className="font-bold text-lg text-secondary">£149.95</span>
+                  Registration fee: <span className="font-bold text-lg text-secondary">{planInfo?.price}</span>
                   <span className="block text-xs text-gray-400 mt-1">
-                    Plan: Group Listing (Multi Nursery)
+                    Plan: {planInfo?.label}
                   </span>
                 </p>
               ) : (

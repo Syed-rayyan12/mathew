@@ -29,7 +29,7 @@ export const createCheckoutSession = async (
   next: NextFunction
 ) => {
   try {
-    const { email, password, firstName, lastName, phone, nurseryName, city, town } = req.body;
+    const { email, password, firstName, lastName, phone, nurseryName, city, town, plan } = req.body;
 
     // Validate required fields before creating checkout
     if (!email || !password || !firstName || !lastName || !phone || !nurseryName) {
@@ -38,6 +38,13 @@ export const createCheckoutSession = async (
         message: 'All required fields must be provided.',
       });
     }
+
+    const PLAN_CONFIG: Record<string, { label: string; description: string; unitAmount: number }> = {
+      standard: { label: 'Nursery Listing (Paid)', description: 'Standard Nursery Listing', unitAmount: 2395 },
+      platinum: { label: 'Platinum', description: 'Platinum Nursery Listing', unitAmount: 3860 },
+    };
+
+    const planConfig = PLAN_CONFIG[plan] ?? PLAN_CONFIG['standard'];
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -61,10 +68,10 @@ export const createCheckoutSession = async (
           price_data: {
             currency: 'gbp',
             product_data: {
-              name: 'Nursery Premium Plan',
-              description: 'Group Listing (Multi Nursery) - Annual Premium',
+              name: planConfig.label,
+              description: planConfig.description,
             },
-            unit_amount: 14995, // £149.95 in pence
+            unit_amount: planConfig.unitAmount,
           },
           quantity: 1,
         },
@@ -78,6 +85,7 @@ export const createCheckoutSession = async (
         city: city || '',
         town: town || '',
         hashedPassword,
+        plan: plan || 'standard',
       },
       success_url: `${config.frontendUrl}/payment-success`,
       cancel_url: `${config.frontendUrl}/payment-cancelled`,

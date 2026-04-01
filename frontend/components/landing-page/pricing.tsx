@@ -17,7 +17,7 @@ const pricingPlans = [
         id: "standard",
         title: "Nursery Listing (Paid)",
         subtitle: "Perfect for growing businesses",
-        price: "29",
+        price: "23.95",
         features: [
             "Full Nursery Profile Page",
             "About Us, Philosophy, Fees, Opening Hours",
@@ -39,7 +39,7 @@ const pricingPlans = [
         id: "platinum",
         title: "Platinum",
         subtitle: "Best for maximum visibility",
-        price: "59",
+        price: "38.60",
         features: [
             "Unlimited Nursery Locations",
             "Nursery Group Page (for multiple branches)",

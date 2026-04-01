@@ -139,7 +139,7 @@ export default function PricingSection() {
                 </div>
 
                 {/* Desktop Grid - Hidden below md */}
-                <div className="hidden lg:grid md:grid-cols-3 gap-10">
+                <div className="hidden lg:grid md:grid-cols-2 gap-10">
                     {pricingPlans.map((plan) => renderPricingCard(plan))}
                 </div>
 
@@ -152,11 +152,10 @@ export default function PricingSection() {
                             <thead>
                                 <tr className="text-left bg-gray-100 rounded-xl">
                                     <th className="p-4  font-medium font-heading text-[28px] text-secondary rounded-l-xl">Features</th>
-                                    <th className="p-4  font-medium font-heading text-[28px] text-secondary ">Free</th>
                                     <th className="p-4  font-medium font-heading text-[28px] text-secondary ">
                                         Nursery Listing (Paid)
                                     </th>
-                                    <th className="p-4  font-medium font-heading text-[28px] text-secondary rounded-r-xl">Group Listing (Paid – Multi Nursery)</th>
+                                    <th className="p-4  font-medium font-heading text-[28px] text-secondary rounded-r-xl">Platinum</th>
                                 </tr>
                             </thead>
 
@@ -171,12 +170,10 @@ export default function PricingSection() {
                                     <td className="p-4">Nursery Name</td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
-                                    <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
                                 <tr>
                                     <td className="p-4">Address</td>
-                                    <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
@@ -185,75 +182,64 @@ export default function PricingSection() {
                                     <td className="p-4">Telephone</td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
-                                    <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
                                 <tr>
                                     <td className="p-4">Full Nursery Profile Page</td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
                                 <tr>
                                     <td className="p-4">About Us, Philosophy, Fees, Opening Hours</td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
                                 <tr>
                                     <td className="p-4">Age Range, Facilities &amp; Services</td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
                                 <tr>
                                     <td className="p-4">Card Image + Gallery Images</td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
                                 <tr>
                                     <td className="p-4">Appear in City &amp; Search Results</td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
                                 <tr>
                                     <td className="p-4">Parent Reviews &amp; Ratings</td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
                                 <tr>
                                     <td className="p-4">Review Notifications</td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
                                 <tr>
                                     <td className="p-4">Contact Enquiries from Parents</td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
                                 <tr>
                                     <td className="p-4">Basic Nursery Dashboard</td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
                                 <tr>
                                     <td className="p-4">Standard Search Visibility</td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
@@ -261,54 +247,45 @@ export default function PricingSection() {
                                 <tr>
                                     <td className="p-4">Unlimited Nursery Locations</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
                                 <tr>
                                     <td className="p-4">Nursery Group Page (for multiple branches)</td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
                                 <tr>
                                     <td className="p-4">Unlimited Image Gallery</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
                                 <tr>
                                     <td className="p-4">Video on Nursery Profile</td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
                                 <tr>
                                     <td className="p-4">Team Member Profiles (including qualifications &amp; badges)</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
                                 <tr>
                                     <td className="p-4">Review Management (approve, reject, respond)</td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
                                 <tr>
                                     <td className="p-4">Full Notification System</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
                                 <tr>
                                     <td className="p-4">Priority Placement in Search Results</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
                                 <tr>
                                     <td className="p-4">Dashboard Analytics (ratings, reviews, performance)</td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>

@@ -170,6 +170,7 @@ export const stripeWebhook = async (
             phone: meta.phone,
             nurseryName: meta.nurseryName,
             role: 'NURSERY_OWNER',
+            plan: meta.plan || 'standard',
             isActive: false,
             isOnline: true,
           },

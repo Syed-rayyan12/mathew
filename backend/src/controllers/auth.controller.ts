@@ -311,6 +311,7 @@ export const nurserySignup = async (
           phone,
           nurseryName,
           role: 'NURSERY_OWNER',
+          plan: 'free',
           isActive: false,
           isOnline: true,
         },
@@ -322,6 +323,7 @@ export const nurserySignup = async (
           phone: true,
           nurseryName: true,
           role: true,
+          plan: true,
           createdAt: true,
         },
       });
@@ -453,6 +455,7 @@ export const nurserySignin = async (
           address: user.address,
           nurseryName: user.nurseryName || '',
           role: user.role,
+          plan: user.plan || 'free',
           isOnline: true,
         },
         accessToken: tokens.accessToken,

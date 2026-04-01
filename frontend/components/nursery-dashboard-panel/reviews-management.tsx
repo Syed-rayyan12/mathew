@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Star } from 'lucide-react'
 import { nurseryDashboardService, Review, ReviewStats, Nursery } from '@/lib/api/nursery'
 import { toast } from 'sonner'
+import { usePlanFeatures } from '@/hooks/use-nursery-plan'
 
 // ✅ Status Badge Component
 function StatusBadge({ status }: { status: string }) {
@@ -55,6 +56,7 @@ export default function ReviewsOverview() {
   const [reviewsByNursery, setReviewsByNursery] = useState<Record<string, { reviews: Review[], stats: ReviewStats }>>({})
   const [loading, setLoading] = useState(true)
   const [processingReview, setProcessingReview] = useState<string | null>(null)
+  const { canApproveRejectReviews } = usePlanFeatures()
 
   useEffect(() => {
     fetchNurseriesAndReviews()
@@ -370,6 +372,7 @@ export default function ReviewsOverview() {
                       <p className="text-sm text-gray-500 min-w-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{review.content}</p>
 
                       {/* Action Buttons */}
+                      {canApproveRejectReviews ? (
                       <div className="flex gap-2 mt-2">
                         <button
                           onClick={() => handleApproveReview(review.id)}
@@ -394,6 +397,11 @@ export default function ReviewsOverview() {
                           {processingReview === review.id && !review.isApproved ? 'Processing...' : review.isRejected ? 'Rejected ✗' : 'Reject Review'}
                         </button>
                       </div>
+                      ) : (
+                        <div className="mt-2 text-xs text-gray-400 bg-gray-50 rounded-md px-3 py-2">
+                          Review approval is available on the <span className="font-semibold text-secondary">Platinum plan</span>.
+                        </div>
+                      )}
                     </div>
                   ))
                 )}

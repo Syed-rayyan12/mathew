@@ -18,14 +18,13 @@ import { API_CONFIG } from "@/lib/api/config";
 function NurserySignupContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const selectedPlan = searchParams.get('plan') || 'free';
-  const isPaidPlan = selectedPlan === 'standard' || selectedPlan === 'platinum';
+  const selectedPlan = searchParams.get('plan') || 'standard';
 
   const PLAN_CONFIG: Record<string, { label: string; price: string }> = {
     standard: { label: "Nursery Listing (Paid)", price: "£23.95" },
     platinum: { label: "Platinum", price: "£38.60" },
   };
-  const planInfo = PLAN_CONFIG[selectedPlan];
+  const planInfo = PLAN_CONFIG[selectedPlan] ?? PLAN_CONFIG['standard'];
   const [isLoading, setIsLoading] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -214,8 +213,7 @@ function NurserySignupContent() {
         localStorage.setItem("selectedTown", formData.town);
       }
 
-      if (isPaidPlan) {
-        // Paid plan → redirect to Stripe Checkout
+      // All plans go through Stripe Checkout
         const response = await fetch(`${API_CONFIG.BASE_URL}/stripe/create-checkout-session`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -229,29 +227,6 @@ function NurserySignupContent() {
         } else {
           toast.error(data.message || "Failed to initiate payment. Please try again.");
         }
-      } else {
-        // Free plan → create account directly (no payment)
-        const response = await fetch(`${API_CONFIG.BASE_URL}/auth/nursery-signup`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-          if (data.pendingApproval) {
-            toast.success("Nursery account created successfully! Your account is pending admin approval.");
-          } else {
-            toast.success("Nursery registered successfully! Redirecting to login...");
-          }
-          setTimeout(() => {
-            router.replace("/nursery-login");
-          }, 3000);
-        } else {
-          toast.error(data.message || "Registration failed. Please try again.");
-        }
-      }
     } catch (error) {
       toast.error("An error occurred. Please try again later.");
       console.error("Signup error:", error);
@@ -540,28 +515,18 @@ function NurserySignupContent() {
 
             {/* Submit Button */}
             <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              {isPaidPlan ? (
-                <p className="text-sm text-gray-600 mb-3 text-center">
-                  Registration fee: <span className="font-bold text-lg text-secondary">{planInfo?.price}</span>
+              <p className="text-sm text-gray-600 mb-3 text-center">
+                  Registration fee: <span className="font-bold text-lg text-secondary">{planInfo.price}</span>
                   <span className="block text-xs text-gray-400 mt-1">
-                    Plan: {planInfo?.label}
+                    Plan: {planInfo.label}
                   </span>
                 </p>
-              ) : (
-                <p className="text-sm text-gray-600 mb-3 text-center">
-                  <span className="font-bold text-lg text-secondary">Free Listing</span>
-                  <span className="block text-xs text-gray-400 mt-1">No payment required</span>
-                </p>
-              )}
               <Button
                 type="submit"
                 className="w-full bg-secondary hover:bg-secondary/90 cursor-pointer text-white py-6 text-base font-semibold"
                 disabled={isLoading}
               >
-                {isLoading
-                  ? (isPaidPlan ? "Redirecting to Payment..." : "Creating Account...")
-                  : (isPaidPlan ? "Proceed to Payment" : "Register Nursery")
-                }
+                {isLoading ? "Redirecting to Payment..." : "Proceed to Payment"}
               </Button>
             </div>
 

@@ -13,9 +13,11 @@ import type { DayTiming } from './weekly-timings'
 import { teamMemberService } from '@/lib/api/nursery'
 import { QualificationCheckboxes } from '@/components/sharedComponents/QualificationCheckboxes'
 import { uploadService } from '@/lib/api/upload'
+import { usePlanFeatures } from '@/hooks/use-nursery-plan'
 
 const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
     const router = useRouter();
+    const { canUploadVideo, canManageTeamMembers } = usePlanFeatures();
     const [isLoading, setIsLoading] = useState(false);
     const [loadingData, setLoadingData] = useState(true);
     const [isViewMode, setIsViewMode] = useState(false);
@@ -781,6 +783,7 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
                     </div>
 
                     {/* Video Upload */}
+                    {canUploadVideo ? (
                     <div>
                         <h3 className="text-2xl font-medium mb-4 text-foreground">Video</h3>
                         <p className="text-sm text-muted-foreground mb-4">Upload an MP4 video to showcase your nursery (max 10 MB)</p>
@@ -862,6 +865,12 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
                             )}
                         </div>
                     </div>
+                    ) : (
+                        <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 bg-gray-50 text-center">
+                            <h3 className="text-2xl font-medium mb-2 text-foreground">Video</h3>
+                            <p className="text-sm text-gray-500">Video upload is available on the <span className="font-semibold text-secondary">Platinum plan</span>.</p>
+                        </div>
+                    )}
 
                     {/* About Section */}
                     <div>
@@ -1080,6 +1089,7 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
                     <WeeklyTimings timings={weeklyTimings} onChange={setWeeklyTimings} />
 
                     {/* Team Members */}
+                    {canManageTeamMembers ? (
                     <div>
                         <h3 className="text-2xl font-medium mb-4 text-foreground">Meet the Team</h3>
                         {teamMembers.length > 0 && (
@@ -1203,6 +1213,12 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
                             </Button>
                         </div>
                     </div>
+                    ) : (
+                        <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 bg-gray-50 text-center">
+                            <h3 className="text-2xl font-medium mb-2 text-foreground">Meet the Team</h3>
+                            <p className="text-sm text-gray-500">Team member profiles are available on the <span className="font-semibold text-secondary">Platinum plan</span>.</p>
+                        </div>
+                    )}
 
                     {/* Action Buttons */}
                     <div className="flex justify-end gap-4 pt-6 border-t">

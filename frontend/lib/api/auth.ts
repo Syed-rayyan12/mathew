@@ -34,6 +34,7 @@ export interface User {
   postcode?: string;
   nurseryName?: string;
   role: string;
+  plan?: string;
   avatar?: string;
   isVerified?: boolean;
   createdAt?: string;

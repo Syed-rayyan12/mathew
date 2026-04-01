@@ -32,6 +32,7 @@ model User {
   shortlist   Shortlist[]
   recentlyViewed RecentlyViewed[]
   nurseryName String?
+  plan        String?     @default("standard") // "standard" | "platinum"
   @@map("users")
 }
 

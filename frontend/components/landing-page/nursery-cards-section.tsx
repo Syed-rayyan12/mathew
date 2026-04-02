@@ -8,6 +8,10 @@ import { nurseryService } from '@/lib/api/nursery';
 import { motion, useInView } from 'framer-motion';
 
 import { Swiper, SwiperSlide } from 'swiper/react';
+import { Navigation, Pagination } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';
 
 interface NurseryCardData {
     id: string;
@@ -190,6 +194,7 @@ const NurseryCardsSection = () => {
                         </div>
                     ) : (
                         <Swiper
+                            modules={[Navigation, Pagination]}
                             slidesPerView={3}
                             spaceBetween={24}
                             navigation={{

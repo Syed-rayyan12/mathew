@@ -205,7 +205,7 @@ const NurseryCardsSection = () => {
                             breakpoints={{
                                 320: { slidesPerView: 1 },
                                 768: { slidesPerView: 2 },
-                                1024: { slidesPerView: 2 },
+                                1024: { slidesPerView: 3 },
                             }}
                             style={{ paddingBottom: 40 }}
                         >
@@ -230,9 +230,11 @@ const NurseryCardsSection = () => {
                                             <div className="flex items-center justify-between gap-2 mb-2">
                                                 <h3 className="font-heading text-[24px] font-medium text-[#044A55]">{nursery.name}</h3>
                                                 {(nursery.city || nursery.town) && (
-                                                    <span className="text-sm font-ubuntu flex items-center text-foreground whitespace-nowrap">
+                                                    <span className="text-sm font-ubuntu flex items-center text-foreground whitespace-nowrap overflow-hidden text-ellipsis">
                                                         <LocationEditIcon className='text-secondary' />
+                                                        <span className='turncate'>
                                                         {[nursery.town, nursery.city].filter(Boolean).join(', ')}
+                                                        </span>
                                                     </span>
                                                 )}
                                             </div>

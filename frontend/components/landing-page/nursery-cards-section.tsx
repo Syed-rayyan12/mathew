@@ -201,7 +201,7 @@ const NurseryCardsSection = () => {
                                 nextEl: '.swiper-button-next-custom',
                                 prevEl: '.swiper-button-prev-custom',
                             }}
-                            pagination={{ clickable: true }}
+                            
                             breakpoints={{
                                 320: { slidesPerView: 1 },
                                 768: { slidesPerView: 2 },
@@ -228,7 +228,9 @@ const NurseryCardsSection = () => {
                                         />
                                         <div className="mt-[-160px] left-0 right-0 px-4 py-6 mx-4 shadow-lg bg-white rounded-lg relative">
                                             <div className="flex items-center justify-between gap-2 mb-2">
-                                                <h3 className="font-heading text-[24px] font-medium text-[#044A55]">{nursery.name}</h3>
+                                                <div className='w-full'>
+                                                <h3 className="font-heading text-[24px] truncate  font-medium text-[#044A55]">{nursery.name}</h3>
+                                                </div>
                                                 {(nursery.city || nursery.town) && (
                                                     <span className="text-sm font-ubuntu flex items-center text-foreground whitespace-nowrap overflow-hidden text-ellipsis">
                                                         <LocationEditIcon className='text-secondary' />

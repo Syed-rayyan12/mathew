@@ -47,7 +47,7 @@ export default function Header() {
 
             {/* Dropdown Menu */}
             <div
-              className={`absolute top-full left-0 mt-2 w-44 bg-white dark:bg-black rounded-lg shadow-lg border border-gray-100 dark:border-gray-800 overflow-hidden transition-all duration-300 origin-top ${
+              className={`absolute top-full left-0 mt-0 w-44 bg-white dark:bg-black rounded-lg shadow-lg border border-gray-100 dark:border-gray-800 overflow-hidden transition-all duration-300 origin-top ${
                 nurseryDropdown
                   ? "opacity-100 scale-y-100 translate-y-0 pointer-events-auto"
                   : "opacity-0 scale-y-95 -translate-y-2 pointer-events-none"

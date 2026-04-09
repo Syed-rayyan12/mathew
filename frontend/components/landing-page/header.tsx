@@ -47,7 +47,7 @@ export default function Header() {
 
             {/* Dropdown Menu */}
             <div
-              className={`absolute top-full left-0 mt-0 w-44 bg-white dark:bg-black rounded-lg shadow-lg border border-gray-100 dark:border-gray-800 overflow-hidden transition-all duration-300 origin-top ${
+              className={`absolute top-full left-0 mt-0 w-52 bg-white dark:bg-black rounded-lg shadow-lg border border-gray-100 dark:border-gray-800 overflow-hidden transition-all duration-300 origin-top ${
                 nurseryDropdown
                   ? "opacity-100 scale-y-100 translate-y-0 pointer-events-auto"
                   : "opacity-0 scale-y-95 -translate-y-2 pointer-events-none"
@@ -57,13 +57,19 @@ export default function Header() {
                 href="/products"
                 className="block px-4 py-3 text-sm hover:text-primary hover:bg-gray-50 dark:hover:bg-gray-900 transition"
               >
-                 Nursery
+                Nursery
               </Link>
               <Link
                 href="/nursery-group"
                 className="block px-4 py-3 text-sm hover:text-primary hover:bg-gray-50 dark:hover:bg-gray-900 transition border-t border-gray-100 dark:border-gray-800"
               >
-                Groups Nursery
+                Nursery Group
+              </Link>
+              <Link
+                href="/products?top20=true"
+                className="block px-4 py-3 text-sm hover:text-primary hover:bg-gray-50 dark:hover:bg-gray-900 transition border-t border-gray-100 dark:border-gray-800"
+              >
+                Top 20 Nurseries
               </Link>
             </div>
           </div>
@@ -71,6 +77,7 @@ export default function Header() {
           <Link href="/submit-review" className="hover:text-primary transition">Submit & Review</Link>
           <Link href="/pricing" className="hover:text-primary transition">Pricing</Link>
           <Link href="/article" className="hover:text-primary transition">Article</Link>
+          <Link href="/jobs" className="hover:text-primary transition">Jobs</Link>
           <Link href="/about" className="hover:text-primary transition">About</Link>
         </nav>
 

@@ -21,6 +21,7 @@ import {
 export default function NurseriesPage() {
   const searchParams = useSearchParams();
   const cityFromUrl = searchParams.get('city') || '';
+  const top20 = searchParams.get('top20') === 'true';
   const [searchQuery, setSearchQuery] = useState("");
   const [nurseries, setNurseries] = useState<Nursery[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,7 +35,7 @@ export default function NurseriesPage() {
 
   useEffect(() => {
     fetchNurseries();
-  }, [selectedAgeGroups, selectedCareTypes, selectedFacilities, selectedServices, cityFromUrl]);
+  }, [selectedAgeGroups, selectedCareTypes, selectedFacilities, selectedServices, cityFromUrl, top20]);
 
   const fetchNurseries = async () => {
     setLoading(true);
@@ -60,6 +61,10 @@ export default function NurseriesPage() {
         }
         
         console.log('Filtered child nurseries:', childNurseries);
+        // Sort by rating descending when top20 mode
+        if (top20) {
+          childNurseries.sort((a, b) => (b.averageRating ?? 0) - (a.averageRating ?? 0));
+        }
         setNurseries(childNurseries);
       }
     } catch (error) {
@@ -110,9 +115,9 @@ export default function NurseriesPage() {
     setIsFilterOpen(false);
   };
 
-  const filteredNurseries = nurseries.filter(nursery =>
-    nursery.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredNurseries = nurseries
+    .filter(nursery => nursery.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    .slice(0, top20 ? 20 : undefined);
 
   // Filter content component for reusability
   const FilterContent = () => (

@@ -69,6 +69,7 @@ export default function Header() {
           </div>
 
           <Link href="/submit-review" className="hover:text-primary transition">Submit & Review</Link>
+          <Link href="/pricing" className="hover:text-primary transition">Pricing</Link>
           <Link href="/article" className="hover:text-primary transition">Article</Link>
           <Link href="/about" className="hover:text-primary transition">About</Link>
         </nav>

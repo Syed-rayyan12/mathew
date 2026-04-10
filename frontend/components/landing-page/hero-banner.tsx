@@ -1,41 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react'
-import { Search, Check, ChevronsUpDown, MapPin, Building2 } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import React, { useState } from 'react'
+import { Search } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
-import { UK_CITIES } from '@/lib/data/uk-cities'
-import { UK_TOWNS } from '@/lib/data/uk-towns'
 import { toast } from 'sonner'
-import { nurseryService } from '@/lib/api/nursery'
-
-interface AutocompleteResults {
-  cities: string[];
-  towns: string[];
-  groups: Array<{
-    id: string;
-    name: string;
-    slug: string;
-    city: string;
-    cardImage?: string;
-  }>;
-  nurseries: Array<{
-    id: string;
-    name: string;
-    slug: string;
-    city: string;
-    town?: string;
-    cardImage?: string;
-    group?: {
-      name: string;
-      slug: string;
-    };
-  }>;
-}
 
 const SLIDES = [
   '/images/hero-banner.png',
@@ -45,99 +14,25 @@ const SLIDES = [
 
 const HeroBanner = () => {
   const router = useRouter();
-  const [selectedCity, setSelectedCity] = useState<string>('');
-  const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchType, setSearchType] = useState<'nursery' | 'group'>('nursery');
-  const [autocompleteResults, setAutocompleteResults] = useState<AutocompleteResults>({
-    cities: [],
-    towns: [],
-    groups: [],
-    nurseries: [],
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const searchContainerRef = useRef<HTMLDivElement>(null);
-
-  // Click outside to close dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // Debounced autocomplete search
-  useEffect(() => {
-    const timer = setTimeout(async () => {
-      if (searchQuery.trim().length > 0) {
-        setIsLoading(true);
-        try {
-          const response = await nurseryService.autocomplete(searchQuery);
-          if (response.success && response.data) {
-            setAutocompleteResults({
-              ...response.data,
-              towns: response.data.towns || [],
-            });
-          }
-        } catch (error) {
-          console.error('Autocomplete error:', error);
-        } finally {
-          setIsLoading(false);
-        }
-      } else {
-        // Show limited UK cities and towns when no search query
-        setAutocompleteResults({
-          cities: UK_CITIES.slice(0, 10),
-          towns: UK_TOWNS.slice(0, 10),
-          groups: [],
-          nurseries: [],
-        });
-      }
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
 
   const handleSearch = () => {
-    if (!selectedCity) {
-      toast.error('Please select a city, group, or nursery');
+    if (!searchQuery.trim()) {
+      toast.error('Please enter a city, group, or nursery name');
       return;
     }
-
-    // Navigate to appropriate page based on search type
     if (searchType === 'group') {
-      router.push(`/nursery-group?city=${encodeURIComponent(selectedCity)}&search=${encodeURIComponent(searchQuery)}&type=group`);
+      router.push(`/nursery-group?city=${encodeURIComponent(searchQuery.trim())}&search=${encodeURIComponent(searchQuery.trim())}&type=group`);
     } else {
-      router.push(`/products?city=${encodeURIComponent(selectedCity)}&search=${encodeURIComponent(searchQuery)}&type=nursery`);
+      router.push(`/products?city=${encodeURIComponent(searchQuery.trim())}&search=${encodeURIComponent(searchQuery.trim())}&type=nursery`);
     }
-  };
-
-  const handleSelectCity = (city: string) => {
-    setSelectedCity(city);
-    setSearchQuery(city); // Display the selected city in the input
-    setOpen(false);
-  };
-
-  const handleSelectGroup = (group: { slug: string; city: string }) => {
-    setOpen(false);
-    router.push(`/nursery-group/${group.slug}`);
-  };
-
-  const handleSelectNursery = (nursery: { slug: string; group?: { slug: string } }) => {
-    setOpen(false);
-    // Navigate to nursery detail page at /products/[slug]
-    router.push(`/products/${nursery.slug}`);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
+    if (e.key === 'Enter') handleSearch();
   };
+
   return (
     <>
         <section className="w-full h-[100vh] max-lg:h-[60vh] max-sm:h-[90vh] lg:h-[70vh] xl:h-[95vh] relative flex justify-center overflow-hidden"> 
@@ -191,144 +86,17 @@ const HeroBanner = () => {
                  </select>
                  
                  {/* Divider */}
-                 <div className="h-8 w-px bg-gray-300"></div>
+                 <div className="h-8 w-px bg-gray-300 self-center"></div>
                  
-                 {/* Search Input with Dropdown */}
-                 <div ref={searchContainerRef} className="relative w-64 max-sm:w-full max-md:w-full">
-                   <input
-                     type="text"
-                     placeholder="Search city, group or nursery"
-                     value={searchQuery}
-                     onChange={(e) => {
-                       setSearchQuery(e.target.value);
-                       setOpen(true);
-                     }}
-                     onFocus={() => setOpen(true)}
-                     className="w-full px-4 py-3 bg-transparent border-none outline-none text-gray-700 font-normal placeholder:text-gray-400"
-                   />
-                   
-                   {/* Dropdown Results */}
-                   {open && (searchQuery.length > 0 || autocompleteResults.cities.length > 0) && (
-                     <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg  w-[400px]  z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                       <Command shouldFilter={false}>
-                         <CommandList>
-                           {isLoading ? (
-                             <div className="py-6 text-center text-sm text-gray-500">
-                               Loading...
-                             </div>
-                           ) : (
-                             <>
-                               {autocompleteResults.cities.length === 0 && 
-                                autocompleteResults.towns.length === 0 && 
-                                autocompleteResults.groups.length === 0 && 
-                                autocompleteResults.nurseries.length === 0 ? (
-                                 <CommandEmpty>No results found.</CommandEmpty>
-                               ) : (
-                                 <>
-                                   {/* Cities and Towns in 2 columns with separate search */}
-                                   {(autocompleteResults.cities.length > 0 || autocompleteResults.towns.length > 0) && (
-                                     <div className="grid grid-cols-2 gap-2 p-2">
-                                       {/* Cities Column */}
-                                       <div className="border-r pr-2">
-                                         <div className="px-2 pb-1 text-xs font-semibold text-gray-500 uppercase">Cities</div>
-                                         <div className="max-h-64 overflow-y-auto">
-                                           <CommandGroup>
-                                             {autocompleteResults.cities.slice(0, 50).map((city) => (
-                                               <CommandItem
-                                                 key={`city-${city}`}
-                                                 value={city}
-                                                 onSelect={() => handleSelectCity(city)}
-                                               >
-                                                 <MapPin className="mr-2 h-4 w-4 text-secondary" />
-                                                 <span>{city}</span>
-                                                 <Check
-                                                   className={cn(
-                                                     "ml-auto h-4 w-4",
-                                                     selectedCity === city ? "opacity-100" : "opacity-0"
-                                                   )}
-                                                 />
-                                               </CommandItem>
-                                             ))}
-                                           </CommandGroup>
-                                         </div>
-                                       </div>
-
-                                       {/* Towns Column */}
-                                       <div>
-                                         <div className="px-2 pb-1 text-xs font-semibold text-gray-500 uppercase">Towns</div>
-                                         <div className="max-h-64 overflow-y-auto">
-                                           <CommandGroup>
-                                             {autocompleteResults.towns.slice(0, 50).map((town) => (
-                                               <CommandItem
-                                                 key={`town-${town}`}
-                                                 value={town}
-                                                 onSelect={() => handleSelectCity(town)}
-                                               >
-                                                 <MapPin className="mr-2 h-4 w-4 text-secondary" />
-                                                 <span>{town}</span>
-                                                 <Check
-                                                   className={cn(
-                                                     "ml-auto h-4 w-4",
-                                                     selectedCity === town ? "opacity-100" : "opacity-0"
-                                                   )}
-                                                 />
-                                               </CommandItem>
-                                             ))}
-                                           </CommandGroup>
-                                         </div>
-                                       </div>
-                                     </div>
-                                 )}
-
-                                 {/* Groups - Show only if searchType is 'group' */}
-                                 {searchType === 'group' && autocompleteResults.groups.length > 0 && (
-                                   <CommandGroup heading="Nursery Groups">
-                                     {autocompleteResults.groups.map((group) => (
-                                       <CommandItem
-                                         key={`group-${group.id}`}
-                                         value={group.name}
-                                         onSelect={() => handleSelectGroup(group)}
-                                       >
-                                         <Building2 className="mr-2 h-4 w-4 text-secondary" />
-                                         <div className="flex flex-col">
-                                           <span className="font-medium">{group.name}</span>
-                                           <span className="text-xs text-gray-500">{group.city}</span>
-                                         </div>
-                                       </CommandItem>
-                                     ))}
-                                   </CommandGroup>
-                                 )}
-
-                                 {/* Nurseries - Show only if searchType is 'nursery' */}
-                                 {searchType === 'nursery' && autocompleteResults.nurseries.length > 0 && (
-                                   <CommandGroup heading="Nurseries">
-                                     {autocompleteResults.nurseries.map((nursery) => (
-                                       <CommandItem
-                                         key={`nursery-${nursery.id}`}
-                                         value={nursery.name}
-                                         onSelect={() => handleSelectNursery(nursery)}
-                                       >
-                                         <Building2 className="mr-2 h-4 w-4 text-green-600" />
-                                         <div className="flex flex-col">
-                                           <span className="font-medium">{nursery.name}</span>
-                                           <span className="text-xs text-gray-500">
-                                             {[nursery.town, nursery.city].filter(Boolean).join(', ')}
-                                             {nursery.group && ` • ${nursery.group.name}`}
-                                           </span>
-                                         </div>
-                                       </CommandItem>
-                                     ))}
-                                   </CommandGroup>
-                                 )}
-                               </>
-                             )}
-                           </>
-                         )}
-                       </CommandList>
-                     </Command>
-                   </div>
-                   )}
-                 </div>
+                 {/* Search Input */}
+                 <input
+                   type="text"
+                   placeholder="Search city, group or nursery"
+                   value={searchQuery}
+                   onChange={(e) => setSearchQuery(e.target.value)}
+                   onKeyDown={handleKeyPress}
+                   className="w-64 max-sm:w-full px-4 py-3 bg-transparent border-none outline-none text-gray-700 font-normal placeholder:text-gray-400"
+                 />
                  
                  {/* Search Button */}
                  <button 
@@ -346,3 +114,6 @@ const HeroBanner = () => {
 }
 
 export default HeroBanner;
+
+
+

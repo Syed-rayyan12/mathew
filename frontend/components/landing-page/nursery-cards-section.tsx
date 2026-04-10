@@ -2,9 +2,12 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { ArrowRight, LocationEditIcon, Star } from 'lucide-react';
+import { ArrowRight, LocationEditIcon, Star, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { nurseryService } from '@/lib/api/nursery';
+import { shortlistService } from '@/lib/api/shortlist';
+import { authService } from '@/lib/api/auth';
+import { toast } from 'sonner';
 import { motion, useInView } from 'framer-motion';
 
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -33,12 +36,50 @@ const NurseryCardsSection = () => {
     const [nurseries, setNurseries] = useState<NurseryCardData[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [shortlistedIds, setShortlistedIds] = useState<Set<string>>(new Set());
+    const [shortlistLoadingIds, setShortlistLoadingIds] = useState<Set<string>>(new Set());
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true, amount: 0.2 });
 
     useEffect(() => {
         fetchNurseries();
     }, []);
+
+    const checkShortlistStatuses = async (ids: string[]) => {
+        if (!authService.isAuthenticated() || ids.length === 0) return;
+        const results = await Promise.allSettled(ids.map(id => shortlistService.checkShortlisted(id)));
+        const shortlisted = new Set<string>();
+        results.forEach((result, i) => {
+            if (result.status === 'fulfilled' && result.value?.data?.isShortlisted) {
+                shortlisted.add(ids[i]);
+            }
+        });
+        setShortlistedIds(shortlisted);
+    };
+
+    const toggleShortlist = async (e: React.MouseEvent, nurseryId: string) => {
+        e.preventDefault();
+        if (!authService.isAuthenticated()) {
+            toast.error('Please sign in to shortlist nurseries');
+            return;
+        }
+        setShortlistLoadingIds(prev => new Set(prev).add(nurseryId));
+        try {
+            if (shortlistedIds.has(nurseryId)) {
+                await shortlistService.removeFromShortlist(nurseryId);
+                setShortlistedIds(prev => { const s = new Set(prev); s.delete(nurseryId); return s; });
+                toast.success('Removed from shortlist');
+            } else {
+                await shortlistService.addToShortlist(nurseryId);
+                setShortlistedIds(prev => new Set(prev).add(nurseryId));
+                toast.success('Added to shortlist');
+            }
+        } catch {
+            toast.error('Failed to update shortlist');
+        } finally {
+            setShortlistLoadingIds(prev => { const s = new Set(prev); s.delete(nurseryId); return s; });
+        }
+    };
 
     const fetchNurseries = async () => {
         try {
@@ -61,6 +102,7 @@ const NurseryCardsSection = () => {
                     group: nursery.group,
                 }));
                 setNurseries(displayNurseries);
+                checkShortlistStatuses(displayNurseries.map(n => n.id));
             } else {
                 console.warn('No nurseries found or invalid response:', response);
             }
@@ -226,6 +268,18 @@ const NurseryCardsSection = () => {
                                                 (e.target as HTMLImageElement).src = '/images/nursery-placeholder.png';
                                             }}
                                         />
+                                        {/* Heart / Shortlist button */}
+                                        <button
+                                            onClick={(e) => toggleShortlist(e, nursery.id)}
+                                            disabled={shortlistLoadingIds.has(nursery.id)}
+                                            className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-sm shadow hover:scale-110 transition-transform disabled:opacity-50 z-10"
+                                            aria-label={shortlistedIds.has(nursery.id) ? 'Remove from shortlist' : 'Add to shortlist'}
+                                        >
+                                            <Heart
+                                                size={18}
+                                                className={shortlistedIds.has(nursery.id) ? 'fill-red-500 text-red-500' : 'text-gray-400'}
+                                            />
+                                        </button>
                                         <div className="mt-[-160px] left-0 right-0 px-4 py-6 mx-4 shadow-lg bg-white rounded-lg relative">
                                             <div className="flex items-center justify-between gap-2 mb-2">
                                                 <div className='w-full'>

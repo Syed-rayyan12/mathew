@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
 import { Star, Search } from "lucide-react";
-import { nurseryService } from "@/lib/api/nursery";
+import { nurseryService, reviewService } from "@/lib/api/nursery";
+import type { Review } from "@/lib/api/nursery";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
@@ -26,6 +27,8 @@ export default function NurseryReviewForm() {
   const [isSearching, setIsSearching] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [sidebarReviews, setSidebarReviews] = useState<Review[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
 
   // Check for pre-filled nursery from URL params
   useEffect(() => {
@@ -104,6 +107,16 @@ export default function NurseryReviewForm() {
     setSelectedNursery(nursery);
     setSearchQuery("");
     setSearchResults([]);
+    // Fetch reviews for sidebar
+    setReviewsLoading(true);
+    reviewService.getNurseryReviews(nursery.id).then(res => {
+      if (res.success && res.data) {
+        const data = res.data as any;
+        setSidebarReviews(Array.isArray(data.reviews) ? data.reviews : []);
+      }
+    }).catch(() => {
+      setSidebarReviews([]);
+    }).finally(() => setReviewsLoading(false));
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -209,6 +222,21 @@ export default function NurseryReviewForm() {
 
       if (response.success) {
         toast.success(`Review submitted! Your average rating of ${averageRating} stars is pending approval.`);
+        // Add the new review optimistically to the sidebar
+        const newReview: Review = {
+          id: Date.now().toString(),
+          overallRating: averageRating,
+          content: form.review,
+          connection: form.connection,
+          firstName: form.firstName,
+          lastName: form.lastName,
+          initialsOnly: form.initialsOnly,
+          isVerified: false,
+          isApproved: false,
+          isRejected: false,
+          createdAt: new Date().toISOString(),
+        };
+        setSidebarReviews(prev => [newReview, ...prev]);
         // Reset form
         setForm({
           overall: 0,
@@ -296,7 +324,7 @@ export default function NurseryReviewForm() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-8">
+    <div className="max-w-7xl mx-auto p-8">
       <motion.h1
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -304,6 +332,10 @@ export default function NurseryReviewForm() {
       >
         Submit a Review
       </motion.h1>
+
+      <div className="flex flex-col lg:flex-row gap-8 items-start">
+        {/* LEFT: Form */}
+        <div className="flex-1 min-w-0">
 
       {/* Search Section */}
       <Card className="rounded-2xl shadow-md mb-6">
@@ -520,7 +552,83 @@ export default function NurseryReviewForm() {
           </form>
         </CardContent>
       </Card>
-      )}
+      )}    
+        </div>
+
+        {/* RIGHT: Reviews Sidebar */}
+        <div className="w-full lg:w-[360px] shrink-0">
+          <div className="sticky top-24 bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-[#044A55]">
+                {selectedNursery ? `${selectedNursery.name} Reviews` : 'Recent Reviews'}
+              </h3>
+              {sidebarReviews.length > 0 && (
+                <span className="text-xs bg-secondary/10 text-secondary font-semibold px-2 py-0.5 rounded-full">
+                  {sidebarReviews.length}
+                </span>
+              )}
+            </div>
+
+            <div className="overflow-y-auto max-h-[600px] divide-y divide-gray-100 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
+              {!selectedNursery ? (
+                <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                  <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                    <Star size={20} className="text-gray-400" />
+                  </div>
+                  <p className="text-gray-400 text-sm">Select a nursery to see its reviews</p>
+                </div>
+              ) : reviewsLoading ? (
+                <div className="flex items-center justify-center py-10">
+                  <div className="w-6 h-6 rounded-full border-2 border-secondary border-t-transparent animate-spin" />
+                </div>
+              ) : sidebarReviews.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                  <p className="text-gray-400 text-sm">No reviews yet. Be the first!</p>
+                </div>
+              ) : (
+                sidebarReviews.map(review => {
+                  const initials = `${review.firstName.charAt(0)}${review.lastName.charAt(0)}`.toUpperCase();
+                  const displayName = review.initialsOnly
+                    ? `${review.firstName.charAt(0)}. ${review.lastName.charAt(0)}.`
+                    : `${review.firstName} ${review.lastName}`;
+                  const date = new Date(review.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+                  return (
+                    <div key={review.id} className="p-4">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                          <span className="text-xs font-semibold text-white tracking-wide">{initials}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-800 truncate">{displayName}</p>
+                          <p className="text-xs text-gray-400">{date}</p>
+                        </div>
+                        <div className="flex shrink-0">
+                          {Array.from({ length: 5 }, (_, i) => (
+                            <Star
+                              key={i}
+                              size={12}
+                              className={i < Math.round(review.overallRating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200 fill-gray-200'}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      {review.connection && (
+                        <p className="text-xs text-secondary font-medium mb-1">{review.connection}</p>
+                      )}
+                      <p className="text-xs text-gray-600 leading-relaxed line-clamp-4">{review.content}</p>
+                      {!review.isApproved && (
+                        <span className="inline-block mt-2 text-[11px] bg-yellow-50 text-yellow-600 border border-yellow-200 px-2 py-0.5 rounded-full">
+                          Pending approval
+                        </span>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

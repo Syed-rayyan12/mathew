@@ -80,7 +80,7 @@ export default function ManageNursery() {
           </Button>
         </div>
 
-        <div className='mt-6  flex w-full gap-4 items-center'>
+        <div className='mt-6  flex w-full gap-5 items-center'>
           {loading ? (
             <div className="text-center py-12 bg-white rounded-md w-full">
               <p className="text-muted-foreground">Loading nurseries...</p>

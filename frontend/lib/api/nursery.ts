@@ -41,6 +41,10 @@ export interface Nursery {
     crbChecked: boolean;
     image?: string;
   }>;
+  pricingFeatures?: Array<{
+    name: string;
+    price: string;
+  }>;
 }
 
 export interface NurseryUpdateData {
@@ -67,6 +71,10 @@ export interface NurseryUpdateData {
   location?: string;
   openingTime?: string;
   closingTime?: string;
+  pricingFeatures?: Array<{
+    name: string;
+    price: string;
+  }>;
 }
 
 // User-facing nursery service (for public viewing)

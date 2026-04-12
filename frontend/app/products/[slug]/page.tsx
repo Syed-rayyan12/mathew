@@ -281,10 +281,11 @@ export default function NurseryDetailsPage() {
         {/* LEFT MAIN CONTENT */}
         <div className="col-span-1 lg:col-span-2 bg-white mt-6 md:mt-10 px-3 md:px-4 pt-3 md:pt-4 pb-10 md:pb-20 shadow-[0px_4px_4px_4px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] rounded-[6px]">
           <Tabs defaultValue="about" className="w-full">
-            <TabsList className="grid grid-cols-3 bg-transparent gap-2 md:gap-4 h-auto">
+            <TabsList className="grid grid-cols-4 bg-transparent gap-2 md:gap-4 h-auto">
               <TabsTrigger value="about" className="data-[state=active]:border-b-2 data-[state=active]:border-secondary data-[state=active]:text-secondary cursor-pointer font-medium font-heading text-lg md:text-[24px] data-[state=active]:bg-transparent data-[state=active]:shadow-none">About</TabsTrigger>
               <TabsTrigger value="reviews" className="data-[state=active]:border-b-2 data-[state=active]:border-secondary data-[state=active]:text-secondary cursor-pointer font-medium font-heading text-lg md:text-[24px] data-[state=active]:bg-transparent data-[state=active]:shadow-none">Reviews</TabsTrigger>
               <TabsTrigger value="team" className="data-[state=active]:border-b-2 data-[state=active]:border-secondary data-[state=active]:text-secondary cursor-pointer font-medium font-heading text-lg md:text-[24px] data-[state=active]:bg-transparent data-[state=active]:shadow-none">Team</TabsTrigger>
+              <TabsTrigger value="pricing" className="data-[state=active]:border-b-2 data-[state=active]:border-secondary data-[state=active]:text-secondary cursor-pointer font-medium font-heading text-lg md:text-[24px] data-[state=active]:bg-transparent data-[state=active]:shadow-none">Pricing</TabsTrigger>
             </TabsList>
             <TabsContent value="about" className="mt-4 md:mt-5 overflow-hidden">
               <div className="space-y-4 md:space-y-6">
@@ -523,6 +524,30 @@ export default function NurseryDetailsPage() {
                 ) : (
                   <div className="text-center py-10 bg-gray-50 rounded-lg">
                     <p className="text-gray-500">No team information available yet.</p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+            <TabsContent value="pricing" className="mt-4 md:mt-5 overflow-hidden">
+              <div className="space-y-4 md:space-y-6">
+                <h2 className="text-xl md:text-2xl lg:text-[34px] mb-2 text-[#044A55] font-medium">PRICING & FEATURES</h2>
+                {nursery.pricingFeatures && nursery.pricingFeatures.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {nursery.pricingFeatures.map((feature: { name: string; price: string }, index: number) => (
+                      <div key={index} className="bg-[#F9F9F9] rounded-[6px] p-4 shadow-sm border border-gray-100 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="flex justify-center items-center bg-secondary/10 rounded-full w-10 h-10 flex-shrink-0">
+                            <Check className="text-secondary w-5 h-5" />
+                          </div>
+                          <span className="font-medium text-[#1F2937] font-heading text-base md:text-lg">{feature.name}</span>
+                        </div>
+                        <span className="text-secondary font-bold text-lg md:text-[22px] font-heading whitespace-nowrap">{feature.price}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-10 bg-gray-50 rounded-lg">
+                    <p className="text-gray-500">No pricing features listed yet.</p>
                   </div>
                 )}
               </div>

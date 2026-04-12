@@ -87,6 +87,7 @@ export const createNursery = async (
       cardImage,
       images,
       videoUrl,
+      pricingFeatures,
     } = req.body;
 
     console.log('Creating nursery with data:', { name, city, userId });
@@ -153,6 +154,7 @@ export const createNursery = async (
           cardImage: cardImage || null,
           images: Array.isArray(images) ? images : [],
           videoUrl: videoUrl || null,
+          pricingFeatures: Array.isArray(pricingFeatures) ? pricingFeatures : [],
           ownerId: userId,
           groupId: parentGroup.id,
           isApproved: true,

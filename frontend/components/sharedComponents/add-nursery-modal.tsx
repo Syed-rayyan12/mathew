@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "../ui/separator";
-import { Plus, X, Upload, Trash2, Check, ChevronsUpDown } from "lucide-react";
+import { Plus, X, Upload, Trash2, Check, ChevronsUpDown, Tag } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -49,6 +49,9 @@ export default function AddNurseryModal({
   const [weeklyTimings, setWeeklyTimings] = useState(getDefaultTimings());
   const [teamMembers, setTeamMembers] = useState<{ name: string; experience: string; qualifications: string[]; crbChecked: boolean; image?: string }[]>([]);
   const [newMember, setNewMember] = useState({ name: '', experience: '', qualifications: [] as string[], crbChecked: false, image: '' });
+  const [pricingFeatures, setPricingFeatures] = useState<{ name: string; price: string }[]>([]);
+  const [featureModalOpen, setFeatureModalOpen] = useState(false);
+  const [featureForm, setFeatureForm] = useState({ name: '', price: '' });
   const [formData, setFormData] = useState({
     nurseryName: "",
     ageGroup: "",
@@ -173,6 +176,7 @@ export default function AddNurseryModal({
         facilities: allFacilities,
         fees,
         openingHours,
+        pricingFeatures,
       });
 
       console.log('Create nursery API response:', response);
@@ -217,6 +221,8 @@ export default function AddNurseryModal({
         setWeeklyTimings(getDefaultTimings());
         setTeamMembers([]);
         setNewMember({ name: '', experience: '', qualifications: [] as string[], crbChecked: false, image: '' });
+        setPricingFeatures([]);
+        setFeatureForm({ name: '', price: '' });
         
         onOpenChange(false);
         if (onSuccess) {
@@ -768,6 +774,48 @@ export default function AddNurseryModal({
 
           {/* Meet the Team */}
           <div>
+            <h3 className="font-medium text-lg mb-2">Pricing Features</h3>
+            <p className="text-sm text-muted-foreground mb-3">Add individual service items and their prices</p>
+
+            {/* Existing features list */}
+            {pricingFeatures.length > 0 && (
+              <div className="space-y-2 mb-4">
+                {pricingFeatures.map((f, i) => (
+                  <div key={i} className="flex items-center justify-between bg-gray-50 rounded-lg p-3 border">
+                    <div className="flex items-center gap-3">
+                      <div className="flex justify-center items-center bg-secondary/10 rounded-full w-8 h-8 flex-shrink-0">
+                        <Tag className="text-secondary w-4 h-4" />
+                      </div>
+                      <span className="text-sm font-medium">{f.name}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-bold text-secondary">{f.price}</span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setPricingFeatures(prev => prev.filter((_, idx) => idx !== i))}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => { setFeatureForm({ name: '', price: '' }); setFeatureModalOpen(true); }}
+            >
+              <Plus className="h-4 w-4 mr-2" /> Add Feature
+            </Button>
+          </div>
+
+          {/* Meet the Team */}
+          <div>
             <h3 className="font-medium text-lg mb-2">Meet the Team</h3>
             {!canManageTeamMembers ? (
               <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center bg-gray-50">
@@ -908,6 +956,50 @@ export default function AddNurseryModal({
             className="bg-secondary hover:bg-secondary/90"
           >
             {loading ? 'Creating...' : 'Create Nursery'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    {/* Pricing Feature Sub-Modal */}
+    <Dialog open={featureModalOpen} onOpenChange={setFeatureModalOpen}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="font-sans text-lg">Add Pricing Feature</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div>
+            <Label className="block mb-2">Item Name *</Label>
+            <Input
+              placeholder="e.g. Morning Session"
+              value={featureForm.name}
+              onChange={e => setFeatureForm(p => ({ ...p, name: e.target.value }))}
+            />
+          </div>
+          <div>
+            <Label className="block mb-2">Item Fee *</Label>
+            <Input
+              placeholder="e.g. £450/month"
+              value={featureForm.price}
+              onChange={e => setFeatureForm(p => ({ ...p, price: e.target.value }))}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setFeatureModalOpen(false)}>Cancel</Button>
+          <Button
+            className="bg-secondary hover:bg-secondary/90"
+            onClick={() => {
+              if (!featureForm.name.trim() || !featureForm.price.trim()) {
+                toast.error('Both item name and fee are required');
+                return;
+              }
+              setPricingFeatures(prev => [...prev, { ...featureForm }]);
+              setFeatureForm({ name: '', price: '' });
+              setFeatureModalOpen(false);
+            }}
+          >
+            Add
           </Button>
         </DialogFooter>
       </DialogContent>

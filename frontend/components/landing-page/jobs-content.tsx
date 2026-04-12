@@ -14,6 +14,7 @@ interface Job {
   responsibilities: string[]
   requirements: string[]
   postedDate: string
+  image: string
 }
 
 const jobs: Job[] = [
@@ -24,6 +25,7 @@ const jobs: Job[] = [
     location: 'London, UK',
     type: 'Full-time',
     experience: '3+ years',
+    image: 'https://images.unsplash.com/photo-1573496799652-408c2ac9fe98?w=600&h=300&fit=crop',
     description:
       'We are looking for an experienced Nursery Manager to lead day-to-day operations, ensure outstanding childcare standards, and manage a dedicated team of professionals.',
     responsibilities: [
@@ -49,6 +51,7 @@ const jobs: Job[] = [
     location: 'Manchester, UK',
     type: 'Full-time',
     experience: '1+ years',
+    image: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&h=300&fit=crop',
     description:
       'Join our passionate childcare team as an Early Years Practitioner where you will support children aged 0–5 in their learning and development journey.',
     responsibilities: [
@@ -74,6 +77,7 @@ const jobs: Job[] = [
     location: 'Birmingham, UK',
     type: 'Full-time',
     experience: '2+ years',
+    image: 'https://images.unsplash.com/photo-1587616211892-f34e3d891cb2?w=600&h=300&fit=crop',
     description:
       'We are seeking a motivated Room Leader for our Toddler room. You will take the lead in planning, delivering, and evaluating activities for children aged 1–3.',
     responsibilities: [
@@ -99,6 +103,7 @@ const jobs: Job[] = [
     location: 'Leeds, UK',
     type: 'Part-time',
     experience: '1+ years',
+    image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600&h=300&fit=crop',
     description:
       'We are looking for a passionate Nursery Cook to prepare healthy, nutritious meals for children aged 3 months to 5 years in line with dietary requirements and food standards.',
     responsibilities: [
@@ -124,6 +129,7 @@ const jobs: Job[] = [
     location: 'Bristol, UK',
     type: 'Full-time',
     experience: '3+ years',
+    image: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?w=600&h=300&fit=crop',
     description:
       'We are recruiting a SENCO to champion inclusive practice and ensure all children with additional needs receive the best possible support.',
     responsibilities: [
@@ -149,6 +155,7 @@ const jobs: Job[] = [
     location: 'Remote / London, UK',
     type: 'Part-time',
     experience: '1+ years',
+    image: 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=600&h=300&fit=crop',
     description:
       'We are looking for an organised and friendly Nursery Administrator to manage front-office operations, communications, and administrative tasks.',
     responsibilities: [
@@ -367,42 +374,59 @@ export default function JobsContent() {
 
       {/* Job Listings */}
       <section className="max-w-6xl mx-auto px-6 py-12">
-        <div className="grid gap-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {jobs.map(job => (
             <div
               key={job.id}
-              className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 flex flex-col md:flex-row md:items-center gap-4 hover:shadow-md transition-shadow"
+              className="group bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col"
             >
-              {/* Job Info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-2 mb-1">
-                  <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${typeBadgeColor[job.type]}`}>
-                    {job.type}
-                  </span>
-                  <span className="text-xs text-gray-400">{job.postedDate}</span>
-                </div>
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white">{job.title}</h2>
-                <p className="text-sm text-primary font-medium">{job.department}</p>
-                <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
-                  <span className="flex items-center gap-1"><MapPin size={14} />{job.location}</span>
-                  <span className="flex items-center gap-1"><Clock size={14} />{job.experience}</span>
+              {/* Card Image Banner */}
+              <div className="relative h-44 overflow-hidden">
+                <img
+                  src={job.image}
+                  alt={job.title}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                {/* dark overlay */}
+                <div className="absolute inset-0 bg-black/30" />
+                {/* Type badge */}
+                <span className={`absolute top-3 right-3 text-xs font-semibold px-2.5 py-0.5 rounded-full ${typeBadgeColor[job.type]}`}>
+                  {job.type}
+                </span>
+                <span className="absolute top-3 left-3 text-xs text-white bg-black/40 px-2 py-0.5 rounded-full">
+                  {job.postedDate}
+                </span>
+                {/* Title overlay at bottom of image */}
+                <div className="absolute bottom-0 left-0 right-0 px-4 py-3 bg-gradient-to-t from-black/70 to-transparent">
+                  <p className="text-xs font-semibold text-white/70 uppercase tracking-wider">{job.department}</p>
+                  <h2 className="text-base font-bold text-white leading-snug">{job.title}</h2>
                 </div>
               </div>
 
-              {/* Actions */}
-              <div className="flex items-center gap-3 shrink-0">
-                <button
-                  onClick={() => setSelectedJob(job)}
-                  className="text-sm px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-primary hover:text-primary transition font-medium"
-                >
-                  View Details
-                </button>
-                <button
-                  onClick={() => setApplyJob(job)}
-                  className="text-sm px-5 py-2 bg-primary text-white rounded-lg font-medium hover:opacity-90 transition flex items-center gap-1"
-                >
-                  Apply <ChevronRight size={15} />
-                </button>
+              {/* Card Body */}
+              <div className="p-5 flex flex-col flex-1">
+                <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-4 flex-1">{job.description}</p>
+
+                <div className="flex flex-wrap gap-3 text-xs text-gray-500 dark:text-gray-400 mb-4">
+                  <span className="flex items-center gap-1"><MapPin size={12} />{job.location}</span>
+                  <span className="flex items-center gap-1"><Clock size={12} />{job.experience}</span>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2 pt-3 border-t border-gray-100 dark:border-gray-800">
+                  <button
+                    onClick={() => setSelectedJob(job)}
+                    className="flex-1 text-sm py-2 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-primary hover:text-primary transition font-medium"
+                  >
+                    View Details
+                  </button>
+                  <button
+                    onClick={() => setApplyJob(job)}
+                    className="flex-1 text-sm py-2 bg-primary text-white rounded-lg font-medium hover:opacity-90 transition flex items-center justify-center gap-1"
+                  >
+                    Apply <ChevronRight size={14} />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -419,17 +443,23 @@ export default function JobsContent() {
             className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-white dark:bg-gray-900 flex items-center justify-between px-6 py-4 border-b dark:border-gray-800 z-10">
-              <div>
-                <p className="text-xs font-medium text-primary uppercase tracking-wider">{selectedJob.department}</p>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">{selectedJob.title}</h2>
+            <div className="sticky top-0 bg-white dark:bg-gray-900 z-10">
+              <div className="relative h-40 overflow-hidden">
+                <img src={selectedJob.image} alt={selectedJob.title} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-black/40" />
+                <button
+                  onClick={() => setSelectedJob(null)}
+                  className="absolute top-3 right-3 p-1.5 rounded-full bg-black/40 hover:bg-black/60 text-white transition"
+                >
+                  <X size={18} />
+                </button>
+                <div className="absolute bottom-0 left-0 right-0 px-5 py-3 bg-gradient-to-t from-black/70 to-transparent">
+                  <p className="text-xs font-semibold text-white/70 uppercase tracking-wider">{selectedJob.department}</p>
+                  <h2 className="text-xl font-bold text-white">{selectedJob.title}</h2>
+                </div>
               </div>
-              <button
-                onClick={() => setSelectedJob(null)}
-                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-              >
-                <X size={20} />
-              </button>
+              <div className="flex items-center justify-between px-6 py-3 border-b dark:border-gray-800">
+            </div>
             </div>
 
             <div className="px-6 py-6 space-y-6">

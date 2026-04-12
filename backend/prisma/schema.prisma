@@ -87,9 +87,10 @@ model Nursery {
   updatedAt    DateTime      @updatedAt
   ownerId      String        @db.VarChar(15)
   groupId      String?       @db.VarChar(15)
-  aboutUs      String?
-  philosophy   String?
-  videoUrl     String?
+  aboutUs         String?
+  philosophy      String?
+  videoUrl        String?
+  pricingFeatures Json?
   group        Group?        @relation("GroupNurseries", fields: [groupId], references: [id], onDelete: SetNull)
   owner        User          @relation("NurseryOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   reviews      Review[]

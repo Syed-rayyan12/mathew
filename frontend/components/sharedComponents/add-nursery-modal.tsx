@@ -243,7 +243,8 @@ export default function AddNurseryModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
       <Separator />
       <DialogContent className="max-w-6xl w-[100%] overflow-y-auto p-4 max-h-[90vh]">
         <DialogHeader className="border-b pb-4">
@@ -1004,5 +1005,6 @@ export default function AddNurseryModal({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    </>
   );
 }

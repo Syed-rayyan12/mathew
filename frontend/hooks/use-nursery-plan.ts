@@ -18,5 +18,6 @@ export function usePlanFeatures() {
     canManageTeamMembers: plan === 'platinum',
     canUploadVideo: plan === 'platinum',
     canApproveRejectReviews: plan === 'platinum',
+    maxNurseries: plan === 'platinum' ? Infinity : 1,
   };
 }

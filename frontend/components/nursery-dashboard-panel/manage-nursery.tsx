@@ -8,12 +8,14 @@ import AddNurseryModal from '../sharedComponents/add-nursery-modal'
 import { useRouter } from 'next/navigation'
 import { nurseryDashboardService } from '@/lib/api/nursery'
 import { toast } from 'sonner'
+import { usePlanFeatures } from '@/hooks/use-nursery-plan'
 
 export default function ManageNursery() {
   const [openModal, setOpenModal] = React.useState(false)
   const [nurseries, setNurseries] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const { plan, maxNurseries } = usePlanFeatures()
 
   useEffect(() => {
     fetchNurseries()
@@ -75,7 +77,20 @@ export default function ManageNursery() {
               <Input placeholder='Search your shortlisted nurseries...' className='w-full rounded-md h-9 bg-white' />
             </div>
           </div>
-          <Button onClick={() => setOpenModal(true)} className='bg-secondary hover:bg-none'>
+          <Button
+            onClick={() => {
+              if (nurseries.length >= maxNurseries) {
+                toast.error(
+                  plan === 'standard'
+                    ? 'Your Standard plan allows only 1 nursery. Upgrade to Platinum to add more.'
+                    : 'Nursery limit reached.'
+                );
+                return;
+              }
+              setOpenModal(true);
+            }}
+            className='bg-secondary hover:bg-none'
+          >
             Add New Nursery
           </Button>
         </div>

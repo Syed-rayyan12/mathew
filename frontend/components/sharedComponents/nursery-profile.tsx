@@ -86,8 +86,8 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
                         return;
                     }
 
-                    // Store nursery ID for updates (only in edit mode)
-                    if (!nurserySlug && nursery.id) {
+                    // Store nursery ID for updates
+                    if (nursery.id) {
                         (window as any).__currentNurseryId = nursery.id;
                         setNurseryId(nursery.id);
                     }
@@ -130,7 +130,7 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
                         setWeeklyTimings(parseTimingsFromOpeningHours(nursery.openingHours));
                     }
 
-                    if (!nurserySlug && nursery.id) {
+                    if (nursery.id) {
                         teamMemberService.getAll(nursery.id)
                             .then(res => { if (res.success) setTeamMembers((res as any).data || []); })
                             .catch(() => {});
@@ -334,14 +334,22 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
                         {isViewMode ? 'View nursery information and details' : 'Complete your nursery profile to get approved'}
                     </p>
                 </div>
-                {isViewMode && (
+                {isViewMode ? (
                     <Button
                         onClick={() => setIsViewMode(false)}
                         className="bg-secondary hover:bg-secondary/90 text-white"
                     >
                         Edit Profile
                     </Button>
-                )}
+                ) : nurserySlug ? (
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsViewMode(true)}
+                    >
+                        Cancel
+                    </Button>
+                ) : null}
             </div>
 
             {isViewMode ? (

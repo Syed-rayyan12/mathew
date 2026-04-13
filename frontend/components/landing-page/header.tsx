@@ -57,7 +57,7 @@ export default function Header() {
                 href="/products"
                 className="block px-4 py-3 text-sm hover:text-primary hover:bg-gray-50 dark:hover:bg-gray-900 transition"
               >
-                Nursery
+                Nurseries
               </Link>
               <Link
                 href="/nursery-group"

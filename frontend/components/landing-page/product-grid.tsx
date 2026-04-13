@@ -3,10 +3,12 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Star, Filter, ChevronDown, ArrowRight, Search, X, LocateIcon } from "lucide-react";
+import { Star, Filter, ChevronDown, ArrowRight, Search, X, LocateIcon, Heart } from "lucide-react";
 import { Separator } from "../ui/separator";
 import Link from "next/link";
 import { nurseryService, Nursery } from "@/lib/api/nursery";
+import { shortlistService } from "@/lib/api/shortlist";
+import { authService } from "@/lib/api/auth";
 import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
 import {
@@ -26,6 +28,8 @@ export default function NurseriesPage() {
   const [nurseries, setNurseries] = useState<Nursery[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [shortlistedIds, setShortlistedIds] = useState<Set<string>>(new Set());
+  const [shortlistLoadingIds, setShortlistLoadingIds] = useState<Set<string>>(new Set());
   
   // Filter states
   const [selectedAgeGroups, setSelectedAgeGroups] = useState<string[]>([]);
@@ -36,6 +40,42 @@ export default function NurseriesPage() {
   useEffect(() => {
     fetchNurseries();
   }, [selectedAgeGroups, selectedCareTypes, selectedFacilities, selectedServices, cityFromUrl, top20]);
+
+  const checkShortlistStatuses = async (ids: string[]) => {
+    if (!authService.isAuthenticated() || ids.length === 0) return;
+    const results = await Promise.allSettled(ids.map(id => shortlistService.checkShortlisted(id)));
+    const shortlisted = new Set<string>();
+    results.forEach((result, i) => {
+      if (result.status === 'fulfilled' && result.value?.data?.isShortlisted) {
+        shortlisted.add(ids[i]);
+      }
+    });
+    setShortlistedIds(shortlisted);
+  };
+
+  const toggleShortlist = async (e: React.MouseEvent, nurseryId: string) => {
+    e.preventDefault();
+    if (!authService.isAuthenticated()) {
+      toast.error('Please sign in to shortlist nurseries');
+      return;
+    }
+    setShortlistLoadingIds(prev => new Set(prev).add(nurseryId));
+    try {
+      if (shortlistedIds.has(nurseryId)) {
+        await shortlistService.removeFromShortlist(nurseryId);
+        setShortlistedIds(prev => { const s = new Set(prev); s.delete(nurseryId); return s; });
+        toast.success('Removed from shortlist');
+      } else {
+        await shortlistService.addToShortlist(nurseryId);
+        setShortlistedIds(prev => new Set(prev).add(nurseryId));
+        toast.success('Added to shortlist');
+      }
+    } catch {
+      toast.error('Failed to update shortlist');
+    } finally {
+      setShortlistLoadingIds(prev => { const s = new Set(prev); s.delete(nurseryId); return s; });
+    }
+  };
 
   const fetchNurseries = async () => {
     setLoading(true);
@@ -66,6 +106,7 @@ export default function NurseriesPage() {
           childNurseries.sort((a, b) => (b.averageRating ?? 0) - (a.averageRating ?? 0));
         }
         setNurseries(childNurseries);
+        checkShortlistStatuses(childNurseries.map(n => n.id));
       }
     } catch (error) {
       console.error('Failed to fetch nurseries:', error);
@@ -377,9 +418,21 @@ export default function NurseriesPage() {
                     className="w-full h-full object-cover rounded-xl cursor-pointer" 
                   />
                 </Link>
+                {/* Heart / Shortlist button */}
+                <button
+                  onClick={(e) => toggleShortlist(e, nursery.id)}
+                  disabled={shortlistLoadingIds.has(nursery.id)}
+                  className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-sm shadow hover:scale-110 transition-transform disabled:opacity-50 z-10"
+                  aria-label={shortlistedIds.has(nursery.id) ? 'Remove from shortlist' : 'Add to shortlist'}
+                >
+                  <Heart
+                    size={18}
+                    className={shortlistedIds.has(nursery.id) ? 'fill-red-500 text-red-500' : 'text-gray-400'}
+                  />
+                </button>
                 <div className="absolute top-52 md:top-60 left-0 right-0 px-3 md:px-4 py-4 md:py-6 mx-3 md:mx-4 shadow-lg bg-white rounded-lg">
                   <div className="flex items-start justify-between gap-2 mb-2">
-                    <h3 className="font-heading text-lg md:text-[24px] font-medium text-[#044A55]">{nursery.name}</h3>
+                    <h3 className="font-heading text-lg md:text-[24px] font-medium text-[#044A55] line-clamp-1">{nursery.name}</h3>
                     {(nursery.city || nursery.town) && (
                       <span className="text-xs md:text-sm font-ubuntu flex items-center gap-1 text-foreground whitespace-nowrap">
                         <LocateIcon className='text-secondary' size={16}/>

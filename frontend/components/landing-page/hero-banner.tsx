@@ -15,18 +15,13 @@ const SLIDES = [
 const HeroBanner = () => {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchType, setSearchType] = useState<'nursery' | 'group'>('nursery');
 
   const handleSearch = () => {
     if (!searchQuery.trim()) {
       toast.error('Please enter a city, group, or nursery name');
       return;
     }
-    if (searchType === 'group') {
-      router.push(`/nursery-group?city=${encodeURIComponent(searchQuery.trim())}&search=${encodeURIComponent(searchQuery.trim())}&type=group`);
-    } else {
-      router.push(`/products?city=${encodeURIComponent(searchQuery.trim())}&search=${encodeURIComponent(searchQuery.trim())}&type=nursery`);
-    }
+    router.push(`/products?city=${encodeURIComponent(searchQuery.trim())}&search=${encodeURIComponent(searchQuery.trim())}&type=nursery`);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -75,19 +70,6 @@ const HeroBanner = () => {
                  animate={{ opacity: 1, y: 0 }}
                  transition={{ duration: 0.8, delay: 0.7 }}
                >
-                 {/* Select Dropdown for Search Type */}
-                 <select 
-                   value={searchType}
-                   onChange={(e) => setSearchType(e.target.value as 'nursery' | 'group')}
-                   className="px-4 py-3 bg-transparent border-none outline-none text-gray-700 font-medium cursor-pointer"
-                 >
-                   <option value="nursery">Nursery</option>
-                   <option value="group">Group</option>
-                 </select>
-                 
-                 {/* Divider */}
-                 <div className="h-8 w-px bg-gray-300 self-center"></div>
-                 
                  {/* Search Input */}
                  <input
                    type="text"

@@ -39,7 +39,6 @@ const BannerSearch = () => {
   const [selectedCity, setSelectedCity] = useState<string>('');
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchType, setSearchType] = useState<'nursery' | 'group'>('nursery');
   const [autocompleteResults, setAutocompleteResults] = useState<AutocompleteResults>({
     cities: [],
     towns: [],
@@ -99,12 +98,7 @@ const BannerSearch = () => {
       return;
     }
 
-    // Navigate to appropriate page based on search type
-    if (searchType === 'group') {
-      router.push(`/nursery-group?city=${encodeURIComponent(selectedCity)}&search=${encodeURIComponent(searchQuery)}&type=group`);
-    } else {
-      router.push(`/products?city=${encodeURIComponent(selectedCity)}&search=${encodeURIComponent(searchQuery)}&type=nursery`);
-    }
+    router.push(`/products?city=${encodeURIComponent(selectedCity)}&search=${encodeURIComponent(searchQuery)}&type=nursery`);
   };
 
   const handleSelectCity = (city: string) => {
@@ -131,19 +125,6 @@ const BannerSearch = () => {
 
   return (
     <div className="bg-white rounded-full shadow-lg p-2 flex gap-2 w-fit">
-      {/* Select Dropdown for Search Type */}
-      <select 
-        value={searchType}
-        onChange={(e) => setSearchType(e.target.value as 'nursery' | 'group')}
-        className="px-4 py-3 bg-transparent border-none outline-none text-gray-700 font-medium cursor-pointer"
-      >
-        <option value="nursery">Nursery</option>
-        <option value="group">Group</option>
-      </select>
-      
-      {/* Divider */}
-      <div className="h-8 w-px bg-gray-300"></div>
-      
       {/* Search Input with Dropdown */}
       <div ref={searchContainerRef} className="relative w-64 max-sm:w-full max-md:w-full">
         <input
@@ -232,8 +213,8 @@ const BannerSearch = () => {
                           </div>
                         )}
 
-                        {/* Groups - Show only if searchType is 'group' */}
-                        {searchType === 'group' && autocompleteResults.groups.length > 0 && (
+                        {/* Groups */}
+                        {autocompleteResults.groups.length > 0 && (
                           <CommandGroup heading="Nursery Groups">
                             {autocompleteResults.groups.map((group) => (
                               <CommandItem
@@ -251,8 +232,8 @@ const BannerSearch = () => {
                           </CommandGroup>
                         )}
 
-                        {/* Nurseries - Show only if searchType is 'nursery' */}
-                        {searchType === 'nursery' && autocompleteResults.nurseries.length > 0 && (
+                        {/* Nurseries */}
+                        {autocompleteResults.nurseries.length > 0 && (
                           <CommandGroup heading="Nurseries">
                             {autocompleteResults.nurseries.map((nursery) => (
                               <CommandItem

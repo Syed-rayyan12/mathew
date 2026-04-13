@@ -327,6 +327,7 @@ export const NurseryTokenManager = {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('nurseryAccessToken');
       localStorage.removeItem('nurseryEmail');
+      localStorage.removeItem('nurseryUser');
     }
   },
   getUser: () => null,

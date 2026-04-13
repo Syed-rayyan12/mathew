@@ -135,6 +135,8 @@ export default function NurseryLoginPage() {
         localStorage.setItem("lastName", data.data.user.lastName || "");
         localStorage.setItem("phone", data.data.user.phone || "");
         localStorage.setItem("nurseryName", data.data.user.nurseryName || "");
+        // Store nursery owner user object under nursery-specific key (not shared 'user' key used by parents)
+        localStorage.setItem("nurseryUser", JSON.stringify(data.data.user));
 
         // Handle Remember Me
         if (rememberMe) {

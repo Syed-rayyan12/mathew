@@ -9,7 +9,19 @@ export function useNurseryPlan(): NurseryPlan {
   const [plan, setPlan] = useState<NurseryPlan>('standard');
 
   useEffect(() => {
-    const user = authService.getCurrentUser();
+    // Read from nursery-specific key first; nursery login stores data under 'nurseryUser'
+    // to avoid overwriting the parent 'user' session key
+    let user: any = null;
+    try {
+      const raw = typeof window !== 'undefined' ? localStorage.getItem('nurseryUser') : null;
+      user = raw ? JSON.parse(raw) : null;
+    } catch {
+      user = null;
+    }
+    // Fallback to the shared user key (covers edge cases)
+    if (!user) {
+      user = authService.getCurrentUser();
+    }
     const rawPlan = user?.plan?.toLowerCase() ?? 'standard';
     // Treat 'free' as 'standard', anything not platinum is standard
     if (rawPlan === 'platinum') {

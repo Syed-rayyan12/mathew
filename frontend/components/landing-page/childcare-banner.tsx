@@ -1,5 +1,4 @@
 import React from 'react'
-import BannerSearch from '../sharedComponents/banner-search'
 
 const ChildcareBanner = () => {
     return (
@@ -24,8 +23,6 @@ const ChildcareBanner = () => {
                     </p>
 
 
-                    {/* Search Box */}
-                    <BannerSearch />
                 </div>
             </div>
         </section>

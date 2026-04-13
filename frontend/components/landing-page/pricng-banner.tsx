@@ -1,5 +1,4 @@
 import React from 'react'
-import { Search } from 'lucide-react'
 
 const PricingBanner = () => {
     return (
@@ -23,9 +22,6 @@ const PricingBanner = () => {
                         Choose a plan that fits your goals and grow your online presence.
                     </p>
 
-
-                    {/* Search Box */}
-                   
                 </div>
             </div>
         </section>

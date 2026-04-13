@@ -25,24 +25,6 @@ const testimonials = [
     rating: 5,
     background: "/images/tesimonial-1.png"
   },
-  {
-    id: 3,
-    image: "/images/person-3.png",
-    name: "Mike Johnson",
-    subName: "Bristol",
-    text: "From the moment we visited, the team made us feel at ease. My son settled in quickly and now looks forward to every day.",
-    rating: 5,
-    background: "/images/tesimonial-2.png"
-  },
-  {
-    id: 4,
-    image: "/images/person-3.png",
-    name: "Mike Johnson",
-    subName: "Bristol",
-    text: "From the moment we visited, the team made us feel at ease. My son settled in quickly and now looks forward to every day.",
-    rating: 5,
-    background: "/images/tesimonial-2.png"
-  }
 ]
 
 export default function TestimonialSlider() {

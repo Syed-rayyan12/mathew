@@ -31,7 +31,7 @@ const pricingPlans = [
             "Standard Search Visibility",
         ],
         buttonText: "Start Standard",
-        buttonClasses: "bg-transparent border-secondary py-4 px-6",
+        buttonClasses: "bg-transparent border-secondary py-4 px-6 hover:bg-secondary hover:text-white transition-colors duration-200",
         popular: true,
     },
 
@@ -52,7 +52,7 @@ const pricingPlans = [
             "Dashboard Analytics (ratings, reviews, performance)",
         ],
         buttonText: "Start Platinum",
-        buttonClasses: "bg-transparent border-secondary py-4 px-6",
+        buttonClasses: "bg-transparent border-secondary py-4 px-6 hover:bg-secondary hover:text-white transition-colors duration-200",
     },
 ];
 

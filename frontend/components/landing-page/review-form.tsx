@@ -4,11 +4,24 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
-import { Star, Search } from "lucide-react";
+import { Star, Info } from "lucide-react";
 import { nurseryService, reviewService } from "@/lib/api/nursery";
 import type { Review } from "@/lib/api/nursery";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
+
+// Generate "Month Year" options going back 3 years
+function generatePeriodOptions() {
+  const options: { value: string; label: string }[] = [];
+  const now = new Date();
+  for (let i = 0; i < 36; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const label = d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+    const value = d.toISOString().slice(0, 7); // "2024-07"
+    options.push({ value, label });
+  }
+  return options;
+}
 
 interface NurserySearchResult {
   id: string;
@@ -63,8 +76,10 @@ export default function NurseryReviewForm() {
       try {
         const response = await nurseryService.search(searchQuery);
         if (response.success && response.data) {
-          const results = Array.isArray(response.data) ? response.data : [];
-          setSearchResults(results);
+          const data = response.data as any;
+          // Backend returns { nurseries: [], groups: [], ... }
+          const nurseries = Array.isArray(data) ? data : (Array.isArray(data.nurseries) ? data.nurseries : []);
+          setSearchResults(nurseries);
         }
       } catch (error) {
         console.error('Search error:', error);
@@ -77,6 +92,8 @@ export default function NurseryReviewForm() {
     const debounceTimer = setTimeout(searchNurseries, 300);
     return () => clearTimeout(debounceTimer);
   }, [searchQuery]);
+
+  const periodOptions = generatePeriodOptions();
 
   const [form, setForm] = useState({
     overall: 0,
@@ -140,7 +157,7 @@ export default function NurseryReviewForm() {
     // Validate all required fields
     const newErrors: Record<string, string> = {};
     if (!form.connection) newErrors.connection = 'Please select your connection to the nursery';
-    if (!form.date) newErrors.date = 'Review date is required';
+    if (!form.date) newErrors.date = 'Please select when your review relates to';
     if (!form.review.trim()) newErrors.review = 'Please write your review';
     else if (form.review.trim().length < 200) newErrors.review = 'Review must be at least 200 characters';
     if (!form.firstName.trim()) newErrors.firstName = 'First name is required';
@@ -237,7 +254,7 @@ export default function NurseryReviewForm() {
           createdAt: new Date().toISOString(),
         };
         setSidebarReviews(prev => [newReview, ...prev]);
-        // Reset form
+        // Reset form but keep nursery selected so sidebar stays visible
         setForm({
           overall: 0,
           connection: "",
@@ -260,7 +277,7 @@ export default function NurseryReviewForm() {
           telephone: "",
           initialsOnly: false,
         });
-        setSelectedNursery(null);
+        // Do NOT clear selectedNursery - keep sidebar showing the nursery's reviews
       }
     } catch (error) {
       console.error('Error submitting review:', error);
@@ -433,6 +450,26 @@ export default function NurseryReviewForm() {
                   className={`border p-2 rounded-xl w-full ${errors.connection ? 'border-red-500' : ''}`}
                 >
                   <option value="">Please Select...</option>
+                  <option value="Father of Child">Father of Child</option>
+                  <option value="Mother of Child">Mother of Child</option>
+                  <option value="Stepfather of Child">Stepfather of Child</option>
+                  <option value="Stepmother of Child">Stepmother of Child</option>
+                  <option value="Grandmother of Child">Grandmother of Child</option>
+                  <option value="Grandfather of Child">Grandfather of Child</option>
+                  <option value="Great-grandmother of Child">Great-grandmother of Child</option>
+                  <option value="Great-grandfather of Child">Great-grandfather of Child</option>
+                  <option value="Aunt of Child">Aunt of Child</option>
+                  <option value="Uncle of Child">Uncle of Child</option>
+                  <option value="Great Aunt of Child">Great Aunt of Child</option>
+                  <option value="Great Uncle of Child">Great Uncle of Child</option>
+                  <option value="Brother of Child">Brother of Child</option>
+                  <option value="Sister of Child">Sister of Child</option>
+                  <option value="Cousin of Child">Cousin of Child</option>
+                  <option value="Guardian of Child">Guardian of Child</option>
+                  <option value="Foster Parent of Child">Foster Parent of Child</option>
+                  <option value="Nanny/Carer of Child">Nanny/Carer of Child</option>
+                  <option value="Godmother of Child">Godmother of Child</option>
+                  <option value="Godfather of Child">Godfather of Child</option>
                   <option value="Parent">Parent</option>
                   <option value="Guardian">Guardian</option>
                   <option value="Carer">Carer</option>

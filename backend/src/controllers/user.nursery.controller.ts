@@ -334,22 +334,25 @@ export const searchNurseries = async (
 
     const searchTerm = query.toLowerCase().trim();
 
-    // Search nurseries
+    // Search nurseries (no approval filter - all nurseries are searchable for reviews)
     const nurseries = await prisma.nursery.findMany({
       where: {
-        isApproved: true,
         OR: [
           { name: { contains: searchTerm, mode: 'insensitive' } },
           { city: { contains: searchTerm, mode: 'insensitive' } },
           { town: { contains: searchTerm, mode: 'insensitive' } },
+          { postcode: { contains: searchTerm, mode: 'insensitive' } },
+          { address: { contains: searchTerm, mode: 'insensitive' } },
         ],
       },
       select: {
         id: true,
         name: true,
         slug: true,
+        address: true,
         city: true,
         town: true,
+        postcode: true,
         cardImage: true,
         group: {
           select: {

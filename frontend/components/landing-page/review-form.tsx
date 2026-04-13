@@ -39,6 +39,7 @@ export default function NurseryReviewForm() {
   const [searchResults, setSearchResults] = useState<NurserySearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectingNursery, setSelectingNursery] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [sidebarReviews, setSidebarReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
@@ -121,11 +122,10 @@ export default function NurseryReviewForm() {
   const showDropdown = searchQuery.length >= 2 && searchResults.length > 0;
 
   const handleSelectNursery = (nursery: NurserySearchResult) => {
-    setSelectedNursery(nursery);
     setSearchQuery("");
     setSearchResults([]);
+    setSelectingNursery(true);
     // Fetch reviews for sidebar
-    setReviewsLoading(true);
     reviewService.getNurseryReviews(nursery.id).then(res => {
       if (res.success && res.data) {
         const data = res.data as any;
@@ -133,7 +133,10 @@ export default function NurseryReviewForm() {
       }
     }).catch(() => {
       setSidebarReviews([]);
-    }).finally(() => setReviewsLoading(false));
+    }).finally(() => {
+      setSelectingNursery(false);
+      setSelectedNursery(nursery);
+    });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -341,102 +344,84 @@ export default function NurseryReviewForm() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-8">
-      <motion.h1
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-3xl font-medium mb-6"
-      >
-        Submit a Review
-      </motion.h1>
+    <div className="max-w-7xl mx-auto px-4 py-8">
 
-      <div className="flex flex-col lg:flex-row gap-8 items-start">
-        {/* LEFT: Form */}
-        <div className="flex-1 min-w-0">
+      {/* SELECTING LOADER */}
+      {selectingNursery ? (
+        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
+          <div className="w-14 h-14 rounded-full border-4 border-secondary border-t-transparent animate-spin" />
+          <p className="text-gray-500 text-base font-medium">Loading nursery...</p>
+        </div>
 
-      {/* Search Section */}
-      <Card className="rounded-2xl shadow-md mb-6">
-        <CardContent className="p-6">
-          <h2 className="text-2xl font-medium mb-2">Search for a Nursery</h2>
-          
-          {/* Show selected nursery */}
-          {selectedNursery ? (
-            <div className="border border-secondary rounded-lg p-4 bg-secondary/5">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="font-semibold text-lg text-gray-800">{selectedNursery.name}</p>
-                  <p className="text-gray-600 text-sm mt-1">{selectedNursery.address} {selectedNursery.city}</p>
-                  <p className="text-gray-500 text-sm">{selectedNursery.postcode}</p>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedNursery(null)}
-                  className="text-sm"
-                >
-                  Change Nursery
-                </Button>
+      ) : !selectedNursery ? (
+        /* SEARCH — centered when no nursery selected */
+        <div className="flex flex-col items-center justify-center min-h-[40vh]">
+          <motion.h1
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-3xl font-medium mb-2 text-center"
+          >
+            Submit a Review
+          </motion.h1>
+          <p className="text-gray-500 mb-8 text-center">Search for a nursery to get started</p>
+
+          <div className="relative w-full max-w-xl">
+            <Input
+              type="text"
+              placeholder="Search by nursery name, city, town or postcode..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-12 text-base pl-4 pr-10 rounded-xl shadow-md"
+              autoFocus
+            />
+
+            {isSearching && searchQuery.length >= 2 && (
+              <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-lg p-4">
+                <p className="text-gray-500 text-sm">Searching...</p>
               </div>
-            </div>
-          ) : (
-            <div className="relative">
-              <Input
-                type="text"
-                placeholder="Search by nursery name, postcode, or city..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full"
-              />
-              
-              {isSearching && searchQuery.length >= 2 && (
-                <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-4">
-                  <p className="text-gray-500 text-sm">Searching...</p>
-                </div>
-              )}
-              
-              {/* Dropdown Search Results */}
-              {showDropdown && !isSearching && (
-                <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-80 overflow-y-auto">
-                  {searchResults.map((nursery) => (
-                    <div
-                      key={nursery.id}
-                      className="p-4 hover:bg-gray-50 cursor-pointer transition border-b last:border-b-0"
-                      onClick={() => handleSelectNursery(nursery)}
-                    >
-                      <p className="font-medium text-gray-800">{nursery.name}</p>
-                      <p className="text-gray-600 text-sm">{nursery.address}, {nursery.city}</p>
-                      <p className="text-gray-500 text-sm">{nursery.postcode}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
+            )}
 
-              {searchQuery.length >= 2 && searchResults.length === 0 && !isSearching && (
-                <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-4">
-                  <p className="text-gray-500 text-sm">No nurseries found</p>
-                </div>
-              )}
+            {showDropdown && !isSearching && (
+              <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-lg max-h-80 overflow-y-auto">
+                {searchResults.map((nursery) => (
+                  <div
+                    key={nursery.id}
+                    className="p-4 hover:bg-gray-50 cursor-pointer transition border-b last:border-b-0"
+                    onClick={() => handleSelectNursery(nursery)}
+                  >
+                    <p className="font-medium text-gray-800">{nursery.name}</p>
+                    <p className="text-gray-500 text-sm">{[nursery.address, nursery.city, nursery.postcode].filter(Boolean).join(', ')}</p>
+                  </div>
+                ))}
+              </div>
+            )}
 
-              {!searchQuery && (
-                <p className="text-gray-500 text-sm mt-2">Start typing to search for a nursery (minimum 2 characters)</p>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Review Form - Only show if nursery is selected */}
-      {!selectedNursery ? (
-        <Card className="rounded-2xl shadow-md">
-          <CardContent className="p-6 text-center py-12">
-            <p className="text-gray-500 text-lg">Please search and select a nursery above to submit a review</p>
-          </CardContent>
-        </Card>
+            {searchQuery.length >= 2 && searchResults.length === 0 && !isSearching && (
+              <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-lg p-4">
+                <p className="text-gray-500 text-sm">No nurseries found matching "{searchQuery}"</p>
+              </div>
+            )}
+          </div>
+        </div>
       ) : (
-        <Card className="rounded-2xl shadow-md">
-          <CardContent className="p-6 space-y-6">
-            <form className="space-y-6" onSubmit={handleSubmit}>
+        /* AFTER nursery selected — two-column layout */
+        <div className="flex flex-col lg:flex-row gap-8 items-start">
+          {/* LEFT: Form */}
+          <div className="flex-1 min-w-0">
+            {/* Selected nursery banner + change button */}
+            <div className="flex items-center justify-between bg-secondary/5 border border-secondary rounded-xl px-5 py-3 mb-6">
+              <div>
+                <p className="font-semibold text-gray-800">{selectedNursery.name}</p>
+                <p className="text-gray-500 text-sm">{[selectedNursery.address, selectedNursery.city, selectedNursery.postcode].filter(Boolean).join(', ')}</p>
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={() => { setSelectedNursery(null); setSidebarReviews([]); }}>
+                Change
+              </Button>
+            </div>
+
+            <Card className="rounded-2xl shadow-md">
+              <CardContent className="p-6 space-y-6">
+                <form className="space-y-6" onSubmit={handleSubmit}>
 
             <StarRating label="Overall Experience" name="overall" required={false} />
 
@@ -589,83 +574,69 @@ export default function NurseryReviewForm() {
           </form>
         </CardContent>
       </Card>
-      )}    
-        </div>
+          </div>
 
-        {/* RIGHT: Reviews Sidebar */}
-        <div className="w-full lg:w-[360px] shrink-0">
-          <div className="sticky top-24 bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-[#044A55]">
-                {selectedNursery ? `${selectedNursery.name} Reviews` : 'Recent Reviews'}
-              </h3>
-              {sidebarReviews.length > 0 && (
-                <span className="text-xs bg-secondary/10 text-secondary font-semibold px-2 py-0.5 rounded-full">
-                  {sidebarReviews.length}
-                </span>
-              )}
-            </div>
+          {/* RIGHT: Reviews Sidebar */}
+          <div className="w-full lg:w-[360px] shrink-0">
+            <div className="sticky top-24 bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
+              <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-[#044A55]">
+                  {selectedNursery.name} Reviews
+                </h3>
+                {sidebarReviews.length > 0 && (
+                  <span className="text-xs bg-secondary/10 text-secondary font-semibold px-2 py-0.5 rounded-full">
+                    {sidebarReviews.length}
+                  </span>
+                )}
+              </div>
 
-            <div className="overflow-y-auto max-h-[600px] divide-y divide-gray-100 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
-              {!selectedNursery ? (
-                <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-                  <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
-                    <Star size={20} className="text-gray-400" />
+              <div className="overflow-y-auto max-h-[600px] divide-y divide-gray-100">
+                {reviewsLoading ? (
+                  <div className="flex items-center justify-center py-10">
+                    <div className="w-6 h-6 rounded-full border-2 border-secondary border-t-transparent animate-spin" />
                   </div>
-                  <p className="text-gray-400 text-sm">Select a nursery to see its reviews</p>
-                </div>
-              ) : reviewsLoading ? (
-                <div className="flex items-center justify-center py-10">
-                  <div className="w-6 h-6 rounded-full border-2 border-secondary border-t-transparent animate-spin" />
-                </div>
-              ) : sidebarReviews.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-                  <p className="text-gray-400 text-sm">No reviews yet. Be the first!</p>
-                </div>
-              ) : (
-                sidebarReviews.map(review => {
-                  const initials = `${review.firstName.charAt(0)}${review.lastName.charAt(0)}`.toUpperCase();
-                  const displayName = review.initialsOnly
-                    ? `${review.firstName.charAt(0)}. ${review.lastName.charAt(0)}.`
-                    : `${review.firstName} ${review.lastName}`;
-                  const date = new Date(review.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-                  return (
-                    <div key={review.id} className="p-4">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                          <span className="text-xs font-semibold text-white tracking-wide">{initials}</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-gray-800 truncate">{displayName}</p>
+                ) : sidebarReviews.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                    <p className="text-gray-400 text-sm">No reviews yet. Be the first!</p>
+                  </div>
+                ) : (
+                  sidebarReviews.map(review => {
+                    const displayName = review.initialsOnly
+                      ? `${review.firstName.charAt(0)} ${review.lastName.charAt(0)}`
+                      : `${review.firstName} ${review.lastName}`;
+                    const date = new Date(review.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+                    return (
+                      <div key={review.id} className="p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex">
+                            {Array.from({ length: 5 }, (_, i) => (
+                              <Star
+                                key={i}
+                                size={14}
+                                className={i < Math.round(review.overallRating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200 fill-gray-200'}
+                              />
+                            ))}
+                          </div>
                           <p className="text-xs text-gray-400">{date}</p>
                         </div>
-                        <div className="flex shrink-0">
-                          {Array.from({ length: 5 }, (_, i) => (
-                            <Star
-                              key={i}
-                              size={12}
-                              className={i < Math.round(review.overallRating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200 fill-gray-200'}
-                            />
-                          ))}
-                        </div>
+                        <p className="text-xs text-gray-600 leading-relaxed line-clamp-5 mb-2">{review.content}</p>
+                        <p className="text-xs text-gray-500 font-medium">
+                          Review from {displayName}{review.connection ? ` (${review.connection})` : ''}
+                        </p>
+                        {!review.isApproved && (
+                          <span className="inline-block mt-1 text-[11px] bg-yellow-50 text-yellow-600 border border-yellow-200 px-2 py-0.5 rounded-full">
+                            Pending approval
+                          </span>
+                        )}
                       </div>
-                      {review.connection && (
-                        <p className="text-xs text-secondary font-medium mb-1">{review.connection}</p>
-                      )}
-                      <p className="text-xs text-gray-600 leading-relaxed line-clamp-4">{review.content}</p>
-                      {!review.isApproved && (
-                        <span className="inline-block mt-2 text-[11px] bg-yellow-50 text-yellow-600 border border-yellow-200 px-2 py-0.5 rounded-full">
-                          Pending approval
-                        </span>
-                      )}
-                    </div>
-                  );
-                })
-              )}
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

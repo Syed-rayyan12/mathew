@@ -129,7 +129,9 @@ export default function NurseryReviewForm() {
     reviewService.getNurseryReviews(nursery.id).then(res => {
       if (res.success && res.data) {
         const data = res.data as any;
-        setSidebarReviews(Array.isArray(data.reviews) ? data.reviews : []);
+        // Backend returns flat array in data, not data.reviews
+        const reviews = Array.isArray(data) ? data : (Array.isArray(data.reviews) ? data.reviews : []);
+        setSidebarReviews(reviews);
       }
     }).catch(() => {
       setSidebarReviews([]);

@@ -427,7 +427,8 @@ export default function NurseryReviewForm() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="font-medium">Connection to Nursery <span className="text-red-500">*</span></label>
+                <label className="font-medium block mb-1">Choose your connection to the Nursery from the list below <span className="text-red-500">*</span></label>
+                <p className="text-sm text-red-600 italic mb-2">Unfortunately we cannot accept reviews from staff including those that have a child at the nursery/group.</p>
                 <select
                   name="connection"
                   value={form.connection}
@@ -516,7 +517,11 @@ export default function NurseryReviewForm() {
             </div>
 
             <div className="space-y-3 border p-4 rounded-md">
-              <h2 className="text-xl font-medium">Your Details</h2>
+              <h2 className="text-xl font-medium">Your Contact Details</h2>
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm text-gray-600 space-y-2">
+                <p>Please provide your details as we may contact you to authenticate your review. The review <strong>MUST</strong> be input and submitted by you, using your own personal email address (the email of the Nursery will not be accepted).</p>
+                <p>Reviews cannot be submitted anonymously. Your full name may be passed to the Nursery or to its service provider handling reviews but not to any other third party. Your full name, email and telephone will not be published.</p>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="font-medium text-sm">First Name <span className="text-red-500">*</span></label>

@@ -1,9 +1,8 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Star, Filter, ChevronDown, ArrowRight, Search, X, LocateIcon, Heart } from "lucide-react";
+import { Star, Filter, ArrowRight, Search, LocateIcon, Heart } from "lucide-react";
 import { Separator } from "../ui/separator";
 import Link from "next/link";
 import { nurseryService, Nursery } from "@/lib/api/nursery";
@@ -24,89 +23,64 @@ export default function NurseriesPage() {
   const searchParams = useSearchParams();
   const cityFromUrl = searchParams.get('city') || '';
   const top20 = searchParams.get('top20') === 'true';
+
   const [searchQuery, setSearchQuery] = useState("");
-  const [nurseries, setNurseries] = useState<Nursery[]>([]);
+  // Raw nurseries fetched from API — never re-fetched on filter changes
+  const [allNurseries, setAllNurseries] = useState<Nursery[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [shortlistedIds, setShortlistedIds] = useState<Set<string>>(new Set());
   const [shortlistLoadingIds, setShortlistLoadingIds] = useState<Set<string>>(new Set());
-  
-  // Filter states
+
+  // Filter states (applied client-side — no API re-fetch)
   const [selectedAgeGroups, setSelectedAgeGroups] = useState<string[]>([]);
   const [selectedCareTypes, setSelectedCareTypes] = useState<string[]>([]);
   const [selectedFacilities, setSelectedFacilities] = useState<string[]>([]);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
 
+  // Only re-fetch from API when city or top20 flag changes
   useEffect(() => {
     fetchNurseries();
-  }, [selectedAgeGroups, selectedCareTypes, selectedFacilities, selectedServices, cityFromUrl, top20]);
+  }, [cityFromUrl, top20]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const checkShortlistStatuses = async (ids: string[]) => {
-    if (!authService.isAuthenticated() || ids.length === 0) return;
-    const results = await Promise.allSettled(ids.map(id => shortlistService.checkShortlisted(id)));
-    const shortlisted = new Set<string>();
-    results.forEach((result, i) => {
-      if (result.status === 'fulfilled' && result.value?.data?.isShortlisted) {
-        shortlisted.add(ids[i]);
-      }
-    });
-    setShortlistedIds(shortlisted);
-  };
-
-  const toggleShortlist = async (e: React.MouseEvent, nurseryId: string) => {
-    e.preventDefault();
-    if (!authService.isAuthenticated()) {
-      toast.error('Please sign in to shortlist nurseries');
-      return;
-    }
-    setShortlistLoadingIds(prev => new Set(prev).add(nurseryId));
+  // Load all shortlisted nursery IDs in a single API call (not N calls)
+  const loadShortlistIds = useCallback(async () => {
+    if (!authService.isAuthenticated()) return;
     try {
-      if (shortlistedIds.has(nurseryId)) {
-        await shortlistService.removeFromShortlist(nurseryId);
-        setShortlistedIds(prev => { const s = new Set(prev); s.delete(nurseryId); return s; });
-        toast.success('Removed from shortlist');
-      } else {
-        await shortlistService.addToShortlist(nurseryId);
-        setShortlistedIds(prev => new Set(prev).add(nurseryId));
-        toast.success('Added to shortlist');
+      const response = await shortlistService.getMyShortlist();
+      if (response.success && Array.isArray(response.data)) {
+        const ids = new Set(response.data.map((item) => item.nursery.id));
+        setShortlistedIds(ids);
       }
     } catch {
-      toast.error('Failed to update shortlist');
-    } finally {
-      setShortlistLoadingIds(prev => { const s = new Set(prev); s.delete(nurseryId); return s; });
+      // Non-critical — shortlist icons just won't be pre-filled
     }
-  };
+  }, []);
 
   const fetchNurseries = async () => {
     setLoading(true);
     try {
-      const response = await nurseryService.getAll({ 
+      const response = await nurseryService.getAll({
         limit: 100,
         city: cityFromUrl || undefined,
-        ageRange: selectedAgeGroups,
-        careTypes: selectedCareTypes,
-        facilities: selectedFacilities,
-        services: selectedServices,
       });
       if (response.success && Array.isArray(response.data)) {
-        // Only show child nurseries (not parent groups)
-        let childNurseries = response.data.filter(n => n.groupId !== null && n.groupId !== undefined);
-        
-        // If city/town is searched, filter by exact city or town match
+        let childNurseries = response.data.filter(
+          (n) => n.groupId !== null && n.groupId !== undefined
+        );
         if (cityFromUrl) {
-          childNurseries = childNurseries.filter(n => 
-            n.city?.toLowerCase() === cityFromUrl.toLowerCase() ||
-            n.town?.toLowerCase() === cityFromUrl.toLowerCase()
+          childNurseries = childNurseries.filter(
+            (n) =>
+              n.city?.toLowerCase() === cityFromUrl.toLowerCase() ||
+              n.town?.toLowerCase() === cityFromUrl.toLowerCase()
           );
         }
-        
-        console.log('Filtered child nurseries:', childNurseries);
-        // Sort by rating descending when top20 mode
         if (top20) {
           childNurseries.sort((a, b) => (b.averageRating ?? 0) - (a.averageRating ?? 0));
         }
-        setNurseries(childNurseries);
-        checkShortlistStatuses(childNurseries.map(n => n.id));
+        setAllNurseries(childNurseries);
+        // Load shortlist in background — doesn't block card rendering
+        loadShortlistIds();
       }
     } catch (error) {
       console.error('Failed to fetch nurseries:', error);
@@ -116,35 +90,51 @@ export default function NurseriesPage() {
     }
   };
 
+  const toggleShortlist = async (e: React.MouseEvent, nurseryId: string) => {
+    e.preventDefault();
+    if (!authService.isAuthenticated()) {
+      toast.error('Please sign in to shortlist nurseries');
+      return;
+    }
+    setShortlistLoadingIds((prev) => new Set(prev).add(nurseryId));
+    try {
+      if (shortlistedIds.has(nurseryId)) {
+        await shortlistService.removeFromShortlist(nurseryId);
+        setShortlistedIds((prev) => { const s = new Set(prev); s.delete(nurseryId); return s; });
+        toast.success('Removed from shortlist');
+      } else {
+        await shortlistService.addToShortlist(nurseryId);
+        setShortlistedIds((prev) => new Set(prev).add(nurseryId));
+        toast.success('Added to shortlist');
+      }
+    } catch {
+      toast.error('Failed to update shortlist');
+    } finally {
+      setShortlistLoadingIds((prev) => { const s = new Set(prev); s.delete(nurseryId); return s; });
+    }
+  };
+
   const handleAgeGroupChange = (ageGroup: string) => {
-    setSelectedAgeGroups(prev =>
-      prev.includes(ageGroup)
-        ? prev.filter(a => a !== ageGroup)
-        : [...prev, ageGroup]
+    setSelectedAgeGroups((prev) =>
+      prev.includes(ageGroup) ? prev.filter((a) => a !== ageGroup) : [...prev, ageGroup]
     );
   };
 
   const handleCareTypeChange = (careType: string) => {
-    setSelectedCareTypes(prev =>
-      prev.includes(careType)
-        ? prev.filter(c => c !== careType)
-        : [...prev, careType]
+    setSelectedCareTypes((prev) =>
+      prev.includes(careType) ? prev.filter((c) => c !== careType) : [...prev, careType]
     );
   };
 
   const handleFacilityChange = (facility: string) => {
-    setSelectedFacilities(prev =>
-      prev.includes(facility)
-        ? prev.filter(f => f !== facility)
-        : [...prev, facility]
+    setSelectedFacilities((prev) =>
+      prev.includes(facility) ? prev.filter((f) => f !== facility) : [...prev, facility]
     );
   };
 
   const handleServiceChange = (service: string) => {
-    setSelectedServices(prev =>
-      prev.includes(service)
-        ? prev.filter(s => s !== service)
-        : [...prev, service]
+    setSelectedServices((prev) =>
+      prev.includes(service) ? prev.filter((s) => s !== service) : [...prev, service]
     );
   };
 
@@ -156,12 +146,43 @@ export default function NurseriesPage() {
     setIsFilterOpen(false);
   };
 
-  const filteredNurseries = nurseries
-    .filter(nursery => nursery.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    .slice(0, top20 ? 20 : undefined);
+  // All filtering done in JS — no API calls on filter changes
+  const filteredNurseries = useMemo(() => {
+    let result = allNurseries;
 
-  // Filter content component for reusability
-  const FilterContent = () => (
+    if (searchQuery) {
+      result = result.filter((n) =>
+        n.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    if (selectedAgeGroups.length > 0) {
+      result = result.filter((n) =>
+        selectedAgeGroups.some((ag) => n.ageRange?.includes(ag))
+      );
+    }
+    if (selectedCareTypes.length > 0) {
+      result = result.filter((n) =>
+        selectedCareTypes.some((ct) => n.facilities?.includes(ct))
+      );
+    }
+    if (selectedFacilities.length > 0) {
+      result = result.filter((n) =>
+        selectedFacilities.every((f) => n.facilities?.includes(f))
+      );
+    }
+    if (selectedServices.length > 0) {
+      result = result.filter((n) =>
+        selectedServices.every((s) => n.facilities?.includes(s))
+      );
+    }
+    if (top20) {
+      result = result.slice(0, 20);
+    }
+    return result;
+  }, [allNurseries, searchQuery, selectedAgeGroups, selectedCareTypes, selectedFacilities, selectedServices, top20]);
+
+  // Memoised to prevent re-mounting on every render
+  const FilterContent = useCallback(() => (
     <div className="p-5 max-h-[calc(100vh-200px)] overflow-y-auto">
       <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
         <Filter size={18} /> Filters
@@ -338,7 +359,8 @@ export default function NurseriesPage() {
         Clear All Filters
       </button>
     </div>
-  );
+  ), [selectedAgeGroups, selectedCareTypes, selectedFacilities, selectedServices,
+      handleAgeGroupChange, handleCareTypeChange, handleFacilityChange, handleServiceChange, clearFilters]);
 
   return (
     <>
@@ -348,7 +370,7 @@ export default function NurseriesPage() {
       <div>
 
         <h2 className="font-medium text-xl md:text-[28px]"><span className="text-secondary">({filteredNurseries.length.toString().padStart(2, '0')})</span> NURSERIES FOUND</h2>
-         <span className="text-gray-600 text-sm">Showing 1-{filteredNurseries.length} of {nurseries.length} results</span>
+         <span className="text-gray-600 text-sm">Showing 1-{filteredNurseries.length} of {allNurseries.length} results</span>
       </div>
       <div className="flex items-center gap-3 w-full md:w-auto">
         {/* Mobile Filter Button */}
@@ -402,9 +424,22 @@ export default function NurseriesPage() {
         {/* GRID */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 md:gap-22 pb-20 md:pb-40 bg-white">
           {loading ? (
-            <div className="col-span-2 text-center py-20">
-              <p className="text-gray-500 text-lg">Loading nurseries...</p>
-            </div>
+            // Skeleton cards — show layout immediately while data loads
+            Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="relative bg-white rounded-xl shadow-md h-80 md:h-96 overflow-hidden animate-pulse">
+                <div className="w-full h-full bg-gray-200 rounded-xl" />
+                <div className="absolute top-52 md:top-60 left-0 right-0 px-3 md:px-4 py-4 md:py-6 mx-3 md:mx-4 bg-white rounded-lg shadow-lg">
+                  <div className="h-5 bg-gray-200 rounded w-3/4 mb-3" />
+                  <div className="flex gap-1 mb-3">
+                    {Array.from({ length: 5 }).map((_, j) => (
+                      <div key={j} className="w-3.5 h-3.5 bg-gray-200 rounded-full" />
+                    ))}
+                  </div>
+                  <div className="h-3 bg-gray-200 rounded w-full mb-1" />
+                  <div className="h-3 bg-gray-200 rounded w-2/3" />
+                </div>
+              </div>
+            ))
           ) : filteredNurseries.length > 0 ? (
             filteredNurseries.map((nursery, index) => (
               <div

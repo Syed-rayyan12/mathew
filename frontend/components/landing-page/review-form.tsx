@@ -370,7 +370,7 @@ export default function NurseryReviewForm() {
           <div className="relative w-full max-w-xl">
             <Input
               type="text"
-              placeholder="Search by nursery name, city, town or postcode..."
+              placeholder="Search by nursery name, city, town"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full h-12 text-base pl-4 pr-10 rounded-xl shadow-md"

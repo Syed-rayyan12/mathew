@@ -597,12 +597,26 @@ export const getAllNurseries = async (
       }
     }
 
-    const [nurseries, total] = await Promise.all([
+    // Run all 3 DB queries in parallel — review averages no longer block nursery fetch
+    const [nurseries, total, allAvgRatings] = await Promise.all([
       prisma.nursery.findMany({
         where,
         skip,
         take: Number(limit),
-        include: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          description: true,
+          city: true,
+          town: true,
+          cardImage: true,
+          images: true,
+          groupId: true,
+          facilities: true,
+          ageRange: true,
+          reviewCount: true,
+          isVerified: true,
           group: {
             select: {
               id: true,
@@ -614,25 +628,26 @@ export const getAllNurseries = async (
         orderBy: { createdAt: 'desc' },
       }),
       prisma.nursery.count({ where }),
+      // Fetch all approved review averages in parallel — merged after all 3 resolve
+      prisma.review.groupBy({
+        by: ['nurseryId'],
+        where: {
+          isApproved: true,
+          isRejected: false,
+        },
+        _avg: { overallRating: true },
+      }),
     ]);
 
-    // Compute average ratings in a single SQL GROUP BY + AVG — no review rows fetched
-    const nurseryIds = nurseries.map(n => n.id);
-    const avgRatings = await prisma.review.groupBy({
-      by: ['nurseryId'],
-      where: {
-        nurseryId: { in: nurseryIds },
-        isApproved: true,
-        isRejected: false,
-      },
-      _avg: { overallRating: true },
-    });
-    const ratingMap = new Map(avgRatings.map(r => [r.nurseryId, r._avg.overallRating ?? 0]));
+    const ratingMap = new Map(allAvgRatings.map(r => [r.nurseryId, r._avg.overallRating ?? 0]));
 
     const nurseriesWithRatings = nurseries.map(nursery => ({
       ...nursery,
       averageRating: Math.round((ratingMap.get(nursery.id) ?? 0) * 10) / 10,
     }));
+
+    // Cache for 60 seconds in the browser and any CDN/proxy in front of the API
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
 
     res.json({
       success: true,
@@ -658,8 +673,6 @@ export const getNurseryBySlug = async (
 ) => {
   try {
     const { slug } = req.params;
-    
-    console.log('🔍 Searching for nursery with slug:', slug);
 
     const nursery = await (prisma as any).nursery.findUnique({
       where: { slug },
@@ -686,27 +699,9 @@ export const getNurseryBySlug = async (
       },
     });
 
-    console.log('🎯 Found nursery:', nursery ? 'YES' : 'NO');
-    console.log('🔐 Nursery approved:', nursery?.isApproved);
-    
     if (!nursery) {
-      console.log('❌ Nursery not found with slug:', slug);
-      
-      // Check all nurseries to debug
-      const allNurseries = await prisma.nursery.findMany({
-        select: { name: true, slug: true, isApproved: true },
-        take: 5,
-      });
-      console.log('📋 Available nurseries:', allNurseries);
-      
       throw new NotFoundError('Nursery not found');
     }
-    
-    // Check if approved (for public viewing, we may want only approved nurseries)
-    // Commenting out for now to allow viewing unapproved nurseries for testing
-    // if (!nursery.isApproved) {
-    //   throw new NotFoundError('Nursery not approved');
-    // }
 
     // Calculate average rating
     const approvedReviews = nursery.reviews || [];
@@ -722,7 +717,6 @@ export const getNurseryBySlug = async (
       },
     });
   } catch (error) {
-    console.error('❌ Error in getNurseryBySlug:', error);
     next(error);
   }
 };

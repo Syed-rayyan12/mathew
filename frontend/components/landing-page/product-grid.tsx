@@ -57,7 +57,26 @@ export default function NurseriesPage() {
     }
   }, []);
 
+  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
   const fetchNurseries = async () => {
+    // Check sessionStorage cache first — page reloads won't re-hit the API
+    const cacheKey = `nurseries_${cityFromUrl}_${top20}`;
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        const { data, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp < CACHE_TTL) {
+          setAllNurseries(data);
+          setLoading(false);
+          loadShortlistIds();
+          return;
+        }
+      }
+    } catch {
+      // sessionStorage unavailable — continue with API fetch
+    }
+
     setLoading(true);
     try {
       const response = await nurseryService.getAll({
@@ -79,6 +98,12 @@ export default function NurseriesPage() {
           childNurseries.sort((a, b) => (b.averageRating ?? 0) - (a.averageRating ?? 0));
         }
         setAllNurseries(childNurseries);
+        // Save to cache
+        try {
+          sessionStorage.setItem(cacheKey, JSON.stringify({ data: childNurseries, timestamp: Date.now() }));
+        } catch {
+          // sessionStorage full — skip caching
+        }
         // Load shortlist in background — doesn't block card rendering
         loadShortlistIds();
       }

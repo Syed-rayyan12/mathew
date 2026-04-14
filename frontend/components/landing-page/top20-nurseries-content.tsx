@@ -97,7 +97,7 @@ export default function Top20NurseriesContent() {
   return (
     <main className="min-h-screen bg-gray-50">
       {/* Orange Banner */}
-      <section className="bg-primary text-white py-16 px-6 md:px-16 lg:px-24">
+      <section className="bg-primary text-white  px-6 md:px-16 lg:px-24">
         <div className="max-w-7xl flex justify-between mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="flex-1 text-center md:text-left">
             <p className="text-sm font-medium uppercase tracking-widest text-white/70 mb-2">
@@ -129,7 +129,7 @@ export default function Top20NurseriesContent() {
             </span>{" "}
             nurseries listed
           </p>
-          <div className="relative">
+          {/* <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
               type="text"
@@ -138,7 +138,7 @@ export default function Top20NurseriesContent() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 w-64"
             />
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -149,7 +149,7 @@ export default function Top20NurseriesContent() {
             <p className="text-gray-500 text-lg">Loading nurseries...</p>
           </div>
         ) : filteredNurseries.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 pb-20">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-10 pb-20">
             {filteredNurseries.map((nursery, index) => (
               <div
                 key={nursery.id}
@@ -190,7 +190,7 @@ export default function Top20NurseriesContent() {
                   />
                 </button>
 
-                <div className="absolute top-52 md:top-60 left-0 right-0 px-3 md:px-4 py-4 md:py-6 mx-3 md:mx-4 shadow-lg bg-white rounded-lg">
+                <div className="absolute top-52 md:top-55 left-0 right-0 px-3 md:px-4 py-4 md:py-6 mx-3 md:mx-4 shadow-lg bg-white rounded-lg">
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <h3 className="font-heading text-lg md:text-[20px] font-medium text-[#044A55] line-clamp-1">
                       {nursery.name}

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Star, ArrowRight, Search, LocateIcon, Heart, Trophy } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { nurseryService, Nursery } from "@/lib/api/nursery";
 import { shortlistService } from "@/lib/api/shortlist";
 import { authService } from "@/lib/api/auth";
@@ -96,14 +97,27 @@ export default function Top20NurseriesContent() {
   return (
     <main className="min-h-screen bg-gray-50">
       {/* Orange Banner */}
-      <section className="bg-primary text-white py-16 px-6 text-center">
-        <p className="text-sm font-medium uppercase tracking-widest text-white/70 mb-2">
-          Best Rated
-        </p>
-        <h1 className="text-4xl md:text-5xl font-bold mb-4">Top 20 Nurseries</h1>
-        <p className="text-white/80 max-w-xl mx-auto text-base">
-          Discover the highest-rated nurseries across the UK, ranked by parent reviews.
-        </p>
+      <section className="bg-primary text-white py-16 px-6 md:px-16 lg:px-24">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="flex-1 text-center md:text-left">
+            <p className="text-sm font-medium uppercase tracking-widest text-white/70 mb-2">
+              Best Rated
+            </p>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">Top 20 Nurseries</h1>
+            <p className="text-white/80 max-w-xl text-base">
+              Discover the highest-rated nurseries across the UK, ranked by parent reviews.
+            </p>
+          </div>
+          <div className="flex-shrink-0">
+            <Image
+              src="/images/top-20.png"
+              alt="Top 20 Nurseries"
+              width={340}
+              height={280}
+              className="object-contain drop-shadow-xl"
+            />
+          </div>
+        </div>
       </section>
 
       {/* Stats Bar */}

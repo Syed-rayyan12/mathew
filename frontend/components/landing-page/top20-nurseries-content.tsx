@@ -98,7 +98,7 @@ export default function Top20NurseriesContent() {
     <main className="min-h-screen bg-gray-50">
       {/* Orange Banner */}
       <section className="bg-primary text-white py-16 px-6 md:px-16 lg:px-24">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
+        <div className="max-w-7xl flex justify-between mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="flex-1 text-center md:text-left">
             <p className="text-sm font-medium uppercase tracking-widest text-white/70 mb-2">
               Best Rated

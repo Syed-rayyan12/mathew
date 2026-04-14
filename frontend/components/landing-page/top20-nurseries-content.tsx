@@ -123,12 +123,12 @@ export default function Top20NurseriesContent() {
       {/* Stats Bar */}
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-6 py-4 flex flex-wrap gap-4 items-center justify-between">
-          <p className="text-sm text-gray-500">
+          {/* <p className="text-sm text-gray-500">
             <span className="font-semibold text-gray-900">
               {filteredNurseries.length}
             </span>{" "}
             nurseries listed
-          </p>
+          </p> */}
           {/* <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input

@@ -341,18 +341,14 @@ export const searchNurseries = async (
           { name: { contains: searchTerm, mode: 'insensitive' } },
           { city: { contains: searchTerm, mode: 'insensitive' } },
           { town: { contains: searchTerm, mode: 'insensitive' } },
-          { postcode: { contains: searchTerm, mode: 'insensitive' } },
-          { address: { contains: searchTerm, mode: 'insensitive' } },
         ],
       },
       select: {
         id: true,
         name: true,
         slug: true,
-        address: true,
         city: true,
         town: true,
-        postcode: true,
         cardImage: true,
         group: {
           select: {

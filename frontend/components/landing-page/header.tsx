@@ -63,10 +63,10 @@ export default function Header() {
                 href="/nursery-group"
                 className="block px-4 py-3 text-sm hover:text-primary hover:bg-gray-50 dark:hover:bg-gray-900 transition border-t border-gray-100 dark:border-gray-800"
               >
-                Nursery Group
+                Group Nurseries
               </Link>
               <Link
-                href="/products?top20=true"
+                href="/top-20-nurseries"
                 className="block px-4 py-3 text-sm hover:text-primary hover:bg-gray-50 dark:hover:bg-gray-900 transition border-t border-gray-100 dark:border-gray-800"
               >
                 Top 20 Nurseries

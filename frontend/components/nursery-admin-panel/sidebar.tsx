@@ -39,7 +39,7 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
         />
       )}
 
-      <aside className={`fixed md:relative top-0 left-0 h-full w-64 bg-white rounded-2xl shadow-md max-md:rounded-none p-6 m-0 md:m-6 flex flex-col flex-shrink-0 z-50 transform transition-transform duration-300 ease-in-out ${
+      <aside className={`fixed md:relative top-0 left-0 h-full w-64 bg-white rounded-2xl shadow-md max-md:rounded-none overflow-hidden overflow-y-auto p-6 m-0 md:m-6 flex flex-col flex-shrink-0 z-50 transform transition-transform duration-300 ease-in-out ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       } ${!isOpen ? 'md:translate-x-0' : ''}`}>
         {/* Close button for mobile */}

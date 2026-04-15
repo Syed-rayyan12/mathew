@@ -292,7 +292,7 @@ model TeamMember {
 }
 
 model Job {
-  id           String   @id @default(cuid()) @db.VarChar(15)
+  id           String   @id @default(cuid()) @db.VarChar(30)
   title        String
   department   String
   location     String
@@ -312,8 +312,8 @@ model Job {
 }
 
 model JobApplication {
-  id           String            @id @default(cuid()) @db.VarChar(15)
-  jobId        String            @db.VarChar(15)
+  id           String            @id @default(cuid()) @db.VarChar(30)
+  jobId        String            @db.VarChar(30)
   fullName     String
   email        String
   phone        String?

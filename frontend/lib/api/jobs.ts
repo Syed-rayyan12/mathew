@@ -1,4 +1,4 @@
-import { apiClient, ApiResponse } from './client';
+import { apiClient, adminApiClient, ApiResponse } from './client';
 
 export interface Job {
   id: string;
@@ -49,19 +49,19 @@ export const jobService = {
 
   // Admin: get all jobs (including inactive)
   adminGetAllJobs: (): Promise<ApiResponse<Job[]>> =>
-    apiClient.get<Job[]>('/jobs/admin/all', true),
+    adminApiClient.get<Job[]>('/jobs/admin/all', true),
 
   // Admin: create job
   adminCreateJob: (data: Partial<Job>): Promise<ApiResponse<Job>> =>
-    apiClient.post<Job>('/jobs/admin', data, true),
+    adminApiClient.post<Job>('/jobs/admin', data, true),
 
   // Admin: update job
   adminUpdateJob: (id: string, data: Partial<Job>): Promise<ApiResponse<Job>> =>
-    apiClient.put<Job>(`/jobs/admin/${id}`, data, true),
+    adminApiClient.put<Job>(`/jobs/admin/${id}`, data, true),
 
   // Admin: delete job
   adminDeleteJob: (id: string): Promise<ApiResponse<void>> =>
-    apiClient.delete<void>(`/jobs/admin/${id}`, true),
+    adminApiClient.delete<void>(`/jobs/admin/${id}`, true),
 
   // Admin: get all applications (optionally filter by jobId or status)
   adminGetApplications: (params?: { jobId?: string; status?: string }): Promise<ApiResponse<JobApplication[]>> => {
@@ -72,7 +72,7 @@ export const jobService = {
       if (params.status) q.append('status', params.status);
       if (q.toString()) endpoint += `?${q.toString()}`;
     }
-    return apiClient.get<JobApplication[]>(endpoint, true);
+    return adminApiClient.get<JobApplication[]>(endpoint, true);
   },
 
   // Admin: update application status
@@ -80,5 +80,5 @@ export const jobService = {
     id: string,
     status: string
   ): Promise<ApiResponse<JobApplication>> =>
-    apiClient.put<JobApplication>(`/jobs/admin/applications/${id}/status`, { status }, true),
+    adminApiClient.put<JobApplication>(`/jobs/admin/applications/${id}/status`, { status }, true),
 };

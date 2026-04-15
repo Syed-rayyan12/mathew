@@ -13,6 +13,7 @@ import recentlyViewedRoutes from './recently-viewed.routes';
 import teamMemberRoutes from './team-member.routes';
 import stripeRoutes from './stripe.routes';
 import uploadRoutes from './upload.routes';
+import jobRoutes from './job.routes';
 
 const router = Router();
 
@@ -30,5 +31,6 @@ router.use('/recently-viewed', recentlyViewedRoutes);
 router.use('/nursery-dashboard/:nurseryId/team', teamMemberRoutes);  // Team members
 router.use('/stripe', stripeRoutes);  // Stripe checkout
 router.use('/upload', uploadRoutes);  // File uploads (R2 CDN)
+router.use('/jobs', jobRoutes);  // Jobs & applications
 
 export default router;

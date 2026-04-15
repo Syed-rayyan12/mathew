@@ -1,180 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { X, MapPin, Clock, Briefcase, ChevronRight, CheckCircle } from 'lucide-react'
+import { jobService, Job, JOB_TYPE_LABEL } from '@/lib/api/jobs'
+import { toast } from 'sonner'
 
-interface Job {
-  id: number
-  title: string
-  department: string
-  location: string
-  type: 'Full-time' | 'Part-time' | 'Contract'
-  experience: string
-  description: string
-  responsibilities: string[]
-  requirements: string[]
-  postedDate: string
-  image: string
+const DEFAULT_JOB_IMAGE = 'https://images.unsplash.com/photo-1573496799652-408c2ac9fe98?w=600&h=300&fit=crop'
+
+function formatPostedDate(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  if (days === 0) return 'Today'
+  if (days === 1) return '1 day ago'
+  if (days < 7) return `${days} days ago`
+  const weeks = Math.floor(days / 7)
+  return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`
 }
-
-const jobs: Job[] = [
-  {
-    id: 1,
-    title: 'Nursery Manager',
-    department: 'Operations',
-    location: 'London, UK',
-    type: 'Full-time',
-    experience: '3+ years',
-    image: 'https://images.unsplash.com/photo-1573496799652-408c2ac9fe98?w=600&h=300&fit=crop',
-    description:
-      'We are looking for an experienced Nursery Manager to lead day-to-day operations, ensure outstanding childcare standards, and manage a dedicated team of professionals.',
-    responsibilities: [
-      'Oversee daily operations and staff management',
-      'Ensure compliance with Ofsted and safeguarding regulations',
-      'Build strong relationships with parents and guardians',
-      'Manage budgets and resources effectively',
-      'Lead continuous improvement initiatives',
-    ],
-    requirements: [
-      'Level 5 Early Years qualification or equivalent',
-      'Minimum 3 years nursery management experience',
-      'Strong knowledge of EYFS framework',
-      'Excellent communication and leadership skills',
-      'Enhanced DBS check required',
-    ],
-    postedDate: '2 days ago',
-  },
-  {
-    id: 2,
-    title: 'Early Years Practitioner',
-    department: 'Childcare',
-    location: 'Manchester, UK',
-    type: 'Full-time',
-    experience: '1+ years',
-    image: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&h=300&fit=crop',
-    description:
-      'Join our passionate childcare team as an Early Years Practitioner where you will support children aged 0–5 in their learning and development journey.',
-    responsibilities: [
-      'Plan and deliver age-appropriate activities',
-      "Observe and record children's progress",
-      'Maintain a safe and stimulating environment',
-      'Communicate effectively with parents and colleagues',
-      "Support key children's individual development plans",
-    ],
-    requirements: [
-      'Level 3 Early Years qualification',
-      'Experience working in an early years setting',
-      'Passion for child development and education',
-      'Team player with strong interpersonal skills',
-      'Enhanced DBS check required',
-    ],
-    postedDate: '5 days ago',
-  },
-  {
-    id: 3,
-    title: 'Room Leader – Toddlers',
-    department: 'Childcare',
-    location: 'Birmingham, UK',
-    type: 'Full-time',
-    experience: '2+ years',
-    image: 'https://images.unsplash.com/photo-1587616211892-f34e3d891cb2?w=600&h=300&fit=crop',
-    description:
-      'We are seeking a motivated Room Leader for our Toddler room. You will take the lead in planning, delivering, and evaluating activities for children aged 1–3.',
-    responsibilities: [
-      'Lead the toddler room and mentor junior staff',
-      'Plan and deliver the weekly curriculum',
-      'Conduct parent updates and progress reviews',
-      'Ensure the room meets health and safety standards',
-      "Monitor and assess children's development milestones",
-    ],
-    requirements: [
-      'Level 3 Early Years qualification (minimum)',
-      '2 years experience in a lead role',
-      'Strong knowledge of EYFS and development milestones',
-      'Confident communicator with parents and team',
-      'Enhanced DBS check required',
-    ],
-    postedDate: '1 week ago',
-  },
-  {
-    id: 4,
-    title: 'Nursery Cook',
-    department: 'Catering',
-    location: 'Leeds, UK',
-    type: 'Part-time',
-    experience: '1+ years',
-    image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600&h=300&fit=crop',
-    description:
-      'We are looking for a passionate Nursery Cook to prepare healthy, nutritious meals for children aged 3 months to 5 years in line with dietary requirements and food standards.',
-    responsibilities: [
-      'Prepare and cook fresh daily meals for all children',
-      'Accommodate allergies and dietary requirements',
-      'Maintain kitchen hygiene to the highest standards',
-      'Plan menus in collaboration with the management team',
-      'Monitor and manage food stock and ordering',
-    ],
-    requirements: [
-      'Level 2 Food Hygiene certificate (minimum)',
-      'Experience cooking for young children',
-      'Knowledge of nutritional needs of early years children',
-      'Organised and able to work independently',
-      'Enhanced DBS check required',
-    ],
-    postedDate: '3 days ago',
-  },
-  {
-    id: 5,
-    title: 'SENCO (Special Educational Needs Coordinator)',
-    department: 'Inclusion & SEND',
-    location: 'Bristol, UK',
-    type: 'Full-time',
-    experience: '3+ years',
-    image: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?w=600&h=300&fit=crop',
-    description:
-      'We are recruiting a SENCO to champion inclusive practice and ensure all children with additional needs receive the best possible support.',
-    responsibilities: [
-      'Lead SEND provision across the nursery',
-      'Liaise with external agencies and support services',
-      'Create and review individual education plans (IEPs)',
-      'Support and train staff on inclusive practice',
-      'Work closely with families of children with SEND',
-    ],
-    requirements: [
-      'Early Years degree or equivalent Level 6 qualification',
-      'SENCO qualification or willingness to complete',
-      '3 years experience in an early years SEND role',
-      'Knowledge of current SEND legislation and EYFS',
-      'Enhanced DBS check required',
-    ],
-    postedDate: '1 week ago',
-  },
-  {
-    id: 6,
-    title: 'Nursery Administrator',
-    department: 'Administration',
-    location: 'Remote / London, UK',
-    type: 'Part-time',
-    experience: '1+ years',
-    image: 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=600&h=300&fit=crop',
-    description:
-      'We are looking for an organised and friendly Nursery Administrator to manage front-office operations, communications, and administrative tasks.',
-    responsibilities: [
-      'Handle enquiries via phone, email, and in person',
-      'Maintain accurate records and filing systems',
-      'Manage bookings, enrolments, and waiting lists',
-      'Assist with invoicing and fee collection',
-      'Support the management team with ad-hoc tasks',
-    ],
-    requirements: [
-      'Proven experience in an administrative role',
-      'Proficient in Microsoft Office and nursery management software',
-      'Excellent organisational and communication skills',
-      'Knowledge of GDPR and data handling standards',
-      'Enhanced DBS check required',
-    ],
-    postedDate: '4 days ago',
-  },
-]
 
 interface ApplyModalProps {
   job: Job
@@ -200,9 +41,23 @@ function ApplyModal({ job, onClose }: ApplyModalProps) {
     if (file) setForm(prev => ({ ...prev, cvFileName: file.name }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSubmitted(true)
+    try {
+      const res = await jobService.applyForJob(job.id, {
+        fullName: form.fullName,
+        email: form.email,
+        phone: form.phone || undefined,
+        coverLetter: form.coverLetter || undefined,
+      })
+      if (res.success) {
+        setSubmitted(true)
+      } else {
+        toast.error(res.message || 'Failed to submit application')
+      }
+    } catch {
+      toast.error('Failed to submit application. Please try again.')
+    }
   }
 
   return (
@@ -338,14 +193,23 @@ function ApplyModal({ job, onClose }: ApplyModalProps) {
 }
 
 const typeBadgeColor: Record<string, string> = {
-  'Full-time': 'bg-green-100 text-green-700',
-  'Part-time': 'bg-blue-100 text-blue-700',
-  'Contract': 'bg-orange-100 text-orange-700',
+  FULL_TIME: 'bg-green-100 text-green-700',
+  PART_TIME: 'bg-blue-100 text-blue-700',
+  CONTRACT: 'bg-orange-100 text-orange-700',
 }
 
 export default function JobsContent() {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null)
   const [applyJob, setApplyJob] = useState<Job | null>(null)
+  const [jobs, setJobs] = useState<Job[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    jobService.getJobs()
+      .then(res => { if (res.success && res.data) setJobs(res.data) })
+      .catch(() => toast.error('Failed to load jobs'))
+      .finally(() => setLoading(false))
+  }, [])
 
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -362,7 +226,7 @@ export default function JobsContent() {
       <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
         <div className="max-w-6xl mx-auto px-6 py-4 flex flex-wrap gap-6 items-center justify-between">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            <span className="font-semibold text-gray-900 dark:text-white">{jobs.length} positions</span> currently open
+            {loading ? 'Loading positions...' : <><span className="font-semibold text-gray-900 dark:text-white">{jobs.length} positions</span> currently open</>}
           </p>
           <div className="flex gap-4 text-sm text-gray-500">
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500 inline-block" /> Full-time</span>
@@ -374,6 +238,27 @@ export default function JobsContent() {
 
       {/* Job Listings */}
       <section className="max-w-6xl mx-auto px-6 py-12">
+        {loading && (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden animate-pulse">
+                <div className="h-44 bg-gray-200 dark:bg-gray-700" />
+                <div className="p-5 space-y-3">
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {!loading && jobs.length === 0 && (
+          <div className="text-center py-20 text-gray-500">
+            <Briefcase size={48} className="mx-auto mb-4 opacity-30" />
+            <p className="text-lg font-medium">No open positions at the moment</p>
+            <p className="text-sm mt-1">Check back soon for new opportunities.</p>
+          </div>
+        )}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {jobs.map(job => (
             <div
@@ -383,7 +268,7 @@ export default function JobsContent() {
               {/* Card Image Banner */}
               <div className="relative h-44 overflow-hidden">
                 <img
-                  src={job.image}
+                  src={job.image || DEFAULT_JOB_IMAGE}
                   alt={job.title}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
@@ -391,10 +276,10 @@ export default function JobsContent() {
                 <div className="absolute inset-0 bg-black/30" />
                 {/* Type badge */}
                 <span className={`absolute top-3 right-3 text-xs font-semibold px-2.5 py-0.5 rounded-full ${typeBadgeColor[job.type]}`}>
-                  {job.type}
+                  {JOB_TYPE_LABEL[job.type]}
                 </span>
                 <span className="absolute top-3 left-3 text-xs text-white bg-black/40 px-2 py-0.5 rounded-full">
-                  {job.postedDate}
+                  {formatPostedDate(job.createdAt)}
                 </span>
                 {/* Title overlay at bottom of image */}
                 <div className="absolute bottom-0 left-0 right-0 px-4 py-3 bg-gradient-to-t from-black/70 to-transparent">
@@ -409,7 +294,7 @@ export default function JobsContent() {
 
                 <div className="flex flex-wrap gap-3 text-xs text-gray-500 dark:text-gray-400 mb-4">
                   <span className="flex items-center gap-1"><MapPin size={12} />{job.location}</span>
-                  <span className="flex items-center gap-1"><Clock size={12} />{job.experience}</span>
+                  {job.experience && <span className="flex items-center gap-1"><Clock size={12} />{job.experience}</span>}
                 </div>
 
                 {/* Actions */}
@@ -445,7 +330,7 @@ export default function JobsContent() {
           >
             <div className="sticky top-0 bg-white dark:bg-gray-900 z-10">
               <div className="relative h-40 overflow-hidden">
-                <img src={selectedJob.image} alt={selectedJob.title} className="w-full h-full object-cover" />
+                <img src={selectedJob.image || DEFAULT_JOB_IMAGE} alt={selectedJob.title} className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-black/40" />
                 <button
                   onClick={() => setSelectedJob(null)}
@@ -466,9 +351,9 @@ export default function JobsContent() {
               {/* Meta */}
               <div className="flex flex-wrap gap-3 text-sm text-gray-600 dark:text-gray-400">
                 <span className="flex items-center gap-1"><MapPin size={14} />{selectedJob.location}</span>
-                <span className="flex items-center gap-1"><Clock size={14} />{selectedJob.experience}</span>
+                {selectedJob.experience && <span className="flex items-center gap-1"><Clock size={14} />{selectedJob.experience}</span>}
                 <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${typeBadgeColor[selectedJob.type]}`}>
-                  {selectedJob.type}
+                  {JOB_TYPE_LABEL[selectedJob.type]}
                 </span>
               </div>
 

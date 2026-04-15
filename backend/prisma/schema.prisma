@@ -290,3 +290,53 @@ model TeamMember {
 
   @@map("team_members")
 }
+
+model Job {
+  id           String   @id @default(cuid()) @db.VarChar(15)
+  title        String
+  department   String
+  location     String
+  type         JobType  @default(FULL_TIME)
+  experience   String
+  description  String   @db.Text
+  responsibilities String[]
+  requirements     String[]
+  image        String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  applications JobApplication[]
+
+  @@map("jobs")
+  @@index([isActive])
+}
+
+model JobApplication {
+  id           String            @id @default(cuid()) @db.VarChar(15)
+  jobId        String            @db.VarChar(15)
+  fullName     String
+  email        String
+  phone        String?
+  coverLetter  String?           @db.Text
+  cvUrl        String?
+  status       ApplicationStatus @default(PENDING)
+  createdAt    DateTime          @default(now())
+  job          Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@map("job_applications")
+  @@index([jobId])
+  @@index([status])
+}
+
+enum JobType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+}
+
+enum ApplicationStatus {
+  PENDING
+  REVIEWED
+  SHORTLISTED
+  REJECTED
+}

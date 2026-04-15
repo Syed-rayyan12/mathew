@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Loader2, X, ChevronRight, Users } from 'lucide-react'
+import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Loader2, X, Users, Search } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select'
 import { jobService, Job, JOB_TYPE_LABEL } from '@/lib/api/jobs'
 import { toast } from 'sonner'
 
@@ -288,6 +290,8 @@ export default function ManageJobs() {
   const [editJob, setEditJob] = useState<Job | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [togglingId, setTogglingId] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [typeFilter, setTypeFilter] = useState('all')
 
   const fetchJobs = useCallback(async () => {
     setLoading(true)
@@ -336,131 +340,166 @@ export default function ManageJobs() {
     }
   }
 
+  const filtered = jobs.filter(j => {
+    const searchMatch =
+      !searchQuery ||
+      j.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      j.department.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      j.location.toLowerCase().includes(searchQuery.toLowerCase())
+    const typeMatch = typeFilter === 'all' || j.type === typeFilter
+    return searchMatch && typeMatch
+  })
+
   return (
-    <div className="space-y-6">
-      {/* Page header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Job Management</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Post jobs that appear as cards on the Jobs page</p>
-        </div>
-        <button
-          onClick={() => { setEditJob(null); setShowForm(true) }}
-          className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-blue-600 transition"
-        >
-          <Plus size={16} /> Post New Job
-        </button>
-      </div>
+    <div className="w-full">
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl border border-gray-100 p-4">
-          <p className="text-xs text-gray-500 mb-1">Total Jobs</p>
-          <p className="text-2xl font-bold text-gray-900">{jobs.length}</p>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-100 p-4">
-          <p className="text-xs text-gray-500 mb-1">Active</p>
-          <p className="text-2xl font-bold text-green-600">{jobs.filter(j => j.isActive).length}</p>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-100 p-4">
-          <p className="text-xs text-gray-500 mb-1">Total Applications</p>
-          <p className="text-2xl font-bold text-blue-600">
-            {jobs.reduce((sum, j) => sum + (j._count?.applications ?? 0), 0)}
-          </p>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 size={32} className="animate-spin text-blue-500" />
+      {/* HEADER */}
+      <div className="bg-white p-4 shadow-md rounded-lg mb-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h2 className="text-secondary font-medium text-2xl md:text-4xl lg:text-[48px] font-heading">
+              <span className="text-foreground">MANAGE</span> Jobs
+            </h2>
+            <p className="text-gray-600">Post and manage jobs that appear as cards on the Jobs page</p>
           </div>
-        ) : jobs.length === 0 ? (
-          <div className="text-center py-20 text-gray-400">
-            <Users size={48} className="mx-auto mb-4 opacity-30" />
-            <p className="font-medium text-gray-500">No jobs posted yet</p>
-            <p className="text-sm mt-1">Click "Post New Job" to get started</p>
+          <button
+            onClick={() => { setEditJob(null); setShowForm(true) }}
+            className="flex items-center gap-2 bg-secondary text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:opacity-90 transition cursor-pointer w-full md:w-auto justify-center"
+          >
+            <Plus size={16} /> Post New Job
+          </button>
+        </div>
+      </div>
+
+      {/* SEARCH + FILTER */}
+      <div className="w-full bg-white p-4 rounded-lg flex flex-wrap items-center gap-4 mb-4">
+        <div className="relative w-full max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="text"
+            className="pl-10 rounded-sm"
+            placeholder="Search by title, department, location..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+          />
+        </div>
+
+        <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <SelectTrigger className="w-[160px] flex items-center gap-2 rounded-sm border border-secondary bg-white px-3 py-2 text-sm">
+            <SelectValue placeholder="Job Type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Types</SelectItem>
+            <SelectItem value="FULL_TIME">Full-time</SelectItem>
+            <SelectItem value="PART_TIME">Part-time</SelectItem>
+            <SelectItem value="CONTRACT">Contract</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {!loading && (
+          <span className="ml-auto text-sm text-gray-400">
+            {filtered.length} of {jobs.length} jobs · {jobs.reduce((s, j) => s + (j._count?.applications ?? 0), 0)} total applications
+          </span>
+        )}
+      </div>
+
+      {/* TABLE */}
+      <div className="shadow-md p-4 bg-white rounded-lg">
+        <h2 className="font-sans font-bold text-xl">All Jobs</h2>
+        <p className="text-gray-500">Toggle Active/Inactive to show or hide a job on the public Jobs page.</p>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-secondary"></div>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div className="w-full mt-4 overflow-x-auto">
+            <table className="w-full min-w-[900px]">
               <thead>
-                <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
-                  <th className="text-left px-6 py-3">Job Title</th>
-                  <th className="text-left px-6 py-3">Department</th>
-                  <th className="text-left px-6 py-3">Location</th>
-                  <th className="text-left px-6 py-3">Type</th>
-                  <th className="text-left px-6 py-3">Applications</th>
-                  <th className="text-left px-6 py-3">Status</th>
-                  <th className="text-left px-6 py-3">Actions</th>
+                <tr className="bg-[#F8F8F8] border-2 border-gray-300 h-14">
+                  <th className="p-3 text-left" style={{ borderRadius: '4px 0px 0px 4px' }}>Job Title</th>
+                  <th className="p-3 text-left">Department</th>
+                  <th className="p-3 text-left">Location</th>
+                  <th className="p-3 text-left">Type</th>
+                  <th className="p-3 text-left">Experience</th>
+                  <th className="p-3 text-left">Applications</th>
+                  <th className="p-3 text-left">Status</th>
+                  <th className="p-3 text-left" style={{ borderRadius: '0px 4px 4px 0px' }}>Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
-                {jobs.map(job => (
-                  <tr key={job.id} className="hover:bg-gray-50 transition">
-                    <td className="px-6 py-4">
-                      <p className="font-semibold text-gray-900">{job.title}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">{job.experience}</p>
-                    </td>
-                    <td className="px-6 py-4 text-gray-600">{job.department}</td>
-                    <td className="px-6 py-4 text-gray-600">{job.location}</td>
-                    <td className="px-6 py-4">
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${TYPE_BADGE[job.type]}`}>
-                        {JOB_TYPE_LABEL[job.type]}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1 text-blue-600 font-semibold">
-                        <Users size={13} />
-                        {job._count?.applications ?? 0}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={() => handleToggle(job)}
-                        disabled={togglingId === job.id}
-                        className="flex items-center gap-1 text-xs font-medium"
-                      >
-                        {togglingId === job.id ? (
-                          <Loader2 size={14} className="animate-spin" />
-                        ) : job.isActive ? (
-                          <>
-                            <ToggleRight size={18} className="text-green-500" />
-                            <span className="text-green-600">Active</span>
-                          </>
-                        ) : (
-                          <>
-                            <ToggleLeft size={18} className="text-gray-400" />
-                            <span className="text-gray-400">Inactive</span>
-                          </>
-                        )}
-                      </button>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => { setEditJob(job); setShowForm(true) }}
-                          className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-500 transition"
-                          title="Edit"
-                        >
-                          <Pencil size={15} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(job.id)}
-                          disabled={deletingId === job.id}
-                          className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition"
-                          title="Delete"
-                        >
-                          {deletingId === job.id
-                            ? <Loader2 size={15} className="animate-spin" />
-                            : <Trash2 size={15} />
-                          }
-                        </button>
+              <tbody>
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={8}>
+                      <div className="flex justify-center w-full">
+                        <span className="block text-center py-10 text-gray-500">
+                          {jobs.length === 0 ? 'No jobs posted yet. Click "Post New Job" to get started.' : 'No jobs match your search.'}
+                        </span>
                       </div>
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filtered.map(job => (
+                    <tr key={job.id} className="border-b hover:bg-gray-50">
+                      <td className="py-5 px-3 font-bold">{job.title}</td>
+                      <td className="py-5 px-3 text-gray-500">{job.department}</td>
+                      <td className="py-5 px-3 text-gray-500">{job.location}</td>
+                      <td className="py-5 px-3">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${TYPE_BADGE[job.type]}`}>
+                          {JOB_TYPE_LABEL[job.type]}
+                        </span>
+                      </td>
+                      <td className="py-5 px-3 text-gray-500">{job.experience}</td>
+                      <td className="py-5 px-3">
+                        <span className="inline-flex items-center gap-1 text-blue-600 font-semibold">
+                          <Users size={13} />
+                          {job._count?.applications ?? 0}
+                        </span>
+                      </td>
+                      <td className="py-5 px-3">
+                        <button
+                          onClick={() => handleToggle(job)}
+                          disabled={togglingId === job.id}
+                          className="flex items-center gap-1.5"
+                        >
+                          {togglingId === job.id ? (
+                            <Loader2 size={14} className="animate-spin text-gray-400" />
+                          ) : job.isActive ? (
+                            <>
+                              <ToggleRight size={20} className="text-green-500" />
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700`}>Active</span>
+                            </>
+                          ) : (
+                            <>
+                              <ToggleLeft size={20} className="text-gray-400" />
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500`}>Inactive</span>
+                            </>
+                          )}
+                        </button>
+                      </td>
+                      <td className="py-5 px-3">
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => { setEditJob(job); setShowForm(true) }}
+                            title="Edit"
+                          >
+                            <Pencil className="w-4 h-4 text-foreground" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(job.id)}
+                            disabled={deletingId === job.id}
+                            title="Delete"
+                          >
+                            {deletingId === job.id
+                              ? <Loader2 className="w-4 h-4 animate-spin text-red-400" />
+                              : <Trash2 className="w-4 h-4 text-red-500" />
+                            }
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

@@ -74,8 +74,8 @@ export default function ManageApplicants() {
       ])
       if (appsRes.success && appsRes.data) setApplications(appsRes.data)
       if (jobsRes.success && jobsRes.data) setJobs(jobsRes.data)
-    } catch {
-      toast.error('Failed to load applicants')
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to load applicants')
     } finally {
       setLoading(false)
     }
@@ -95,8 +95,8 @@ export default function ManageApplicants() {
       } else {
         toast.error(res.message || 'Failed to update status')
       }
-    } catch {
-      toast.error('Failed to update status')
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to update status')
     } finally {
       setUpdatingId(null)
     }

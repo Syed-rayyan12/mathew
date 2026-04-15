@@ -83,8 +83,8 @@ function JobFormModal({ initial, onClose, onSaved }: JobFormModalProps) {
       } else {
         toast.error(res.message || 'Failed to save job')
       }
-    } catch {
-      toast.error('An error occurred. Please try again.')
+    } catch (err: any) {
+      toast.error(err?.message || 'An error occurred. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -294,8 +294,8 @@ export default function ManageJobs() {
     try {
       const res = await jobService.adminGetAllJobs()
       if (res.success && res.data) setJobs(res.data)
-    } catch {
-      toast.error('Failed to load jobs')
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to load jobs')
     } finally {
       setLoading(false)
     }
@@ -314,8 +314,8 @@ export default function ManageJobs() {
       } else {
         toast.error(res.message || 'Failed to delete job')
       }
-    } catch {
-      toast.error('Failed to delete job')
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to delete job')
     } finally {
       setDeletingId(null)
     }
@@ -329,8 +329,8 @@ export default function ManageJobs() {
         setJobs(prev => prev.map(j => j.id === job.id ? { ...j, isActive: !j.isActive } : j))
         toast.success(`Job ${!job.isActive ? 'activated' : 'deactivated'}`)
       }
-    } catch {
-      toast.error('Failed to update job status')
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to update job status')
     } finally {
       setTogglingId(null)
     }

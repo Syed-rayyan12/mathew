@@ -99,6 +99,11 @@ model Nursery {
   teamMembers  TeamMember[]
 
   @@map("nurseries")
+  @@index([isApproved])
+  @@index([groupId])
+  @@index([city])
+  @@index([town])
+  @@index([isApproved, groupId])
 }
 
 model Review {
@@ -138,6 +143,9 @@ model Review {
   user          User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("reviews")
+  @@index([nurseryId])
+  @@index([isApproved, isRejected])
+  @@index([nurseryId, isApproved, isRejected])
 }
 
 model Shortlist {

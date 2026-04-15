@@ -18,7 +18,7 @@ const handleMulterError = (
       if (err) {
         const message =
           err.code === 'LIMIT_FILE_SIZE'
-            ? 'File too large. Maximum size is 10 MB.'
+            ? 'File too large. Maximum size is 500 MB for videos and 20 MB for images.'
             : err.message || 'Upload error';
         return res.status(400).json({ success: false, message });
       }

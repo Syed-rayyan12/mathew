@@ -196,7 +196,7 @@ export default function Top20NurseriesContent() {
                       {nursery.name}
                     </h3>
                     {(nursery.city || nursery.town) && (
-                      <span className="text-xs md:text-sm font-ubuntu flex items-center gap-1 text-foreground whitespace-nowrap">
+                      <span className="text-xs md:text-sm font-ubuntu line-clamp-2 flex items-center gap-1 text-foreground whitespace-nowrap">
                         <LocateIcon className="text-secondary" size={16} />
                         {[nursery.town, nursery.city].filter(Boolean).join(", ")}
                       </span>

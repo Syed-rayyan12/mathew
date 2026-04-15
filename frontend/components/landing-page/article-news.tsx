@@ -141,7 +141,7 @@ const ArticleNews = () => {
                                                 })}
                                             </span>
                                         </div>
-                                        <h3 className="font-heading text-[24px] font-medium text-[#044A55] line-clamp-2">
+                                        <h3 className="font-heading text-[24px] font-medium text-[#044A55] line-clamp-1">
                                             {article.cardHeading || article.name}
                                         </h3>
                                         <p className="font-ubuntu text-[14px] text-muted-foreground line-clamp-2">

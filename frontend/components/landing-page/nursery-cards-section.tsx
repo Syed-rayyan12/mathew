@@ -93,7 +93,7 @@ const NurseryCardsSection = () => {
                     id: nursery.id,
                     name: nursery.name,
                     slug: nursery.slug,
-                    cardImage: nursery.cardImage || '/images/nursery-placeholder.png',
+                    cardImage: nursery.cardImage || nursery.images?.[0] || '/images/nursery-1.png',
                     reviewCount: nursery.reviewCount || 0,
                     description: nursery.description,
                     city: nursery.city || 'Location not specified',
@@ -152,7 +152,7 @@ const NurseryCardsSection = () => {
             id: '4',
             name: 'Sunshine Kids',
             slug: 'sunshine-kids',
-            cardImage: '/images/nursery-4.png',
+            cardImage: '/images/nursery-1.png',
             reviewCount: 29,
             description: 'Bright and cheerful environment for early learners.',
             city: 'Leeds',
@@ -162,7 +162,7 @@ const NurseryCardsSection = () => {
             id: '5',
             name: 'Tiny Treasures',
             slug: 'tiny-treasures',
-            cardImage: '/images/nursery-5.png',
+            cardImage: '/images/nursery-2.png',
             reviewCount: 34,
             description: 'A place where every child is a treasure.',
             city: 'Liverpool',
@@ -172,7 +172,7 @@ const NurseryCardsSection = () => {
             id: '6',
             name: 'Little Explorers',
             slug: 'little-explorers',
-            cardImage: '/images/nursery-6.png',
+            cardImage: '/images/nursery-3.png',
             reviewCount: 41,
             description: 'Encouraging curiosity and adventure in every child.',
             city: 'Bristol',
@@ -261,11 +261,11 @@ const NurseryCardsSection = () => {
                                         whileHover={{ y: -10 }}
                                     >
                                         <img
-                                            src={nursery.cardImage || '/images/nursery-placeholder.png'}
+                                            src={nursery.cardImage || '/images/nursery-1.png'}
                                             alt={nursery.name}
                                             className="w-full h-full object-cover rounded-xl"
                                             onError={(e) => {
-                                                (e.target as HTMLImageElement).src = '/images/nursery-placeholder.png';
+                                                (e.target as HTMLImageElement).src = '/images/nursery-1.png';
                                             }}
                                         />
                                         {/* Heart / Shortlist button */}

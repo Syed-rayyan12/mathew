@@ -158,7 +158,7 @@ export default function Top20NurseriesContent() {
                 {/* Rank badge */}
                 <div className="absolute top-3 left-3 z-20 flex items-center gap-1 bg-primary text-white text-xs font-bold px-2 py-1 rounded-full shadow">
                   <Trophy size={12} />
-                  #{index + 1}
+                 
                 </div>
 
                 <Link href={`/products/${nursery.slug}`}>

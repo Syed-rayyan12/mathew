@@ -161,7 +161,7 @@ const ArticleTabs = () => {
                                         <Calendar className='text-secondary' />
                                         <span className="text-sm text-muted-foreground">{formatTimeAgo(article.publishedAt)}</span>
                                     </div>
-                                    <h3 className="font-heading text-[24px] font-medium text-foreground">{article.cardHeading}</h3>
+                                    <h3 className="font-heading text-[24px] font-medium line-clamp-1 text-foreground">{article.cardHeading}</h3>
                                     <p className="font-ubuntu text-[14px] text-muted-foreground line-clamp-2">{article.cardParagraph}</p>
                                     <Link href={`/article/${article.slug}`}>
                                         <div className='mt-4 flex items-center pt-2'>

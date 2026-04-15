@@ -44,6 +44,13 @@ const getEmbedUrl = (url: string): string => {
   return url;
 };
 
+// Returns true for direct video file uploads (R2, S3, etc.) — not YouTube/Vimeo
+const isDirectVideoUrl = (url: string): boolean => {
+  if (!url) return false;
+  if (url.includes('youtube.com') || url.includes('youtu.be') || url.includes('vimeo.com')) return false;
+  return true;
+};
+
 export default function NurseryDetailsPage() {
   const params = useParams();
   const slug = params.slug as string;
@@ -263,13 +270,22 @@ export default function NurseryDetailsPage() {
           <div className="mt-4 md:mt-6 mb-4 md:mb-6">
             <h3 className="text-xl md:text-2xl font-semibold mb-3 md:mb-4 text-[#044A55] font-heading">VIDEO TOUR</h3>
             <div className="aspect-video w-full rounded-lg overflow-hidden shadow-md">
-              <iframe
-                src={getEmbedUrl(nursery.videoUrl)}
-                className="w-full h-full"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
+              {isDirectVideoUrl(nursery.videoUrl) ? (
+                <video
+                  src={nursery.videoUrl}
+                  className="w-full h-full"
+                  controls
+                  playsInline
+                />
+              ) : (
+                <iframe
+                  src={getEmbedUrl(nursery.videoUrl)}
+                  className="w-full h-full"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              )}
             </div>
           </div>
         )}

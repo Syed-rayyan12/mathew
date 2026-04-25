@@ -21,12 +21,12 @@ export default function Header() {
         
         {/* LOGO */}
         <Link href="/">
-        <img src="/images/logo.png" alt="" className="object-cover"  width={200} height={200}/>
+        <img src="/images/logo.png" alt="" className="object-cover"  width={250} height={250}/>
         </Link>
 
         {/* CENTER LINKS */}
         <nav className="hidden lg:flex items-center gap-8 text-base font-medium">
-          <Link href="/" className="hover:text-primary transition">Home</Link>
+          <Link href="/" className="hover:text-primary text-lg transition">Home</Link>
 
           {/* Find Nursery Dropdown */}
           <div
@@ -36,7 +36,7 @@ export default function Header() {
           >
             <Link
               href="/products"
-              className="flex items-center gap-1 hover:text-primary transition"
+              className="flex items-center gap-1 text-lg hover:text-primary transition"
             >
               Find Nursery
               <ChevronDown
@@ -55,30 +55,30 @@ export default function Header() {
             >
               <Link
                 href="/products"
-                className="block px-4 py-3 text-sm hover:text-primary hover:bg-gray-50 dark:hover:bg-gray-900 transition"
+                className="block px-4 py-3  text-lg hover:text-primary hover:bg-gray-50 dark:hover:bg-gray-900 transition"
               >
                 Nurseries
               </Link>
               <Link
                 href="/nursery-group"
-                className="block px-4 py-3 text-sm hover:text-primary hover:bg-gray-50 dark:hover:bg-gray-900 transition border-t border-gray-100 dark:border-gray-800"
+                className="block px-4 py-3 text-lg hover:text-primary hover:bg-gray-50 dark:hover:bg-gray-900 transition border-t border-gray-100 dark:border-gray-800"
               >
                 Group Nurseries
               </Link>
               <Link
                 href="/top-20-nurseries"
-                className="block px-4 py-3 text-sm hover:text-primary hover:bg-gray-50 dark:hover:bg-gray-900 transition border-t border-gray-100 dark:border-gray-800"
+                className="block px-4 py-3 text-lg hover:text-primary hover:bg-gray-50 dark:hover:bg-gray-900 transition border-t border-gray-100 dark:border-gray-800"
               >
                 Top 20 Nurseries
               </Link>
             </div>
           </div>
 
-          <Link href="/pricing" className="hover:text-primary transition">Pricing</Link>
-          <Link href="/submit-review" className="hover:text-primary transition">Submit & Review</Link>
-          <Link href="/jobs" className="hover:text-primary transition">Jobs</Link>
-          <Link href="/article" className="hover:text-primary transition">Article</Link>
-          <Link href="/about" className="hover:text-primary transition">About</Link>
+          <Link href="/pricing" className="hover:text-primary transition text-lg">Pricing</Link>
+          <Link href="/submit-review" className="hover:text-primary transition text-lg">Submit & Review</Link>
+          <Link href="/jobs" className="hover:text-primary transition text-lg">Jobs</Link>
+          <Link href="/article" className="hover:text-primary transition text-lg">Article</Link>
+          <Link href="/about" className="hover:text-primary transition text-lg">About</Link>
         </nav>
 
         {/* RIGHT SECTION - Auth Button or Dashboard */}

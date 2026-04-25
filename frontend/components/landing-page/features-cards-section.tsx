@@ -38,7 +38,7 @@ const FeaturesCardsSection = () => {
                     animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
                     transition={{ duration: 0.8 }}
                 >
-                    <p className="text-primary font-medium font-heading text-2xl">Reviews & Awards</p>
+                    <p className="text-primary font-medium font-heading text-[30px]">Reviews & Awards</p>
                     <h2 className="text-4xl md:text-5xl font-heading font-medium mb-2 text-foreground leading-tight">
                        Nursery Reviews & <span className="text-secondary">Awards</span>
                     </h2>

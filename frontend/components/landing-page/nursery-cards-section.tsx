@@ -197,7 +197,7 @@ const NurseryCardsSection = () => {
                     animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
                     transition={{ duration: 0.8 }}
                 >
-                    <p className="text-primary font-medium font-heading text-2xl">Featured Nurseries</p>
+                    <p className="text-primary font-medium font-heading text-[30px]">Featured Nurseries</p>
                     <h2 className="text-4xl md:text-5xl font-heading font-medium mb-2 text-foreground leading-tight">
                         Join today and register as one of our top <span className="text-secondary max-w-7xl">nurseries</span>
                     </h2>

@@ -168,12 +168,7 @@ function NurserySignupContent() {
       isValid = false;
     }
 
-    // City validation
-    if (!formData.city.trim()) {
-      newErrors.city = "City is required";
-      isValid = false;
-    }
-
+    // City validation (optional)
     // Town validation (optional)
     // You can make it required by uncommenting below
     // if (!formData.town.trim()) {

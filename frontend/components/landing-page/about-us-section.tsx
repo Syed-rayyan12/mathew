@@ -37,7 +37,7 @@ const AboutUsSection = () => {
                         transition={{ duration: 0.8, delay: 0.2 }}
                     >
                         {/* Sub tag */}
-                        <p className="text-primary font-medium font-heading text-2xl">ABOUT US</p>
+                        <p className="text-primary font-medium font-heading text-[30px]">ABOUT US</p>
 
                         {/* Heading */}
                         <h2 className="text-4xl md:text-5xl font-heading font-bold text-gray-800 leading-tight">

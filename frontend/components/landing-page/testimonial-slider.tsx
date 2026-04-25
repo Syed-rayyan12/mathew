@@ -114,7 +114,7 @@ export default function TestimonialSlider() {
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
           transition={{ duration: 0.8 }}
         >
-          <p className="text-primary font-medium font-heading text-2xl">Testimonials</p>
+          <p className="text-primary font-medium font-heading text-[30px]">Testimonials</p>
           <h2 className="text-4xl md:text-5xl font-heading font-medium mb-2 text-foreground leading-tight">
             Our Recent <span className="text-secondary">Reviews</span>
           </h2>

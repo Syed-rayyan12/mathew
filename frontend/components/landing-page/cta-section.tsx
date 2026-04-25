@@ -24,7 +24,7 @@ const CTASection = () => {
                     animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
                     transition={{ duration: 0.8 }}
                 >
-                     <p className="text-primary font-medium font-heading text-2xl">Limited Time Offer</p>
+                     <p className="text-primary font-medium font-heading text-[30px]">Limited Time Offer</p>
                     <h2 className="text-4xl md:text-5xl font-heading font-medium mb-2 text-foreground leading-tight">
                        Join My Nursery <span className="text-secondary">Platform</span> Today
                     </h2>

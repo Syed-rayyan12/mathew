@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { X, MapPin, Clock, Briefcase, ChevronRight, CheckCircle } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { X, MapPin, Clock, Briefcase, ChevronRight, CheckCircle, Search } from 'lucide-react'
 import { jobService, Job, JOB_TYPE_LABEL } from '@/lib/api/jobs'
 import { toast } from 'sonner'
 
@@ -203,6 +204,13 @@ export default function JobsContent() {
   const [applyJob, setApplyJob] = useState<Job | null>(null)
   const [jobs, setJobs] = useState<Job[]>([])
   const [loading, setLoading] = useState(true)
+  const [localSearch, setLocalSearch] = useState('')
+  const searchParams = useSearchParams()
+  const urlSearch = searchParams.get('search') || ''
+
+  useEffect(() => {
+    setLocalSearch(urlSearch)
+  }, [urlSearch])
 
   useEffect(() => {
     jobService.getJobs()
@@ -210,6 +218,17 @@ export default function JobsContent() {
       .catch(() => toast.error('Failed to load jobs'))
       .finally(() => setLoading(false))
   }, [])
+
+  const filteredJobs = useMemo(() => {
+    const q = localSearch.trim().toLowerCase()
+    if (!q) return jobs
+    return jobs.filter(job =>
+      job.title.toLowerCase().includes(q) ||
+      (job.department && job.department.toLowerCase().includes(q)) ||
+      (job.description && job.description.toLowerCase().includes(q)) ||
+      job.location.toLowerCase().includes(q)
+    )
+  }, [jobs, localSearch])
 
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -226,12 +245,34 @@ export default function JobsContent() {
       <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
         <div className="max-w-6xl mx-auto px-6 py-4 flex flex-wrap gap-6 items-center justify-between">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {loading ? 'Loading positions...' : <><span className="font-semibold text-gray-900 dark:text-white">{jobs.length} positions</span> currently open</>}
+            {loading ? 'Loading positions...' : (
+              <>
+                <span className="font-semibold text-gray-900 dark:text-white">{filteredJobs.length}</span> {localSearch ? 'results found' : 'positions currently open'}
+              </>
+            )}
           </p>
-          <div className="flex gap-4 text-sm text-gray-500">
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500 inline-block" /> Full-time</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> Part-time</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-500 inline-block" /> Contract</span>
+          <div className="flex items-center gap-4 flex-wrap">
+            {/* Inline search on jobs page */}
+            <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 rounded-full px-3 py-1.5">
+              <Search size={14} className="text-gray-400" />
+              <input
+                type="text"
+                value={localSearch}
+                onChange={e => setLocalSearch(e.target.value)}
+                placeholder="Search jobs..."
+                className="bg-transparent text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 outline-none w-40"
+              />
+              {localSearch && (
+                <button onClick={() => setLocalSearch('')} className="text-gray-400 hover:text-gray-600">
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+            <div className="flex gap-4 text-sm text-gray-500">
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500 inline-block" /> Full-time</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> Part-time</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-500 inline-block" /> Contract</span>
+            </div>
           </div>
         </div>
       </div>
@@ -252,15 +293,18 @@ export default function JobsContent() {
             ))}
           </div>
         )}
-        {!loading && jobs.length === 0 && (
+        {!loading && filteredJobs.length === 0 && (
           <div className="text-center py-20 text-gray-500">
             <Briefcase size={48} className="mx-auto mb-4 opacity-30" />
-            <p className="text-lg font-medium">No open positions at the moment</p>
-            <p className="text-sm mt-1">Check back soon for new opportunities.</p>
+            <p className="text-lg font-medium">{localSearch ? `No jobs found for "${localSearch}"` : 'No open positions at the moment'}</p>
+            <p className="text-sm mt-1">{localSearch ? 'Try a different search term.' : 'Check back soon for new opportunities.'}</p>
+            {localSearch && (
+              <button onClick={() => setLocalSearch('')} className="mt-4 text-sm text-primary underline">Clear search</button>
+            )}
           </div>
         )}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {jobs.map(job => (
+          {filteredJobs.map(job => (
             <div
               key={job.id}
               className="group bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col"

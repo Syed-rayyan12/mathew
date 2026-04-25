@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import Header from '@/components/landing-page/header'
 import Footer from '@/components/landing-page/footer'
 import MiniNav from '@/components/landing-page/little-nav'
@@ -14,7 +15,9 @@ export default function JobsPage() {
     <>
       <MiniNav />
       <Header />
-      <JobsContent />
+      <Suspense fallback={null}>
+        <JobsContent />
+      </Suspense>
       <Footer />
     </>
   )

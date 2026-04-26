@@ -4,7 +4,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { X } from 'lucide-react';
+import { X, Lock } from 'lucide-react';
+import { useNurseryPlan } from '@/hooks/use-nursery-plan';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -12,17 +13,21 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
-  const links = [
+  const plan = useNurseryPlan();
+  const isPlatinum = plan === 'platinum';
 
+  const baseLinks = [
     { name: 'Management Nurseries', href: '/nursery-dashboard' },
-    // { name: 'My Nurseries (Detailed)', href: '/nursery-dashboard/my-nurseries' },
-    // { name: 'My Group', href: '/nursery-dashboard/my-group' },
-    // { name: 'Photos & Media Gallery', href: '/nursery-dashboard/photos-media-gallery' },
     { name: 'Reviews Management', href: '/nursery-dashboard/review-management' },
     { name: 'Help & Support', href: '/nursery-dashboard/help-and-support' },
-
   ];
-    const pathname = usePathname()
+
+  const platinumLinks = [
+    { name: 'My Job Postings', href: '/nursery-dashboard/jobs' },
+    { name: 'Job Applicants', href: '/nursery-dashboard/applicants' },
+  ];
+
+  const pathname = usePathname()
 
   return (
     <>
@@ -54,12 +59,12 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
         </div>
 
         <nav className="flex flex-col gap-2 mt-4">
-          {links.map((link) => (
+          {baseLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              onClick={() => setIsOpen(false)} // Close sidebar on mobile after navigation
-               className={`px-4 py-2  rounded-lg transition ${
+              onClick={() => setIsOpen(false)}
+              className={`px-4 py-2 rounded-lg transition ${
                 pathname === link.href
                   ? 'bg-blue-500 text-white'
                   : 'hover:bg-gray-100 text-gray-700'
@@ -68,6 +73,40 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
               {link.name}
             </Link>
           ))}
+
+          {/* Platinum-only section */}
+          <div className="mt-2 pt-2 border-t border-gray-100">
+            <p className="px-4 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1">
+              {!isPlatinum && <Lock size={10} />} Jobs
+              {!isPlatinum && <span className="ml-auto text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full">Platinum</span>}
+            </p>
+            {isPlatinum ? (
+              platinumLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setIsOpen(false)}
+                  className={`px-4 py-2 rounded-lg transition block ${
+                    pathname === link.href
+                      ? 'bg-blue-500 text-white'
+                      : 'hover:bg-gray-100 text-gray-700'
+                  }`}
+                >
+                  {link.name}
+                </Link>
+              ))
+            ) : (
+              platinumLinks.map((link) => (
+                <div
+                  key={link.href}
+                  className="px-4 py-2 rounded-lg text-gray-300 flex items-center gap-2 cursor-not-allowed select-none"
+                  title="Available on Platinum plan"
+                >
+                  <Lock size={12} /> {link.name}
+                </div>
+              ))
+            )}
+          </div>
         </nav>
       </aside>
     </>

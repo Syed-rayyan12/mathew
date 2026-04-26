@@ -1,4 +1,4 @@
-import { apiClient, adminApiClient, ApiResponse } from './client';
+import { apiClient, adminApiClient, nurseryApiClient, ApiResponse } from './client';
 
 export interface Job {
   id: string;
@@ -12,6 +12,8 @@ export interface Job {
   requirements: string[];
   image?: string;
   isActive: boolean;
+  nurseryName?: string | null;
+  postedById?: string | null;
   createdAt: string;
   _count?: { applications: number };
 }
@@ -81,4 +83,41 @@ export const jobService = {
     status: string
   ): Promise<ApiResponse<JobApplication>> =>
     adminApiClient.put<JobApplication>(`/jobs/admin/applications/${id}/status`, { status }, true),
+
+  // ── Nursery owner methods ──────────────────────────────────────────────────
+
+  // Nursery: get my jobs
+  nurseryGetMyJobs: (): Promise<ApiResponse<Job[]>> =>
+    nurseryApiClient.get<Job[]>('/jobs/nursery/my-jobs', true),
+
+  // Nursery: create a job
+  nurseryCreateJob: (data: Partial<Job>): Promise<ApiResponse<Job>> =>
+    nurseryApiClient.post<Job>('/jobs/nursery', data, true),
+
+  // Nursery: update a job
+  nurseryUpdateJob: (id: string, data: Partial<Job>): Promise<ApiResponse<Job>> =>
+    nurseryApiClient.put<Job>(`/jobs/nursery/${id}`, data, true),
+
+  // Nursery: delete a job
+  nurseryDeleteJob: (id: string): Promise<ApiResponse<void>> =>
+    nurseryApiClient.delete<void>(`/jobs/nursery/${id}`, true),
+
+  // Nursery: get applicants for my jobs
+  nurseryGetApplications: (params?: { jobId?: string; status?: string }): Promise<ApiResponse<JobApplication[]>> => {
+    let endpoint = '/jobs/nursery/applications';
+    if (params) {
+      const q = new URLSearchParams();
+      if (params.jobId) q.append('jobId', params.jobId);
+      if (params.status) q.append('status', params.status);
+      if (q.toString()) endpoint += `?${q.toString()}`;
+    }
+    return nurseryApiClient.get<JobApplication[]>(endpoint, true);
+  },
+
+  // Nursery: update application status
+  nurseryUpdateApplicationStatus: (
+    id: string,
+    status: string
+  ): Promise<ApiResponse<JobApplication>> =>
+    nurseryApiClient.put<JobApplication>(`/jobs/nursery/applications/${id}/status`, { status }, true),
 };

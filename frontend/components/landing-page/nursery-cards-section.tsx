@@ -305,10 +305,10 @@ const NurseryCardsSection = () => {
                                             </p>
                                             <div className='mt-4 flex items-center gap-2 pt-2'>
                                                 <Link
-                                                    href="/products"
+                                                    href={`/products/${nursery.slug}`}
                                                     className='text-secondary font-heading text-[20px] uppercase hover:underline'
                                                 >
-                                                    view all nurseries
+                                                    view nursery
                                                 </Link>
                                                 <ArrowRight className='text-secondary size-5' />
                                             </div>

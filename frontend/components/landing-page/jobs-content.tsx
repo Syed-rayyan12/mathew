@@ -329,6 +329,9 @@ export default function JobsContent() {
                 <div className="absolute bottom-0 left-0 right-0 px-4 py-3 bg-gradient-to-t from-black/70 to-transparent">
                   <p className="text-xs font-semibold text-white/70 uppercase tracking-wider">{job.department}</p>
                   <h2 className="text-base font-bold text-white leading-snug">{job.title}</h2>
+                  {job.nurseryName && (
+                    <p className="text-xs text-white/60 mt-0.5">📍 {job.nurseryName}</p>
+                  )}
                 </div>
               </div>
 

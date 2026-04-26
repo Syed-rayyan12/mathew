@@ -478,27 +478,28 @@ export default function NurseriesPage() {
                     className="w-full h-full object-cover rounded-xl cursor-pointer" 
                   />
                 </Link>
-                {/* Heart / Shortlist button */}
-                <button
-                  onClick={(e) => toggleShortlist(e, nursery.id)}
-                  disabled={shortlistLoadingIds.has(nursery.id)}
-                  className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-sm shadow hover:scale-110 transition-transform disabled:opacity-50 z-10"
-                  aria-label={shortlistedIds.has(nursery.id) ? 'Remove from shortlist' : 'Add to shortlist'}
-                >
-                  <Heart
-                    size={18}
-                    className={shortlistedIds.has(nursery.id) ? 'fill-red-500 text-red-500' : 'text-gray-400'}
-                  />
-                </button>
                 <div className="absolute top-52 md:top-60 left-0 right-0 px-3 md:px-4 py-4 md:py-6 mx-3 md:mx-4 shadow-lg bg-white rounded-lg">
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <h3 className="font-heading text-lg md:text-[24px] font-medium text-[#044A55] line-clamp-1">{nursery.name}</h3>
-                    {(nursery.city || nursery.town) && (
-                      <span className="text-xs md:text-sm font-ubuntu flex items-center gap-1 text-foreground whitespace-nowrap">
-                        <LocateIcon className='text-secondary' size={16}/>
-                        {[nursery.town, nursery.city].filter(Boolean).join(', ')}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {(nursery.city || nursery.town) && (
+                        <span className="text-xs md:text-sm font-ubuntu flex items-center gap-1 text-foreground whitespace-nowrap">
+                          <LocateIcon className='text-secondary' size={16}/>
+                          {[nursery.town, nursery.city].filter(Boolean).join(', ')}
+                        </span>
+                      )}
+                      <button
+                        onClick={(e) => toggleShortlist(e, nursery.id)}
+                        disabled={shortlistLoadingIds.has(nursery.id)}
+                        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50 transition-colors disabled:opacity-50"
+                        aria-label={shortlistedIds.has(nursery.id) ? 'Remove from shortlist' : 'Add to shortlist'}
+                      >
+                        <Heart
+                          size={16}
+                          className={shortlistedIds.has(nursery.id) ? 'fill-red-500 text-red-500' : 'text-gray-400'}
+                        />
+                      </button>
+                    </div>
                   </div>
                   <div className="flex items-center gap-1 mb-2 mt-1">
                     {Array.from({ length: 5 }, (_, i) => (

@@ -346,7 +346,7 @@ export default function NurseryReviewForm() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className=" bg-white mx-auto  py-8">
 
       {/* SELECTING LOADER */}
       {selectingNursery ? (
@@ -357,25 +357,38 @@ export default function NurseryReviewForm() {
 
       ) : !selectedNursery ? (
         /* SEARCH — centered when no nursery selected */
-        <div className="flex flex-col items-center justify-center min-h-[40vh]">
+        <div className="flex flex-col items-center justify-center min-h-[40vh] bg-primary  py-12 px-4">
           <motion.h1
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-3xl font-medium mb-2 text-center"
+            className="text-3xl font-medium text-white mb-2 text-center"
           >
-            Submit a Review
+            Submit Your Feedback
           </motion.h1>
-          <p className="text-gray-500 mb-8 text-center">Search for a nursery to get started</p>
+          <p className="text-white mb-8 text-center">Search for a nursery to get started</p>
 
           <div className="relative w-full max-w-xl">
-            <Input
-              type="text"
-              placeholder="Search by nursery name, city, town"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-12 text-base pl-4 pr-10 rounded-xl shadow-md"
-              autoFocus
-            />
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                placeholder="Search by nursery name, city, town"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 py-5 rounded-md bg-white"
+                autoFocus
+              />
+              <button
+               
+                className="py-2 px-8 bg-[#04b0d6] hover:bg-[#039ac0] cursor-pointer text-white rounded-md font-semibold"
+              
+                onClick={() => {
+                  if (searchResults.length === 1) handleSelectNursery(searchResults[0]);
+                }}
+                disabled={searchResults.length === 0 || isSearching}
+              >
+                Submit
+              </button>
+            </div>
 
             {isSearching && searchQuery.length >= 2 && (
               <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-lg p-4">
@@ -575,7 +588,7 @@ export default function NurseryReviewForm() {
               </div>
             </div>
 
-            <Button type="submit" disabled={isSubmitting} className="w-full rounded-xl p-3 text-lg">
+            <Button type="submit" disabled={isSubmitting} className="w-full rounded-xl p-3 text-lg text-white" style={{ backgroundColor: '#04b0d6' }}>
               {isSubmitting ? 'Submitting...' : 'Submit Review'}
             </Button>
           </form>

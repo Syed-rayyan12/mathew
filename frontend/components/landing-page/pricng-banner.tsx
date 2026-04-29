@@ -13,8 +13,8 @@ const PricingBanner = () => {
             <div className="absolute inset-0 bottom-[190px] flex items-center justify-center">
                 <div className="relative w-full px-24 max-sm:px-8 max-md:px-14 xl:px-24 max-xl:px-16 flex flex-col gap-4">
                     {/* Heading */}
-                    <h2 className="text-[55px] max-sm:text-[40px] font-heading font-medium text-white leading-tight">
-                       Flexible Plans for Every Nursery<br/> for Your Child
+                    <h2 className="text-[55px] max-sm:text-[40px] font-heading font-medium text-white leading-tight max-w-[54%]">
+                       A Flexible Online Platform Helping Every Nursery Grow
                     </h2>
 
                     {/* Paragraph */}

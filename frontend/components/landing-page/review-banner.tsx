@@ -14,12 +14,12 @@ const ReviewBanner = () => {
                 <div className="relative w-full px-24 max-sm:px-8 max-md:px-14 xl:px-24 max-xl:px-16 flex flex-col gap-4">
                     {/* Heading */}
                     <h2 className="text-[55px] max-sm:text-[45px] font-heading font-medium text-white leading-tight">
-                        Share Your Experience
+                     We value your feedback
                     </h2>
 
                     {/* Paragraph */}
                     <p className="text-white text-lg leading-relaxed">
-                        Help other parents by sharing your honest review
+                        Help other parents by sharing your honest feedback
                     </p>
 
                 </div>

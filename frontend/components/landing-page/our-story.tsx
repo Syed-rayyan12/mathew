@@ -2,12 +2,12 @@ import React from 'react'
 
 const OurStory = () => {
     return (
-        <section className="w-full bg-[#F2F4F5] mb-20 max-sm:mb-10">
+        <section className="w-full bg-[#F2F4F5] max-sm:mb-10">
             <div className="flex max-lg:flex-col item-center">
                 {/* Image */}
 
                 <img
-                    src="/images/our-story.jpeg"
+                    src="/images/our-story.png"
                     alt="Our Story"
                     className="w-1/2 max-lg:w-full h-auto object-cover"
                 />

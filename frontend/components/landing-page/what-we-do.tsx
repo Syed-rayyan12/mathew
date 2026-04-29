@@ -5,22 +5,22 @@ const WhatWeDo = () => {
     {
       icon: '/images/do-1.png',
       title: 'Nursery Discovery',
-      description: 'It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout.'
+      description: 'Finding the right nursery shouldn’t be overwhelming. Our platform lets parents explore thousands of settings with simple, intuitive filters for location, fees, opening times, availability, curriculum, and more. Whether you’re searching locally or planning ahead, we make it easy to compare nurseries sidebyside and discover the options that truly fit your family’s needs.'
     },
     {
       icon: '/images/do-2.png',
       title: 'Verified Reviews',
-      description: 'It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout.'
+      description: 'Every review on our platform is carefully checked before it’s published, ensuring parents see genuine, trustworthy feedback from real families. This helps you make confident decisions based on honest experiences, while giving nurseries fair, constructive insights that reflect the quality of care they provide.'
     },
     {
       icon: '/images/do-3.png',
       title: 'Detailed Profiles',
-      description: 'It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout.'
+      description: 'Each nursery has a rich, informative profile designed to give parents a complete picture at a glance. From photos and staff qualifications to facilities, fees, funding options, Ofsted ratings, and curriculum details, everything you need to know is clearly presented in one place  helping you choose with clarity and confidence.'
     },
     {
       icon: '/images/do-4.png',
       title: 'Parent Support',
-      description: 'It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout.'
+      description: 'Choosing childcare is a big decision, and we’re here to help every step of the way. Our Parent Support Hub offers practical guides, expert advice, and helpful resources covering funding, settlingin tips, early years development, and more. We empower families with the knowledge they need to make the best choices for their children'
     }
   ]
 
@@ -48,13 +48,13 @@ const WhatWeDo = () => {
                 <img
                   src={service.icon}
                   alt={service.title}
-                  className="w-12 max-sm:w-10 mx-auto object-cover"
+                  className=" mx-auto object-cover"
                 />
               </div>
               <h3 className="text-xl max-sm:text-lg font-heading font-medium text-[#044A55] mb-3 max-sm:mb-2">
                 {service.title}
               </h3>
-              <p className="text-muted-foreground font-sans text-[16px] max-sm:text-sm text-sm leading-relaxed">
+              <p className="text-muted-foreground font-sans text-[16px] max-sm:text-sm text-sm line-clamp-5 leading-relaxed">
                 {service.description}
               </p>
             </div>

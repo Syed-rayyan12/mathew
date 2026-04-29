@@ -205,11 +205,13 @@ export default function JobsContent() {
   const [jobs, setJobs] = useState<Job[]>([])
   const [loading, setLoading] = useState(true)
   const [localSearch, setLocalSearch] = useState('')
+  const [appliedSearch, setAppliedSearch] = useState('')
   const searchParams = useSearchParams()
   const urlSearch = searchParams.get('search') || ''
 
   useEffect(() => {
     setLocalSearch(urlSearch)
+    setAppliedSearch(urlSearch)
   }, [urlSearch])
 
   useEffect(() => {
@@ -220,7 +222,7 @@ export default function JobsContent() {
   }, [])
 
   const filteredJobs = useMemo(() => {
-    const q = localSearch.trim().toLowerCase()
+    const q = appliedSearch.trim().toLowerCase()
     if (!q) return jobs
     return jobs.filter(job =>
       job.title.toLowerCase().includes(q) ||
@@ -228,21 +230,49 @@ export default function JobsContent() {
       (job.description && job.description.toLowerCase().includes(q)) ||
       job.location.toLowerCase().includes(q)
     )
-  }, [jobs, localSearch])
+  }, [jobs, appliedSearch])
 
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Banner */}
-      <section className="bg-primary text-white py-16 px-6 text-center">
+      <section className="bg-primary text-white pt-16 pb-0 px-6 text-center relative">
         <p className="text-sm font-medium uppercase tracking-widest text-white/70 mb-2">We're Hiring</p>
         <h1 className="text-4xl md:text-5xl font-bold mb-4">Current Openings</h1>
-        <p className="text-white/80 max-w-xl mx-auto text-base">
+        <p className="text-white/80 max-w-xl mx-auto text-base mb-10">
           Join our growing team and help shape the future of early years childcare across the UK.
         </p>
+        {/* Search — sits at bottom edge of banner, half overlapping */}
+        <div className="relative max-w-xl mx-auto translate-y-1/2">
+          <div className="flex items-center bg-white rounded-lg gap-2 overflow-hidden shadow-lg p-4 border border-gray-200">
+            <div className="relative flex-1 flex items-center border border-gray-100 rounded-lg">
+              <Search size={16} className="absolute left-3 text-gray-400 shrink-0  pointer-events-none" />
+              <input
+                type="text"
+                value={localSearch}
+                onChange={e => setLocalSearch(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && setAppliedSearch(localSearch)}
+                placeholder="Search job listings..."
+                className="w-full pl-9 pr-3 py-3 rounded-lg text-gray-700 text-sm outline-none bg-transparent placeholder-gray-400"
+              />
+            </div>
+            {localSearch && (
+              <button onClick={() => { setLocalSearch(''); setAppliedSearch(''); }} className="text-gray-400 hover:text-gray-600 mr-2">
+                <X size={16} />
+              </button>
+            )}
+            <button
+              onClick={() => setAppliedSearch(localSearch)}
+              className="px-6 py-3.5 text-white font-semibold text-sm rounded-lg"
+              style={{ backgroundColor: '#04b0d6' }}
+            >
+              Search
+            </button>
+          </div>
+        </div>
       </section>
 
       {/* Stats Bar */}
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 pt-10">
         <div className="max-w-6xl mx-auto px-6 py-4 flex flex-wrap gap-6 items-center justify-between">
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {loading ? 'Loading positions...' : (
@@ -252,22 +282,6 @@ export default function JobsContent() {
             )}
           </p>
           <div className="flex items-center gap-4 flex-wrap">
-            {/* Inline search on jobs page */}
-            <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 rounded-full px-3 py-1.5">
-              <Search size={14} className="text-gray-400" />
-              <input
-                type="text"
-                value={localSearch}
-                onChange={e => setLocalSearch(e.target.value)}
-                placeholder="Search jobs..."
-                className="bg-transparent text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 outline-none w-40"
-              />
-              {localSearch && (
-                <button onClick={() => setLocalSearch('')} className="text-gray-400 hover:text-gray-600">
-                  <X size={14} />
-                </button>
-              )}
-            </div>
             <div className="flex gap-4 text-sm text-gray-500">
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500 inline-block" /> Full-time</span>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> Part-time</span>

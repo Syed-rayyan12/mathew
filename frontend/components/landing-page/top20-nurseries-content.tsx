@@ -12,10 +12,13 @@ import { toast } from "sonner";
 
 export default function Top20NurseriesContent() {
   const [nurseries, setNurseries] = useState<Nursery[]>([]);
+  const [filteredNurseries, setFilteredNurseries] = useState<Nursery[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isFiltering, setIsFiltering] = useState(false);
   const [shortlistedIds, setShortlistedIds] = useState<Set<string>>(new Set());
   const [shortlistLoadingIds, setShortlistLoadingIds] = useState<Set<string>>(new Set());
+ 
 
   useEffect(() => {
     fetchTop20();
@@ -34,6 +37,7 @@ export default function Top20NurseriesContent() {
         );
         const top20 = sorted.slice(0, 20);
         setNurseries(top20);
+        setFilteredNurseries(top20);
         checkShortlistStatuses(top20.map((n) => n.id));
       }
     } catch (error) {
@@ -90,66 +94,73 @@ export default function Top20NurseriesContent() {
     }
   };
 
-  const filteredNurseries = nurseries.filter((n) =>
-    n.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  useEffect(() => {
+    if (searchQuery === "") {
+      setFilteredNurseries(nurseries);
+      setIsFiltering(false);
+      return;
+    }
+    setIsFiltering(true);
+    const timer = setTimeout(() => {
+      setFilteredNurseries(
+        nurseries.filter((n) =>
+          n.name.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      );
+      setIsFiltering(false);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery, nurseries]);
 
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Orange Banner */}
-      <section className="bg-primary text-white  px-6 md:px-16 lg:px-24">
-        <div className="max-w-7xl flex justify-between mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="flex-1 text-center md:text-left">
-            <p className="text-sm font-medium uppercase tracking-widest text-white/70 mb-2">
-              Best Rated
+      {/* Image Banner — same as About page */}
+      <section className="relative w-full h-[600px] flex justify-center overflow-hidden">
+        <Image
+          src="/images/all-banners.png"
+          alt="Top 20 Nurseries Banner"
+          fill
+          priority
+          className="object-cover"
+        />
+        <div className="absolute inset-0 bottom-[190px] flex items-center justify-center">
+          <div className="relative w-full px-24 max-sm:px-8 max-md:px-14 xl:px-24 max-xl:px-16 flex flex-col gap-4">
+
+            <h2 className="text-[55px] max-sm:text-[39px] font-heading font-medium text-white leading-tight">
+              For Your Child
+            </h2>
+            <p className="text-white text-lg leading-relaxed max-w-6xl">
+              Serach Trusted nurseries in your area
             </p>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">Top 20 Nurseries</h1>
-            <p className="text-white/80 max-w-xl text-base">
-              Discover the highest-rated nurseries across the UK, ranked by parent reviews.
-            </p>
-          </div>
-          <div className="flex-shrink-0">
-            <Image
-              src="/images/top-20.png"
-              alt="Top 20 Nurseries"
-              width={340}
-              height={280}
-              className="object-contain drop-shadow-xl"
-            />
           </div>
         </div>
       </section>
 
-      {/* Stats Bar */}
-      <div className="bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex flex-wrap gap-4 items-center justify-between">
-          {/* <p className="text-sm text-gray-500">
-            <span className="font-semibold text-gray-900">
-              {filteredNurseries.length}
-            </span>{" "}
-            nurseries listed
-          </p> */}
-          {/* <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+      {/* Orange Search Bar */}
+      <section className="bg-primary py-5 px-6 md:px-16 lg:px-24">
+        <div className="max-w-7xl mx-auto flex justify-end">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60 h-5 w-5" />
             <Input
               type="text"
               placeholder="Search nurseries..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 w-64"
+              className="pl-10 h-12 w-72 rounded-xl bg-white/20 border-white/30 text-white placeholder:text-white/60 focus:bg-white/30 focus:border-white"
             />
-          </div> */}
+          </div>
         </div>
-      </div>
+      </section>
 
       {/* Nursery Grid */}
       <section className="max-w-7xl mx-auto px-6 py-12">
-        {loading ? (
-          <div className="text-center py-20">
-            <p className="text-gray-500 text-lg">Loading nurseries...</p>
+        {isFiltering ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <div className="w-12 h-12 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+            <p className="text-gray-500 text-base">Searching nurseries...</p>
           </div>
         ) : filteredNurseries.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-10 pb-20">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-10 pb-20">
             {filteredNurseries.map((nursery, index) => (
               <div
                 key={nursery.id}

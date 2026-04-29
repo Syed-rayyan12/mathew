@@ -1,9 +1,9 @@
-import AboutBanner from '@/components/landing-page/about-banner'
 import Footer from '@/components/landing-page/footer'
 import Header from '@/components/landing-page/header'
 import MiniNav from '@/components/landing-page/little-nav'
 import NurseryGroup from '@/components/landing-page/nursery-group'
 import NurseryGroupBanner from '@/components/landing-page/nursery-group-banner'
+import Link from 'next/link'
 import React, { Suspense } from 'react'
 
 const page = () => {
@@ -12,6 +12,14 @@ const page = () => {
        <MiniNav />
         <Header />
        <NurseryGroupBanner/>
+       <div className="w-full px-8 md:px-14 xl:px-24 max-xl:px-16 py-6">
+         <Link
+           href="/nursery-signup?plan=standard"
+           className="inline-block bg-orange-500 hover:bg-orange-600 text-white font-semibold text-base px-6 py-3 rounded-md transition-colors duration-200"
+         >
+           Nursery Group
+         </Link>
+       </div>
        <Suspense fallback={
          <div className="min-h-screen flex items-center justify-center">
            <div className="text-center">

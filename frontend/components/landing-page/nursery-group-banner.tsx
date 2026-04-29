@@ -22,7 +22,6 @@ const NurseryGroupBanner = () => {
                         Search trusted nurseries in your area
                     </p>
 
-
                 </div>
             </div>
         </section>

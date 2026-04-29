@@ -420,7 +420,7 @@ export default function NurseryReviewForm() {
         </div>
       ) : (
         /* AFTER nursery selected — two-column layout */
-        <div className="flex flex-col lg:flex-row gap-8 items-start">
+        <div className="flex flex-col lg:flex-row gap-8 items-start max-w-7xl mx-auto px-4">
           {/* LEFT: Form */}
           <div className="flex-1 min-w-0">
             {/* Selected nursery banner + change button */}

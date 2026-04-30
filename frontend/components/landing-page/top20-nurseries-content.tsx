@@ -134,6 +134,16 @@ export default function Top20NurseriesContent() {
             </p>
           </div>
         </div>
+        {/* Badge — bottom right */}
+        <div className="absolute bottom-36 right-20 z-10">
+          <Image
+            src="/images/badge.png"
+            alt="Top 20 Badge"
+            width={120}
+            height={120}
+            className="object-contain drop-shadow-lg"
+          />
+        </div>
       </section>
 
       {/* Orange Search Bar */}

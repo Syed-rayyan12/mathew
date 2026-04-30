@@ -237,7 +237,11 @@ export default function JobsContent() {
       {/* Banner */}
       <section className="bg-primary text-white pt-16 pb-0 px-6 text-center relative">
         <p className="text-sm font-medium uppercase tracking-widest text-white/70 mb-2">We're Hiring</p>
-        <h1 className="text-4xl md:text-5xl font-bold mb-4">Current Openings</h1>
+        <h1 className="text-4xl md:text-5xl font-bold mb-2 flex items-center justify-center gap-6">
+          <Briefcase size={36} className="text-white/80" />
+          <span className="border-b border-white pb-3 pt-3">Current Openings</span>
+          <Briefcase size={36} className="text-white/80" />
+        </h1>
         <p className="text-white/80 max-w-xl mx-auto text-base mb-10">
           Join our growing team and help shape the future of early years childcare across the UK.
         </p>

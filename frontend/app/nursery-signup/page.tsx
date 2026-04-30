@@ -21,7 +21,7 @@ function NurserySignupContent() {
   const selectedPlan = searchParams.get('plan') || 'standard';
 
   const PLAN_CONFIG: Record<string, { label: string; price: string }> = {
-    standard: { label: "Nursery Listing (Paid)", price: "£23.95" },
+    standard: { label: "Nursery Listing (Paid)", price: "£23.90" },
     platinum: { label: "Platinum", price: "£38.60" },
   };
   const planInfo = PLAN_CONFIG[selectedPlan] ?? PLAN_CONFIG['standard'];

@@ -17,7 +17,7 @@ const pricingPlans = [
         id: "standard",
         title: "Nursery Listing (Paid)",
         subtitle: "Perfect for growing businesses",
-        price: "23.95",
+        price: "23.90",
         features: [
             "Full Nursery Profile Page",
             "About Us, Philosophy, Fees, Opening Hours",
@@ -33,6 +33,7 @@ const pricingPlans = [
         buttonText: "Start Standard",
         buttonClasses: "bg-transparent border-secondary py-4 px-6 hover:bg-secondary hover:text-white transition-colors duration-200",
         popular: true,
+        priceLabel: "from £23.90 per month per nursery",
     },
 
     {
@@ -53,6 +54,7 @@ const pricingPlans = [
         ],
         buttonText: "Start Platinum",
         buttonClasses: "bg-transparent border-secondary py-4 px-6 hover:bg-secondary hover:text-white transition-colors duration-200",
+        priceLabel: "from £38.60 per month per nursery group",
     },
 ];
 
@@ -92,7 +94,7 @@ export default function PricingSection() {
 
             <p className="text-4xl font-bold mt-6">
                 £{plan.price}
-                <span className="text-base font-medium text-gray-500">/mo</span>
+                <span className="text-base font-medium text-gray-500"> {plan.priceLabel}</span>
             </p>
 
             <ul className="mt-6 space-y-4">

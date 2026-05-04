@@ -53,6 +53,12 @@ function UpgradeContent() {
   const handleUpgrade = async () => {
     setLoading(true);
     try {
+      // Debug: log what token and user are available
+      const token = localStorage.getItem('nurseryAccessToken');
+      const user = localStorage.getItem('nurseryUser');
+      console.log('🔑 nurseryAccessToken:', token ? token.slice(0, 30) + '...' : 'MISSING');
+      console.log('👤 nurseryUser:', user ? JSON.parse(user) : 'MISSING');
+
       const res = await authService.createUpgradeSession('platinum');
       if (res.success && res.data?.url) {
         window.location.href = res.data.url;
@@ -60,8 +66,9 @@ function UpgradeContent() {
         setErrorMsg(res.message || 'Could not start upgrade. Please try again.');
         setStatus('error');
       }
-    } catch {
-      setErrorMsg('Something went wrong. Please try again.');
+    } catch (err: any) {
+      console.error('❌ Upgrade error:', err);
+      setErrorMsg(err?.message || 'Something went wrong. Please try again.');
       setStatus('error');
     } finally {
       setLoading(false);

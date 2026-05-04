@@ -221,6 +221,9 @@ export const createUpgradeSession = async (
     const authReq = req as any;
     const userId: string = authReq.user?.userId;
 
+    console.log('🔼 createUpgradeSession — userId from token:', userId);
+    console.log('🔼 createUpgradeSession — Authorization header:', req.headers.authorization ? 'present' : 'MISSING');
+
     if (!userId) {
       return res.status(401).json({ success: false, message: 'Unauthorised.' });
     }

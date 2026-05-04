@@ -40,8 +40,8 @@ export const createCheckoutSession = async (
     }
 
     const PLAN_CONFIG: Record<string, { label: string; description: string; unitAmount: number }> = {
-      standard: { label: 'Nursery Listing (Paid)', description: 'Standard Nursery Listing', unitAmount: 2395 },
-      platinum: { label: 'Platinum', description: 'Platinum Nursery Listing', unitAmount: 3860 },
+      standard: { label: 'Standard Nursery Listing – Monthly Recurring', description: 'Monthly recurring payment: £23.95/month | Annual equivalent: £287.40/year. This is a recurring subscription. 90 days written notice is required prior to the renewal date to cancel.', unitAmount: 2395 },
+      platinum: { label: 'Platinum Nursery Listing – Monthly Recurring', description: 'Monthly recurring payment: £38.60/month | Annual payment option: £463.20/year. This is a recurring subscription. 90 days written notice is required prior to the renewal date to cancel.', unitAmount: 3860 },
     };
 
     const planConfig = PLAN_CONFIG[plan] ?? PLAN_CONFIG['standard'];
@@ -86,6 +86,11 @@ export const createCheckoutSession = async (
         town: town || '',
         hashedPassword,
         plan: plan || 'standard',
+      },
+      custom_text: {
+        submit: {
+          message: '⚠️ Recurring payment — £38.60/month (Platinum) or £463.20/year. 90 days written notice required before renewal date to cancel. By completing payment you agree to these terms.',
+        },
       },
       success_url: `${config.frontendUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${config.frontendUrl}/payment-cancelled`,
@@ -244,7 +249,7 @@ export const createUpgradeSession = async (
     }
 
     const PLAN_CONFIG: Record<string, { label: string; description: string; unitAmount: number }> = {
-      platinum: { label: 'Platinum', description: 'Upgrade to Platinum Nursery Listing', unitAmount: 3860 },
+      platinum: { label: 'Platinum Nursery Listing – Monthly Recurring', description: 'Monthly recurring payment: £38.60/month | Annual payment option: £463.20/year. This is a recurring subscription. 90 days written notice is required prior to the renewal date to cancel.', unitAmount: 3860 },
     };
 
     const planConfig = PLAN_CONFIG[plan];
@@ -271,6 +276,11 @@ export const createUpgradeSession = async (
         upgrade: 'true',
         userId,
         plan,
+      },
+      custom_text: {
+        submit: {
+          message: '⚠️ Recurring payment — £38.60/month or £463.20/year annual option available. 90 days written notice required before renewal date to cancel. By completing payment you agree to these terms.',
+        },
       },
       success_url: `${config.frontendUrl}/nursery-dashboard/upgrade?session_id={CHECKOUT_SESSION_ID}&upgraded=true`,
       cancel_url: `${config.frontendUrl}/nursery-dashboard/upgrade?cancelled=true`,

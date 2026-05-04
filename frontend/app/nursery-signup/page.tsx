@@ -19,6 +19,7 @@ function NurserySignupContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const selectedPlan = searchParams.get('plan') || 'standard';
+  const billingFromUrl = searchParams.get('billing') === 'annual' ? 'annual' : 'monthly';
 
   const PLAN_PRICING = {
     standard: { label: 'Standard Nursery Listing', monthly: '£23.95', annual: '£287.40' },
@@ -26,7 +27,7 @@ function NurserySignupContent() {
   } as const;
   const planKey = (selectedPlan in PLAN_PRICING) ? selectedPlan as keyof typeof PLAN_PRICING : 'standard';
   const planInfo = PLAN_PRICING[planKey];
-  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>(billingFromUrl);
   const [isLoading, setIsLoading] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);

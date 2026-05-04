@@ -59,11 +59,18 @@ export const createCheckoutSession = async (
     });
 
     if (existingUser) {
-      throw new ConflictError('User with this email already exists');
+      if (existingUser.role !== 'NURSERY_OWNER') {
+        // Non-nursery accounts (parents, admins) cannot sign up as nursery owners
+        return res.status(409).json({
+          success: false,
+          message: 'This email is already registered. Please use a different email or sign in.',
+        });
+      }
+      // Existing nursery owner — allow them to create a new nursery group
     }
 
-    // Hash the password now so we can store the hash in metadata
-    const hashedPassword = await hashPassword(password);
+    // Hash the password only for new accounts (not needed for existing users)
+    const hashedPassword = existingUser ? '' : await hashPassword(password);
 
     const stripe = getStripe();
     const session = await stripe.checkout.sessions.create({
@@ -93,6 +100,7 @@ export const createCheckoutSession = async (
         town: town || '',
         hashedPassword,
         plan: plan || 'standard',
+        existingUserId: existingUser?.id || '',
       },
       custom_text: {
         submit: {
@@ -160,18 +168,43 @@ export const stripeWebhook = async (
     }
 
     try {
-      // Check if user was already created (idempotency)
-      const existingUser = await prisma.user.findUnique({
-        where: { email: meta.email },
-      });
+      const groupId = await generateShortId('GRP');
 
-      if (existingUser) {
-        console.log(`User ${meta.email} already exists, skipping creation`);
-        return res.json({ received: true });
-      }
+      if (meta.existingUserId) {
+        // Existing nursery owner adding a new nursery group
+        const slug = meta.nurseryName
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '');
+
+        await prisma.group.create({
+          data: {
+            id: groupId,
+            name: meta.nurseryName,
+            slug,
+            email: meta.email,
+            phone: meta.phone,
+            firstName: meta.firstName,
+            lastName: meta.lastName,
+            city: meta.city || null,
+            town: meta.town || null,
+            ownerId: meta.existingUserId,
+          },
+        });
+
+        console.log(`✅ New nursery group created for existing owner ${meta.email} after payment`);
+      } else {
+        // New user — check idempotency first
+        const alreadyExists = await prisma.user.findUnique({
+          where: { email: meta.email },
+        });
+
+        if (alreadyExists) {
+          console.log(`User ${meta.email} already exists, skipping creation`);
+          return res.json({ received: true });
+        }
 
       const userId = await generateShortId('USR');
-      const groupId = await generateShortId('GRP');
 
       await prisma.$transaction(async (tx: any) => {
         await tx.user.create({
@@ -211,7 +244,8 @@ export const stripeWebhook = async (
         });
       });
 
-      console.log(`✅ Nursery owner account created for ${meta.email} after payment`);
+        console.log(`✅ Nursery owner account created for ${meta.email} after payment`);
+      }
     } catch (err) {
       console.error('❌ Error creating nursery account from webhook:', err);
       // Return 200 anyway so Stripe doesn't retry endlessly

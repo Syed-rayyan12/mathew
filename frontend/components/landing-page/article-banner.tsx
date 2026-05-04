@@ -11,7 +11,7 @@ const ArticleBanner = () => {
                 backgroundRepeat: 'no-repeat'
             }}
         >
-            <div className="absolute inset-0 flex bottom-[60px] items-center justify-center">
+            <div className="absolute inset-0 flex bottom-[190px] items-center justify-center">
                 <div className="relative w-full px-24 max-md:px-14 xl:px-24 max-xl:px-16 flex flex-col gap-4">
                     {/* Heading */}
                     <h2 className="text-[55px] max-sm:text-[45px] font-heading font-medium text-white leading-tight">

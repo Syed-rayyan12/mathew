@@ -18,11 +18,11 @@ export default function Header() {
   return (
     <>
       {/* HEADER */}
-      <header className="w-full h-20 bg-white dark:bg-black shadow-md sticky top-0 flex items-center justify-between xl:px-24 lg:px-12 max-lg:px-10 z-50">
+      <header className="w-full h-16 sm:h-18 lg:h-20 bg-white dark:bg-black shadow-md sticky top-0 flex items-center justify-between px-4 sm:px-6 lg:px-12 xl:px-24 z-50">
         
         {/* LOGO */}
-        <Link href="/">
-        <img src="/images/logo.png" alt="" className="object-cover"  width={250} height={250}/>
+        <Link href="/" className="shrink-0">
+          <img src="/images/logo.png" alt="My Nursery" className="object-contain w-[130px] sm:w-[160px] lg:w-[200px] xl:w-[220px] h-auto" />
         </Link>
 
         {/* CENTER LINKS */}
@@ -107,10 +107,9 @@ export default function Header() {
         {/* MOBILE MENU ICON + SHEET */}
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
-            <Menu
-              size={26}
-              className="lg:hidden cursor-pointer ml-4"
-            />
+            <button className="lg:hidden cursor-pointer ml-2 p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition" aria-label="Open menu">
+              <Menu size={24} />
+            </button>
           </SheetTrigger>
           <SheetContent side="left" className="w-[260px] px-6 py-8 flex flex-col gap-6">
             {/* Logo */}

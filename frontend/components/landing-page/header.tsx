@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Menu, LayoutDashboard, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 export default function Header() {
   const [open, setOpen] = useState(false);
@@ -103,26 +104,59 @@ export default function Header() {
           )}
         </div>
 
-        {/* MOBILE MENU ICON */}
-        <Menu
-          size={26}
-          className="lg:hidden cursor-pointer ml-4"
-          onClick={() => setOpen(!open)}
-        />
-      </header>
+        {/* MOBILE MENU ICON + SHEET */}
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger asChild>
+            <Menu
+              size={26}
+              className="lg:hidden cursor-pointer ml-4"
+            />
+          </SheetTrigger>
+          <SheetContent side="left" className="w-[260px] px-6 py-8 flex flex-col gap-6">
+            {/* Logo */}
+            <Link href="/" onClick={() => setOpen(false)}>
+              <img src="/images/logo.png" alt="logo" className="object-cover" width={160} height={60} />
+            </Link>
 
-      {/* MOBILE MENU */}
-      {open && (
-        <div className="lg:hidden bg-white dark:bg-black shadow-md px-6 py-4 flex flex-col gap-4 text-base font-medium">
-          <Link href="/" className="hover:text-primary transition">Home</Link>
-          <Link href="/about" className="hover:text-primary transition">About</Link>
-          <Link href="/products" className="hover:text-primary transition">Products</Link>
-          <Link href="/contact" className="hover:text-primary transition">Contact</Link>
-          {!isLoading && !isAuthenticated && (
-            <Link href="/signin" className="text-primary font-semibold">Sign In</Link>
-          )}
-        </div>
-      )}
+            {/* Nav Links */}
+            <nav className="flex flex-col gap-5 text-base font-medium">
+              <Link href="/" className="hover:text-primary transition" onClick={() => setOpen(false)}>Home</Link>
+              <Link href="/products" className="hover:text-primary transition" onClick={() => setOpen(false)}>Find Nursery</Link>
+              <Link href="/nursery-group" className="hover:text-primary transition" onClick={() => setOpen(false)}>Group Nurseries</Link>
+              <Link href="/top-20-nurseries" className="hover:text-primary transition" onClick={() => setOpen(false)}>Top 20 Nurseries</Link>
+              <Link href="/pricing" className="hover:text-primary transition" onClick={() => setOpen(false)}>Pricing</Link>
+              <Link href="/submit-review" className="hover:text-primary transition" onClick={() => setOpen(false)}>Submit & Review</Link>
+              <Link href="/jobs" className="hover:text-primary transition" onClick={() => setOpen(false)}>Jobs</Link>
+              <Link href="/article" className="hover:text-primary transition" onClick={() => setOpen(false)}>Article</Link>
+              <Link href="/about" className="hover:text-primary transition" onClick={() => setOpen(false)}>About</Link>
+            </nav>
+
+            {/* Auth */}
+            <div className="mt-auto">
+              {!isLoading && (
+                shouldShowDashboard ? (
+                  <Link
+                    href={getDashboardPath()}
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-2 bg-primary text-white rounded-[6px] px-6 py-2 font-medium w-full justify-center"
+                  >
+                    <LayoutDashboard size={18} />
+                    <span>My Dashboard</span>
+                  </Link>
+                ) : (
+                  <Link
+                    href="/signin"
+                    onClick={() => setOpen(false)}
+                    className="bg-primary text-white rounded-[6px] px-8 py-2 inline-flex items-center justify-center w-full"
+                  >
+                    Sign In
+                  </Link>
+                )
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
+      </header>
     </>
   );
 }

@@ -33,7 +33,7 @@ const pricingPlans = [
         buttonText: "Start Standard",
         buttonClasses: "bg-transparent border-secondary py-4 px-6 hover:bg-secondary hover:text-white transition-colors duration-200",
         popular: true,
-        priceLabel: "from £23.90 per month per nursery",
+        priceLabel: " per month per nursery",
     },
 
     {
@@ -54,7 +54,7 @@ const pricingPlans = [
         ],
         buttonText: "Start Platinum",
         buttonClasses: "bg-transparent border-secondary py-4 px-6 hover:bg-secondary hover:text-white transition-colors duration-200",
-        priceLabel: "from £38.60 per month per nursery group",
+        priceLabel: "per month per nursery group",
     },
 ];
 
@@ -93,7 +93,7 @@ export default function PricingSection() {
             <p className="text-gray-500 mt-1">{plan.subtitle}</p>
 
             <p className="text-4xl font-bold mt-6">
-                £{plan.price}
+               <span className="text-2xl text-secondary">From</span> £{plan.price}
                 <span className="text-base font-medium text-gray-500"> {plan.priceLabel}</span>
             </p>
 

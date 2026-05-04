@@ -17,7 +17,7 @@ const page = () => {
            href="/nursery-signup?plan=standard"
            className="inline-block bg-orange-500 hover:bg-orange-600 text-white font-semibold text-base px-6 py-3 rounded-md transition-colors duration-200"
          >
-           Nursery Group
+           Add Your Nursery Group
          </Link>
        </div>
        <Suspense fallback={

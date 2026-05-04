@@ -3,6 +3,7 @@
 import { Check, X, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { authService } from "@/lib/api/auth";
 import {
     Carousel,
     CarouselContent,
@@ -81,7 +82,6 @@ export default function PricingSection() {
         if (isNurseryOwner && planId === 'platinum' && currentPlan !== 'platinum') {
             setUpgrading(true);
             try {
-                const { authService } = await import('@/lib/api/auth');
                 const res = await authService.createUpgradeSession('platinum');
                 if (res.success && res.data?.url) {
                     window.location.href = res.data.url;

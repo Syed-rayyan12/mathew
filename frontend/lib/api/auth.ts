@@ -1,4 +1,4 @@
-import { apiClient, TokenManager, ApiResponse } from './client';
+import { apiClient, nurseryApiClient, TokenManager, ApiResponse } from './client';
 import { ENDPOINTS } from './config';
 
 // Types
@@ -148,12 +148,12 @@ export const authService = {
 
   // Create Stripe upgrade checkout session for existing nursery owner
   createUpgradeSession: async (plan: string): Promise<ApiResponse<{ url: string }>> => {
-    return apiClient.post<{ url: string }>('/stripe/create-upgrade-session', { plan }, true);
+    return nurseryApiClient.post<{ url: string }>('/stripe/create-upgrade-session', { plan }, true);
   },
 
   // Verify upgrade payment and update plan in DB + localStorage
   verifyUpgradeSession: async (sessionId: string): Promise<ApiResponse<{ plan: string }>> => {
-    const response = await apiClient.post<{ plan: string }>('/stripe/verify-upgrade-session', { sessionId });
+    const response = await nurseryApiClient.post<{ plan: string }>('/stripe/verify-upgrade-session', { sessionId }, false);
     if (response.success && response.data?.plan) {
       // Update the stored nurseryUser plan so the hook re-reads the correct value
       try {

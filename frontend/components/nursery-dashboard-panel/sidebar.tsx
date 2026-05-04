@@ -107,7 +107,7 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
                   </div>
                 ))}
                 <Link
-                  href="/pricing"
+                  href="/nursery-dashboard/upgrade"
                   onClick={() => setIsOpen(false)}
                   className="mt-1 mx-1 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-yellow-700 bg-yellow-50 hover:bg-yellow-100 border border-yellow-200 transition"
                 >
@@ -131,7 +131,7 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
                 Unlock job postings, applicant management & more.
               </p>
               <Link
-                href="/pricing"
+                href="/nursery-dashboard/upgrade"
                 onClick={() => setIsOpen(false)}
                 className="mt-1 w-full text-center text-xs font-semibold py-2 rounded-lg bg-yellow-400 hover:bg-yellow-500 text-yellow-900 transition"
               >

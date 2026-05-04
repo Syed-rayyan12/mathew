@@ -1,7 +1,8 @@
 "use client";
 
-import { Check, X } from "lucide-react";
+import { Check, X, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
     Carousel,
     CarouselContent,
@@ -60,9 +61,53 @@ const pricingPlans = [
 
 export default function PricingSection() {
     const router = useRouter();
+    const [isNurseryOwner, setIsNurseryOwner] = useState(false);
+    const [currentPlan, setCurrentPlan] = useState<string>('');
+    const [upgrading, setUpgrading] = useState(false);
 
-    const handlePlanSelect = (planId: string) => {
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem('nurseryUser');
+            const user = raw ? JSON.parse(raw) : null;
+            if (user && user.role === 'NURSERY_OWNER') {
+                setIsNurseryOwner(true);
+                setCurrentPlan((user.plan || 'standard').toLowerCase());
+            }
+        } catch { /* not logged in */ }
+    }, []);
+
+    const handlePlanSelect = async (planId: string) => {
+        // Logged-in nursery owner upgrading
+        if (isNurseryOwner && planId === 'platinum' && currentPlan !== 'platinum') {
+            setUpgrading(true);
+            try {
+                const { authService } = await import('@/lib/api/auth');
+                const res = await authService.createUpgradeSession('platinum');
+                if (res.success && res.data?.url) {
+                    window.location.href = res.data.url;
+                } else {
+                    alert(res.message || 'Could not start upgrade. Please try again.');
+                }
+            } catch {
+                alert('Something went wrong. Please try again.');
+            } finally {
+                setUpgrading(false);
+            }
+            return;
+        }
+        // Guest or already platinum — go to signup
         router.push(`/nursery-signup?plan=${planId}`);
+    };
+
+    const getPlanButtonLabel = (planId: string) => {
+        if (!isNurseryOwner) return planId === 'standard' ? 'Start Standard' : 'Start Platinum';
+        if (planId === 'standard') return currentPlan === 'standard' ? '✓ Your Current Plan' : 'Start Standard';
+        if (planId === 'platinum') return currentPlan === 'platinum' ? '✓ Your Current Plan' : upgrading ? 'Redirecting…' : 'Upgrade to Platinum';
+        return 'Get Started';
+    };
+
+    const isPlanDisabled = (planId: string) => {
+        return isNurseryOwner && currentPlan === planId;
     };
 
     const renderPricingCard = (plan: typeof pricingPlans[0]) => (
@@ -108,9 +153,17 @@ export default function PricingSection() {
 
             <button
                 onClick={() => handlePlanSelect(plan.id)}
-                className={`mt-8 w-full border rounded-xl font-semibold ${plan.buttonClasses}`}
+                disabled={isPlanDisabled(plan.id) || upgrading}
+                className={`mt-8 w-full border rounded-xl font-semibold disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
+                    isNurseryOwner && plan.id === 'platinum' && currentPlan !== 'platinum'
+                        ? 'bg-secondary text-white border-secondary py-4 px-6 hover:opacity-90 transition-opacity duration-200'
+                        : plan.buttonClasses
+                }`}
             >
-                {plan.buttonText}
+                {isNurseryOwner && plan.id === 'platinum' && currentPlan !== 'platinum' && (
+                    <Zap size={15} className="fill-white text-white" />
+                )}
+                {getPlanButtonLabel(plan.id)}
             </button>
         </div>
     );

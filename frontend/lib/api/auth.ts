@@ -145,4 +145,33 @@ export const authService = {
     const user = TokenManager.getUser();
     return user?.role || null;
   },
+
+  // Create Stripe upgrade checkout session for existing nursery owner
+  createUpgradeSession: async (plan: string): Promise<ApiResponse<{ url: string }>> => {
+    return apiClient.post<{ url: string }>('/stripe/create-upgrade-session', { plan }, true);
+  },
+
+  // Verify upgrade payment and update plan in DB + localStorage
+  verifyUpgradeSession: async (sessionId: string): Promise<ApiResponse<{ plan: string }>> => {
+    const response = await apiClient.post<{ plan: string }>('/stripe/verify-upgrade-session', { sessionId });
+    if (response.success && response.data?.plan) {
+      // Update the stored nurseryUser plan so the hook re-reads the correct value
+      try {
+        const raw = typeof window !== 'undefined' ? localStorage.getItem('nurseryUser') : null;
+        if (raw) {
+          const nurseryUser = JSON.parse(raw);
+          nurseryUser.plan = response.data.plan;
+          localStorage.setItem('nurseryUser', JSON.stringify(nurseryUser));
+        }
+        // Also update shared user key if present
+        const raw2 = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+        if (raw2) {
+          const user = JSON.parse(raw2);
+          user.plan = response.data.plan;
+          localStorage.setItem('user', JSON.stringify(user));
+        }
+      } catch { /* ignore parse errors */ }
+    }
+    return response;
+  },
 };

@@ -208,6 +208,132 @@ export const stripeWebhook = async (
 };
 
 /**
+ * POST /api/stripe/create-upgrade-session
+ * Creates a Stripe Checkout Session for an existing nursery owner upgrading their plan.
+ * Requires authentication. Only stores userId + new plan in metadata — no password.
+ */
+export const createUpgradeSession = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const authReq = req as any;
+    const userId: string = authReq.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Unauthorised.' });
+    }
+
+    const { plan } = req.body;
+
+    if (!plan || plan !== 'platinum') {
+      return res.status(400).json({ success: false, message: 'Invalid upgrade plan.' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    if (user.plan === 'platinum') {
+      return res.status(400).json({ success: false, message: 'You are already on the Platinum plan.' });
+    }
+
+    const PLAN_CONFIG: Record<string, { label: string; description: string; unitAmount: number }> = {
+      platinum: { label: 'Platinum', description: 'Upgrade to Platinum Nursery Listing', unitAmount: 3860 },
+    };
+
+    const planConfig = PLAN_CONFIG[plan];
+    const stripe = getStripe();
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'payment',
+      customer_email: user.email,
+      line_items: [
+        {
+          price_data: {
+            currency: 'gbp',
+            product_data: {
+              name: planConfig.label,
+              description: planConfig.description,
+            },
+            unit_amount: planConfig.unitAmount,
+          },
+          quantity: 1,
+        },
+      ],
+      metadata: {
+        upgrade: 'true',
+        userId,
+        plan,
+      },
+      success_url: `${config.frontendUrl}/nursery-dashboard/upgrade?session_id={CHECKOUT_SESSION_ID}&upgraded=true`,
+      cancel_url: `${config.frontendUrl}/nursery-dashboard/upgrade?cancelled=true`,
+    });
+
+    res.json({ success: true, url: session.url });
+  } catch (error: any) {
+    console.error('❌ createUpgradeSession error:', error?.message || error);
+    return res.status(500).json({
+      success: false,
+      message: error?.message || 'Failed to create upgrade session. Please try again.',
+    });
+  }
+};
+
+/**
+ * POST /api/stripe/verify-upgrade-session
+ * Called after payment success on the upgrade page.
+ * Updates the user's plan in the database.
+ */
+export const verifyUpgradeSession = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { sessionId } = req.body;
+
+    if (!sessionId) {
+      return res.status(400).json({ success: false, message: 'Session ID is required.' });
+    }
+
+    const stripe = getStripe();
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+    if (!session || session.payment_status !== 'paid') {
+      return res.status(400).json({ success: false, message: 'Payment not completed.' });
+    }
+
+    const meta = session.metadata;
+    if (!meta || meta.upgrade !== 'true' || !meta.userId) {
+      return res.status(400).json({ success: false, message: 'Invalid session metadata.' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: meta.userId } });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    await prisma.user.update({
+      where: { id: meta.userId },
+      data: { plan: meta.plan || 'platinum' },
+    });
+
+    console.log(`✅ Plan upgraded to ${meta.plan} for user ${meta.userId}`);
+    return res.json({ success: true, plan: meta.plan });
+  } catch (error: any) {
+    console.error('❌ verifyUpgradeSession error:', error?.message || error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to verify upgrade. Please contact support.',
+    });
+  }
+};
+
+/**
  * POST /api/stripe/verify-session
  * Called by the payment-success page with the Stripe session_id.
  * Retrieves the session from Stripe, then creates the user + group.

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Mail, Phone } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -115,6 +115,41 @@ export default function SupportSection() {
 
   return (
     <div className="grid md:grid-cols-1 gap-6 font-sans">
+      {/* Contact Info Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Email Support Card */}
+        <div className="bg-white rounded-2xl shadow-md p-6 flex items-center gap-4">
+          <div className="bg-blue-100 p-3 rounded-full">
+            <Mail className="w-6 h-6 text-blue-600" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-gray-500 font-sans uppercase tracking-wide">Email Support</h3>
+            <a
+              href="mailto:help@my-nursery.co.uk"
+              className="text-blue-600 font-medium font-sans hover:underline break-all"
+            >
+              help@my-nursery.co.uk
+            </a>
+          </div>
+        </div>
+
+        {/* Phone Support Card */}
+        <div className="bg-white rounded-2xl shadow-md p-6 flex items-center gap-4">
+          <div className="bg-green-100 p-3 rounded-full">
+            <Phone className="w-6 h-6 text-green-600" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-gray-500 font-sans uppercase tracking-wide">Contact Support</h3>
+            <a
+              href="tel:01482688508"
+              className="text-green-600 font-medium font-sans hover:underline"
+            >
+              01482 688508
+            </a>
+          </div>
+        </div>
+      </div>
+
       {/* FAQ Card */}
       <div className="bg-white rounded-2xl shadow-md p-6">
         <h2 className="text-2xl font-bold  text-foreground font-sans">frequently asked questions</h2>

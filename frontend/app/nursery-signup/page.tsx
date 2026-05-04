@@ -20,11 +20,13 @@ function NurserySignupContent() {
   const searchParams = useSearchParams();
   const selectedPlan = searchParams.get('plan') || 'standard';
 
-  const PLAN_CONFIG: Record<string, { label: string; price: string }> = {
-    standard: { label: "Nursery Listing (Paid)", price: "£23.90" },
-    platinum: { label: "Platinum", price: "£38.60" },
-  };
-  const planInfo = PLAN_CONFIG[selectedPlan] ?? PLAN_CONFIG['standard'];
+  const PLAN_PRICING = {
+    standard: { label: 'Standard Nursery Listing', monthly: '£23.95', annual: '£287.40' },
+    platinum: { label: 'Platinum Nursery Listing', monthly: '£38.60', annual: '£463.20' },
+  } as const;
+  const planKey = (selectedPlan in PLAN_PRICING) ? selectedPlan as keyof typeof PLAN_PRICING : 'standard';
+  const planInfo = PLAN_PRICING[planKey];
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
   const [isLoading, setIsLoading] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -212,7 +214,7 @@ function NurserySignupContent() {
         const response = await fetch(`${API_CONFIG.BASE_URL}/stripe/create-checkout-session`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...formData, plan: selectedPlan }),
+          body: JSON.stringify({ ...formData, plan: selectedPlan, billingPeriod }),
         });
 
         const data = await response.json();
@@ -509,13 +511,50 @@ function NurserySignupContent() {
             </div>
 
             {/* Submit Button */}
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <p className="text-sm text-gray-600 mb-3 text-center">
-                  Registration fee: <span className="font-bold text-lg text-secondary">{planInfo.price}</span>
-                  <span className="block text-xs text-gray-400 mt-1">
-                    Plan: {planInfo.label}
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 space-y-4">
+              {/* Billing toggle */}
+              <div>
+                <p className="text-xs text-gray-500 text-center mb-2">Billing period</p>
+                <div className="flex items-center gap-1 p-1 bg-gray-200 rounded-lg w-fit mx-auto">
+                  <button
+                    type="button"
+                    onClick={() => setBillingPeriod('monthly')}
+                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
+                      billingPeriod === 'monthly' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-800'
+                    }`}
+                  >
+                    Monthly
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBillingPeriod('annual')}
+                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
+                      billingPeriod === 'annual' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-800'
+                    }`}
+                  >
+                    Annual
+                  </button>
+                </div>
+              </div>
+
+              {/* Price summary */}
+              <div className="text-center">
+                <p className="text-sm text-gray-600">
+                  {billingPeriod === 'monthly' ? 'Monthly payment' : 'Annual payment (paid upfront)'}:
+                  <span className="font-bold text-lg text-secondary ml-1">
+                    {billingPeriod === 'monthly' ? planInfo.monthly : planInfo.annual}
                   </span>
                 </p>
+                {billingPeriod === 'annual' && (
+                  <p className="text-xs text-green-600 mt-0.5">
+                    Equivalent to {planInfo.monthly}/month
+                  </p>
+                )}
+                <p className="text-xs text-gray-400 mt-1">
+                  Plan: {planInfo.label} · Recurring · 90 days notice to cancel
+                </p>
+              </div>
+
               <Button
                 type="submit"
                 className="w-full bg-secondary hover:bg-secondary/90 cursor-pointer text-white py-6 text-base font-semibold"

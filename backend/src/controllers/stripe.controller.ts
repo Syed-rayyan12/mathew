@@ -29,7 +29,7 @@ export const createCheckoutSession = async (
   next: NextFunction
 ) => {
   try {
-    const { email, password, firstName, lastName, phone, nurseryName, city, town, plan } = req.body;
+    const { email, password, firstName, lastName, phone, nurseryName, city, town, plan, billingPeriod } = req.body;
 
     // Validate required fields before creating checkout
     if (!email || !password || !firstName || !lastName || !phone || !nurseryName) {
@@ -39,12 +39,19 @@ export const createCheckoutSession = async (
       });
     }
 
-    const PLAN_CONFIG: Record<string, { label: string; description: string; unitAmount: number }> = {
-      standard: { label: 'Standard Nursery Listing – Monthly Recurring', description: 'Monthly recurring payment: £23.95/month | Annual equivalent: £287.40/year. This is a recurring subscription. 90 days written notice is required prior to the renewal date to cancel.', unitAmount: 2395 },
-      platinum: { label: 'Platinum Nursery Listing – Monthly Recurring', description: 'Monthly recurring payment: £38.60/month | Annual payment option: £463.20/year. This is a recurring subscription. 90 days written notice is required prior to the renewal date to cancel.', unitAmount: 3860 },
-    };
-
-    const planConfig = PLAN_CONFIG[plan] ?? PLAN_CONFIG['standard'];
+    const billing = billingPeriod === 'annual' ? 'annual' : 'monthly';
+    const PLAN_CONFIG = {
+      standard: {
+        monthly: { label: 'Standard Nursery Listing – Monthly', description: 'Monthly recurring payment: £23.95/month. Annual option: £287.40/year paid upfront. Recurring subscription — 90 days written notice required before renewal date to cancel.', unitAmount: 2395 },
+        annual:  { label: 'Standard Nursery Listing – Annual',  description: 'Annual payment: £287.40/year (equivalent to £23.95/month) paid upfront. Recurring subscription — 90 days written notice required before renewal date to cancel.', unitAmount: 28740 },
+      },
+      platinum: {
+        monthly: { label: 'Platinum Nursery Listing – Monthly', description: 'Monthly recurring payment: £38.60/month. Annual option: £463.20/year paid upfront. Recurring subscription — 90 days written notice required before renewal date to cancel.', unitAmount: 3860 },
+        annual:  { label: 'Platinum Nursery Listing – Annual',  description: 'Annual payment: £463.20/year (equivalent to £38.60/month) paid upfront. Recurring subscription — 90 days written notice required before renewal date to cancel.', unitAmount: 46320 },
+      },
+    } as const;
+    const planKey = (plan in PLAN_CONFIG) ? plan as keyof typeof PLAN_CONFIG : 'standard';
+    const planConfig = PLAN_CONFIG[planKey][billing];
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -89,7 +96,9 @@ export const createCheckoutSession = async (
       },
       custom_text: {
         submit: {
-          message: '⚠️ Recurring payment — £38.60/month (Platinum) or £463.20/year. 90 days written notice required before renewal date to cancel. By completing payment you agree to these terms.',
+          message: billing === 'annual'
+            ? '⚠️ Annual recurring payment — paid upfront each year. 90 days written notice required before renewal date to cancel. By completing payment you agree to these terms.'
+            : '⚠️ Monthly recurring payment. 90 days written notice required before renewal date to cancel. By completing payment you agree to these terms.',
         },
       },
       success_url: `${config.frontendUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
@@ -233,7 +242,7 @@ export const createUpgradeSession = async (
       return res.status(401).json({ success: false, message: 'Unauthorised.' });
     }
 
-    const { plan } = req.body;
+    const { plan, billingPeriod } = req.body;
 
     if (!plan || plan !== 'platinum') {
       return res.status(400).json({ success: false, message: 'Invalid upgrade plan.' });
@@ -248,11 +257,12 @@ export const createUpgradeSession = async (
       return res.status(400).json({ success: false, message: 'You are already on the Platinum plan.' });
     }
 
-    const PLAN_CONFIG: Record<string, { label: string; description: string; unitAmount: number }> = {
-      platinum: { label: 'Platinum Nursery Listing – Monthly Recurring', description: 'Monthly recurring payment: £38.60/month | Annual payment option: £463.20/year. This is a recurring subscription. 90 days written notice is required prior to the renewal date to cancel.', unitAmount: 3860 },
-    };
-
-    const planConfig = PLAN_CONFIG[plan];
+    const billing = billingPeriod === 'annual' ? 'annual' : 'monthly';
+    const UPGRADE_CONFIG = {
+      monthly: { label: 'Platinum Nursery Listing – Monthly', description: 'Monthly recurring payment: £38.60/month. Annual option: £463.20/year paid upfront. Recurring subscription — 90 days written notice required before renewal date to cancel.', unitAmount: 3860 },
+      annual:  { label: 'Platinum Nursery Listing – Annual',  description: 'Annual payment: £463.20/year (equivalent to £38.60/month) paid upfront. Recurring subscription — 90 days written notice required before renewal date to cancel.', unitAmount: 46320 },
+    } as const;
+    const planConfig = UPGRADE_CONFIG[billing];
     const stripe = getStripe();
 
     const session = await stripe.checkout.sessions.create({
@@ -279,7 +289,9 @@ export const createUpgradeSession = async (
       },
       custom_text: {
         submit: {
-          message: '⚠️ Recurring payment — £38.60/month or £463.20/year annual option available. 90 days written notice required before renewal date to cancel. By completing payment you agree to these terms.',
+          message: billing === 'annual'
+            ? '⚠️ Annual recurring payment — paid upfront each year. 90 days written notice required before renewal date to cancel. By completing payment you agree to these terms.'
+            : '⚠️ Monthly recurring payment. 90 days written notice required before renewal date to cancel. By completing payment you agree to these terms.',
         },
       },
       success_url: `${config.frontendUrl}/nursery-dashboard/upgrade?session_id={CHECKOUT_SESSION_ID}&upgraded=true`,

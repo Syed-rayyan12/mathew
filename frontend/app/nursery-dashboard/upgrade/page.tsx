@@ -31,6 +31,7 @@ function UpgradeContent() {
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(3);
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
 
   // Auto-verify when returning from Stripe with session_id
   useEffect(() => {
@@ -97,7 +98,7 @@ function UpgradeContent() {
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ plan: 'platinum' }),
+        body: JSON.stringify({ plan: 'platinum', billingPeriod }),
       });
 
       const rawBody = await rawRes.text();
@@ -222,15 +223,45 @@ function UpgradeContent() {
           <span className="text-xs font-semibold uppercase tracking-widest text-yellow-700">Plan Upgrade</span>
         </div>
         <h1 className="text-2xl font-bold text-gray-900 mt-2">Upgrade to Platinum</h1>
-        <p className="text-gray-500 text-sm mt-1 mb-6">
-          One-time upgrade — no new account needed. Your existing nursery stays intact.
+        <p className="text-gray-500 text-sm mt-1 mb-5">
+          Upgrade your existing nursery — no new account needed.
         </p>
 
-        {/* Price */}
-        <div className="flex items-end gap-2 mb-6">
-          <span className="text-4xl font-bold text-gray-900">£38.60</span>
-          <span className="text-gray-400 text-sm pb-1">/ month per nursery group</span>
+        {/* Billing Toggle */}
+        <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-lg w-fit mb-6">
+          <button
+            type="button"
+            onClick={() => setBillingPeriod('monthly')}
+            className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
+              billingPeriod === 'monthly' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Monthly
+          </button>
+          <button
+            type="button"
+            onClick={() => setBillingPeriod('annual')}
+            className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
+              billingPeriod === 'annual' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Annual
+          </button>
         </div>
+
+        {/* Price */}
+        <div className="flex items-end gap-2 mb-1">
+          <span className="text-4xl font-bold text-gray-900">
+            {billingPeriod === 'monthly' ? '£38.60' : '£463.20'}
+          </span>
+          <span className="text-gray-400 text-sm pb-1">
+            {billingPeriod === 'monthly' ? '/ month per nursery group' : '/ year paid upfront'}
+          </span>
+        </div>
+        {billingPeriod === 'annual' && (
+          <p className="text-xs text-green-600 font-medium mb-5">Equivalent to £38.60/month</p>
+        )}
+        {billingPeriod === 'monthly' && <div className="mb-5" />}
 
         {/* Features */}
         <ul className="space-y-3 mb-8">
@@ -251,11 +282,11 @@ function UpgradeContent() {
           {loading ? (
             <><Loader2 size={16} className="animate-spin" /> Redirecting to payment…</>
           ) : (
-            <><Zap size={16} className="fill-yellow-900" /> Upgrade Now — £38.60</>
+            <><Zap size={16} className="fill-yellow-900" /> Upgrade Now — {billingPeriod === 'monthly' ? '£38.60/mo' : '£463.20/yr'}</>
           )}
         </button>
         <p className="text-center text-xs text-gray-400 mt-3">
-          Secure payment via Stripe. You can cancel anytime.
+          Secure payment via Stripe · Recurring payment · 90 days notice required to cancel
         </p>
       </div>
     </div>

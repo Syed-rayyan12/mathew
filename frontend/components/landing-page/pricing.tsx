@@ -101,13 +101,21 @@ export default function PricingSection() {
 
     const getPlanButtonLabel = (planId: string) => {
         if (!isNurseryOwner) return planId === 'standard' ? 'Start Standard' : 'Start Platinum';
-        if (planId === 'standard') return currentPlan === 'standard' ? '✓ Your Current Plan' : 'Start Standard';
-        if (planId === 'platinum') return currentPlan === 'platinum' ? '✓ Your Current Plan' : upgrading ? 'Redirecting…' : 'Upgrade to Platinum';
+        if (planId === currentPlan) return '✓ Your Current Plan';
+        // platinum owner looking at standard
+        if (currentPlan === 'platinum' && planId === 'standard') return '✓ Included in Platinum';
+        // standard owner looking at platinum
+        if (planId === 'platinum') return upgrading ? 'Redirecting…' : '⚡ Upgrade to Platinum';
         return 'Get Started';
     };
 
     const isPlanDisabled = (planId: string) => {
-        return isNurseryOwner && currentPlan === planId;
+        if (!isNurseryOwner) return false;
+        // disable current plan
+        if (planId === currentPlan) return true;
+        // disable lower tier (platinum owner shouldn't be able to click standard)
+        if (currentPlan === 'platinum' && planId === 'standard') return true;
+        return false;
     };
 
     const renderPricingCard = (plan: typeof pricingPlans[0]) => (

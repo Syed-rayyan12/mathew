@@ -53,22 +53,44 @@ function UpgradeContent() {
   const handleUpgrade = async () => {
     setLoading(true);
     try {
-      // Debug: log what token and user are available
       const token = localStorage.getItem('nurseryAccessToken');
       const user = localStorage.getItem('nurseryUser');
       console.log('🔑 nurseryAccessToken:', token ? token.slice(0, 30) + '...' : 'MISSING');
       console.log('👤 nurseryUser:', user ? JSON.parse(user) : 'MISSING');
 
-      const res = await authService.createUpgradeSession('platinum');
-      if (res.success && res.data?.url) {
-        window.location.href = res.data.url;
+      const url = 'https://mathew-production.up.railway.app/api/stripe/create-upgrade-session';
+      console.log('📤 Sending POST to:', url);
+
+      const rawRes = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ plan: 'platinum' }),
+      });
+
+      const rawBody = await rawRes.text();
+      console.log('📡 HTTP Status:', rawRes.status, rawRes.statusText);
+      console.log('📡 Raw body:', rawBody);
+
+      // Parse JSON safely
+      let json: any = {};
+      try { json = JSON.parse(rawBody); } catch {
+        setErrorMsg(`Server returned non-JSON response (status ${rawRes.status}). The backend may not be deployed yet.`);
+        setStatus('error');
+        return;
+      }
+
+      if (rawRes.ok && json.success && json.url) {
+        window.location.href = json.url;
       } else {
-        setErrorMsg(res.message || 'Could not start upgrade. Please try again.');
+        setErrorMsg(`Error ${rawRes.status}: ${json.message || 'Unknown error from server'}`);
         setStatus('error');
       }
     } catch (err: any) {
-      console.error('❌ Upgrade error:', err);
-      setErrorMsg(err?.message || 'Something went wrong. Please try again.');
+      console.error('❌ Network-level error (fetch never sent or CORS blocked):', err);
+      setErrorMsg(`Network error: ${err?.message || 'Could not reach the server. Check console for details.'}`);
       setStatus('error');
     } finally {
       setLoading(false);

@@ -14,6 +14,7 @@ import { recentlyViewedService } from "@/lib/api/recently-viewed";
 import { toast } from "sonner";
 import { useParams } from "next/navigation";
 import { QUALIFICATION_GROUPS } from "@/lib/data/qualifications";
+import NurseryMap from "@/components/sharedComponents/nursery-map";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Autoplay } from 'swiper/modules';
 import type { Swiper as SwiperType } from 'swiper';
@@ -668,6 +669,18 @@ export default function NurseryDetailsPage() {
           <Button className="mt-4 md:mt-5 w-full bg-primary hover:bg-blue-600 rounded-[6px] hover:text-primary hover:bg-transparent cursor-pointer border-2 border-primary transition-all duration-300 text-sm md:text-base py-5 md:py-6">
             Book a Visit
           </Button>
+
+          {/* OpenStreetMap */}
+          <div className="mt-5 md:mt-6">
+            <h3 className="text-sm font-semibold text-[#044A55] font-heading uppercase tracking-wide mb-2">Location</h3>
+            <NurseryMap
+              address={nursery.address}
+              town={nursery.town}
+              city={nursery.city}
+              postcode={nursery.postcode}
+              name={nursery.name}
+            />
+          </div>
         </Card>
       </div>
     </div>

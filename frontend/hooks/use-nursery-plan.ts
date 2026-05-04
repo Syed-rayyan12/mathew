@@ -1,24 +1,18 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { authService } from '@/lib/api/auth';
 
 export type NurseryPlan = 'standard' | 'platinum' | 'free';
 
 function readPlanFromStorage(): NurseryPlan {
-  let user: any = null;
   try {
     const raw = typeof window !== 'undefined' ? localStorage.getItem('nurseryUser') : null;
-    user = raw ? JSON.parse(raw) : null;
+    const user = raw ? JSON.parse(raw) : null;
+    const rawPlan = (user?.plan ?? '').toLowerCase();
+    return rawPlan === 'platinum' ? 'platinum' : 'standard';
   } catch {
-    user = null;
+    return 'standard';
   }
-  // Fallback to the shared user key
-  if (!user) {
-    user = authService.getCurrentUser();
-  }
-  const rawPlan = user?.plan?.toLowerCase() ?? 'standard';
-  return rawPlan === 'platinum' ? 'platinum' : 'standard';
 }
 
 export function useNurseryPlan(): NurseryPlan {

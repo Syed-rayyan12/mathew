@@ -326,7 +326,7 @@ export const verifyUpgradeSession = async (
     });
 
     console.log(`✅ Plan upgraded to ${meta.plan} for user ${meta.userId}`);
-    return res.json({ success: true, plan: meta.plan });
+    return res.json({ success: true, data: { plan: meta.plan } });
   } catch (error: any) {
     console.error('❌ verifyUpgradeSession error:', error?.message || error);
     return res.status(500).json({

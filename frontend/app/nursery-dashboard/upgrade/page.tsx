@@ -38,6 +38,24 @@ function UpgradeContent() {
       authService.verifyUpgradeSession(sessionId)
         .then(res => {
           if (res.success) {
+            // Belt-and-suspenders: directly set plan in localStorage so
+            // the hard-redirect picks up the change immediately
+            try {
+              const plan = res.data?.plan || 'platinum';
+              const raw = localStorage.getItem('nurseryUser');
+              if (raw) {
+                const u = JSON.parse(raw);
+                u.plan = plan;
+                localStorage.setItem('nurseryUser', JSON.stringify(u));
+              }
+              const raw2 = localStorage.getItem('user');
+              if (raw2) {
+                const u2 = JSON.parse(raw2);
+                u2.plan = plan;
+                localStorage.setItem('user', JSON.stringify(u2));
+              }
+              window.dispatchEvent(new Event('storage'));
+            } catch { /* ignore */ }
             setStatus('success');
           } else {
             setErrorMsg(res.message || 'Verification failed. Please contact support.');

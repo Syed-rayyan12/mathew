@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { X, MapPin, Clock, Briefcase, ChevronRight, CheckCircle, Search } from 'lucide-react'
+import { X, MapPin, Clock, Briefcase, ChevronRight, CheckCircle, Search, Trash2 } from 'lucide-react'
 import { jobService, Job, JOB_TYPE_LABEL } from '@/lib/api/jobs'
 import { toast } from 'sonner'
 
@@ -25,12 +25,13 @@ interface ApplyModalProps {
 
 function ApplyModal({ job, onClose }: ApplyModalProps) {
   const [submitted, setSubmitted] = useState(false)
+  const [cvFile, setCvFile] = useState<File | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [form, setForm] = useState({
     fullName: '',
     email: '',
     phone: '',
     coverLetter: '',
-    cvFileName: '',
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -39,7 +40,14 @@ function ApplyModal({ job, onClose }: ApplyModalProps) {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) setForm(prev => ({ ...prev, cvFileName: file.name }))
+    if (file) setCvFile(file)
+  }
+
+  const handleRemoveFile = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setCvFile(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -150,19 +158,38 @@ function ApplyModal({ job, onClose }: ApplyModalProps) {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Upload CV <span className="text-red-500">*</span>
                 </label>
-                <label className="flex items-center gap-3 w-full px-4 py-2.5 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 cursor-pointer hover:border-primary transition">
-                  <Briefcase size={18} className="text-gray-400" />
-                  <span className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                    {form.cvFileName || 'Click to upload CV (PDF, DOC)'}
-                  </span>
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx"
-                    required
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-                </label>
+                {cvFile ? (
+                  <div className="flex items-center gap-3 w-full px-4 py-2.5 rounded-lg border border-primary bg-primary/5 dark:bg-primary/10">
+                    <Briefcase size={18} className="text-primary shrink-0" />
+                    <span className="text-sm text-gray-700 dark:text-gray-300 truncate flex-1">
+                      {cvFile.name}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleRemoveFile}
+                      onMouseDown={e => e.stopPropagation()}
+                      className="p-1 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 transition shrink-0"
+                      aria-label="Remove file"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex items-center gap-3 w-full px-4 py-2.5 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 cursor-pointer hover:border-primary transition">
+                    <Briefcase size={18} className="text-gray-400" />
+                    <span className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                      Click to upload CV (PDF, DOC)
+                    </span>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      required
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                  </label>
+                )}
               </div>
 
               <div>

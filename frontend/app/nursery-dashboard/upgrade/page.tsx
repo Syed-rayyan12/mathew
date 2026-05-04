@@ -30,6 +30,7 @@ function UpgradeContent() {
   );
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
+  const [countdown, setCountdown] = useState(3);
 
   // Auto-verify when returning from Stripe with session_id
   useEffect(() => {
@@ -49,6 +50,17 @@ function UpgradeContent() {
         });
     }
   }, [upgraded, sessionId, status]);
+
+  // Countdown then hard-redirect so all components re-mount with updated plan
+  useEffect(() => {
+    if (status !== 'success') return;
+    if (countdown <= 0) {
+      window.location.href = '/nursery-dashboard';
+      return;
+    }
+    const t = setTimeout(() => setCountdown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [status, countdown]);
 
   const handleUpgrade = async () => {
     setLoading(true);
@@ -106,14 +118,18 @@ function UpgradeContent() {
         </div>
         <h1 className="text-2xl font-bold text-gray-900">You're now on Platinum!</h1>
         <p className="text-gray-500 max-w-sm text-sm">
-          Your plan has been upgraded. All Platinum features are now unlocked in your dashboard.
+          Your plan has been upgraded. All Platinum features are now unlocked.
         </p>
-        <Link
-          href="/nursery-dashboard"
+        <div className="flex items-center gap-3">
+          <Loader2 className="w-4 h-4 text-primary animate-spin" />
+          <span className="text-sm text-gray-500">Redirecting to dashboard in {countdown}s…</span>
+        </div>
+        <button
+          onClick={() => { window.location.href = '/nursery-dashboard'; }}
           className="px-8 py-3 bg-primary text-white rounded-xl font-semibold hover:opacity-90 transition"
         >
-          Go to Dashboard
-        </Link>
+          Go to Dashboard Now
+        </button>
       </div>
     );
   }

@@ -155,7 +155,6 @@ export const authService = {
   verifyUpgradeSession: async (sessionId: string): Promise<ApiResponse<{ plan: string }>> => {
     const response = await nurseryApiClient.post<{ plan: string }>('/stripe/verify-upgrade-session', { sessionId }, false);
     if (response.success && response.data?.plan) {
-      // Update the stored nurseryUser plan so the hook re-reads the correct value
       try {
         const raw = typeof window !== 'undefined' ? localStorage.getItem('nurseryUser') : null;
         if (raw) {
@@ -169,6 +168,10 @@ export const authService = {
           const user = JSON.parse(raw2);
           user.plan = response.data.plan;
           localStorage.setItem('user', JSON.stringify(user));
+        }
+        // Dispatch storage event so useNurseryPlan hook re-reads in the same tab
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('storage'));
         }
       } catch { /* ignore parse errors */ }
     }

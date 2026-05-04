@@ -4,7 +4,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { X, Lock } from 'lucide-react';
+import { X, Lock, Zap } from 'lucide-react';
 import { useNurseryPlan } from '@/hooks/use-nursery-plan';
 
 interface SidebarProps {
@@ -96,18 +96,50 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
                 </Link>
               ))
             ) : (
-              platinumLinks.map((link) => (
-                <div
-                  key={link.href}
-                  className="px-4 py-2 rounded-lg text-gray-300 flex items-center gap-2 cursor-not-allowed select-none"
-                  title="Available on Platinum plan"
+              <>
+                {platinumLinks.map((link) => (
+                  <div
+                    key={link.href}
+                    className="px-4 py-2 rounded-lg text-gray-300 flex items-center gap-2 cursor-not-allowed select-none"
+                    title="Available on Platinum plan"
+                  >
+                    <Lock size={12} /> {link.name}
+                  </div>
+                ))}
+                <Link
+                  href="/pricing"
+                  onClick={() => setIsOpen(false)}
+                  className="mt-1 mx-1 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-yellow-700 bg-yellow-50 hover:bg-yellow-100 border border-yellow-200 transition"
                 >
-                  <Lock size={12} /> {link.name}
-                </div>
-              ))
+                  <Zap size={11} className="fill-yellow-500 text-yellow-500" />
+                  Upgrade to unlock
+                </Link>
+              </>
             )}
           </div>
         </nav>
+
+        {/* Upgrade banner — only for non-platinum */}
+        {!isPlatinum && (
+          <div className="mt-auto pt-4">
+            <div className="rounded-xl bg-gradient-to-br from-yellow-50 to-amber-50 border border-yellow-200 p-4 flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <Zap size={16} className="fill-yellow-500 text-yellow-500 shrink-0" />
+                <p className="text-xs font-semibold text-yellow-800">You're on Standard</p>
+              </div>
+              <p className="text-xs text-yellow-700 leading-snug">
+                Unlock job postings, applicant management & more.
+              </p>
+              <Link
+                href="/pricing"
+                onClick={() => setIsOpen(false)}
+                className="mt-1 w-full text-center text-xs font-semibold py-2 rounded-lg bg-yellow-400 hover:bg-yellow-500 text-yellow-900 transition"
+              >
+                Upgrade to Platinum
+              </Link>
+            </div>
+          </div>
+        )}
       </aside>
     </>
   );

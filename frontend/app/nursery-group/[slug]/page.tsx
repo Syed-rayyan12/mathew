@@ -9,6 +9,7 @@ import Header from "@/components/landing-page/header";
 import Footer from "@/components/landing-page/footer";
 import { Nursery, nurseryService } from "@/lib/api/nursery";
 import { NurseryGroup, nurseryGroupService } from "@/lib/api/nursery-group";
+import NurseryMap from "@/components/sharedComponents/nursery-map";
 import Image from "next/image";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Autoplay } from 'swiper/modules';
@@ -219,6 +220,16 @@ export default function NurseryGroupPage({ params }: { params: Promise<{ slug: s
               <Button className="mt-4 md:mt-5 w-full bg-primary hover:bg-blue-600 rounded-[6px] hover:text-primary hover:bg-transparent cursor-pointer border-2 border-primary transition-all duration-300 text-sm md:text-base py-5">
                 Download Brochure
               </Button>
+            </div>
+
+            {/* OpenStreetMap */}
+            <div className="mt-5 md:mt-6">
+              <h3 className="text-sm font-semibold text-[#044A55] font-heading uppercase tracking-wide mb-2">Location</h3>
+              <NurseryMap
+                town={group.town ?? undefined}
+                city={group.city}
+                name={group.name}
+              />
             </div>
           </div>
 

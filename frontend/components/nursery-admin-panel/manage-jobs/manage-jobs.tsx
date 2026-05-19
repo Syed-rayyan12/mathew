@@ -17,6 +17,7 @@ const EMPTY_FORM = {
   title: '',
   department: '',
   location: '',
+  nurseryName: '',
   type: 'FULL_TIME' as Job['type'],
   experience: '',
   description: '',
@@ -42,6 +43,7 @@ function JobFormModal({ initial, onClose, onSaved }: JobFormModalProps) {
           title: initial.title,
           department: initial.department,
           location: initial.location,
+          nurseryName: initial.nurseryName || '',
           type: initial.type,
           experience: initial.experience,
           description: initial.description,
@@ -140,7 +142,7 @@ function JobFormModal({ initial, onClose, onSaved }: JobFormModalProps) {
             </div>
           </div>
 
-          {/* Row: location + experience */}
+          {/* Row: location + nurseryName */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-gray-700 block mb-1">
@@ -156,16 +158,30 @@ function JobFormModal({ initial, onClose, onSaved }: JobFormModalProps) {
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700 block mb-1">
-                Experience Required <span className="text-red-500">*</span>
+                Nursery / Group Name <span className="text-red-500">*</span>
               </label>
               <input
                 required
-                value={form.experience}
-                onChange={e => set('experience', e.target.value)}
-                placeholder="e.g. 2+ years"
+                value={form.nurseryName}
+                onChange={e => set('nurseryName', e.target.value)}
+                placeholder="e.g. Sunshine Kids Nursery"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
+          </div>
+
+          {/* Experience */}
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-1">
+              Experience Required <span className="text-red-500">*</span>
+            </label>
+            <input
+              required
+              value={form.experience}
+              onChange={e => set('experience', e.target.value)}
+              placeholder="e.g. 2+ years"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
 
           {/* Row: type + isActive */}

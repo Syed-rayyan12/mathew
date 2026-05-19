@@ -4,10 +4,10 @@ import prisma from '../config/database';
 // ── Admin: create a new job post ──────────────────────────────────────────────
 export const createJob = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { title, department, location, type, experience, description, responsibilities, requirements, image } = req.body;
+    const { title, department, location, nurseryName, type, experience, description, responsibilities, requirements, image } = req.body;
 
-    if (!title || !department || !location || !experience || !description) {
-      return res.status(400).json({ success: false, message: 'title, department, location, experience and description are required' });
+    if (!title || !department || !location || !nurseryName || !experience || !description) {
+      return res.status(400).json({ success: false, message: 'title, department, location, nurseryName, experience and description are required' });
     }
 
     const job = await prisma.job.create({
@@ -15,6 +15,7 @@ export const createJob = async (req: Request, res: Response, next: NextFunction)
         title: title.trim(),
         department: department.trim(),
         location: location.trim(),
+        nurseryName: nurseryName.trim(),
         type: type || 'FULL_TIME',
         experience: experience.trim(),
         description: description.trim(),
@@ -35,7 +36,7 @@ export const createJob = async (req: Request, res: Response, next: NextFunction)
 export const updateJob = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { title, department, location, type, experience, description, responsibilities, requirements, image, isActive } = req.body;
+    const { title, department, location, nurseryName, type, experience, description, responsibilities, requirements, image, isActive } = req.body;
 
     const job = await prisma.job.update({
       where: { id },
@@ -43,6 +44,7 @@ export const updateJob = async (req: Request, res: Response, next: NextFunction)
         ...(title && { title: title.trim() }),
         ...(department && { department: department.trim() }),
         ...(location && { location: location.trim() }),
+        ...(nurseryName !== undefined && { nurseryName: nurseryName.trim() }),
         ...(type && { type }),
         ...(experience && { experience: experience.trim() }),
         ...(description && { description: description.trim() }),

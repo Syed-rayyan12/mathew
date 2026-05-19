@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Loader2, X, Users, Search, Lock } from 'lucide-react'
+import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Loader2, X, Users, Search, Lock, Building2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select'
 import { jobService, Job, JOB_TYPE_LABEL } from '@/lib/api/jobs'
+import { nurseryGroupService } from '@/lib/api/nursery-group'
 import { useNurseryPlan } from '@/hooks/use-nursery-plan'
 import { toast } from 'sonner'
 import Link from 'next/link'
@@ -34,9 +35,11 @@ interface JobFormModalProps {
   initial?: Job | null
   onClose: () => void
   onSaved: () => void
+  groupName?: string
+  groupLocation?: string
 }
 
-function JobFormModal({ initial, onClose, onSaved }: JobFormModalProps) {
+function JobFormModal({ initial, onClose, onSaved, groupName, groupLocation }: JobFormModalProps) {
   const isEdit = !!initial
   const [form, setForm] = useState<FormState>(
     initial
@@ -52,9 +55,16 @@ function JobFormModal({ initial, onClose, onSaved }: JobFormModalProps) {
           image: initial.image || '',
           isActive: initial.isActive,
         }
-      : { ...EMPTY_FORM }
+      : { ...EMPTY_FORM, location: groupLocation || '' }
   )
   const [saving, setSaving] = useState(false)
+
+  // If groupLocation loads after mount (async), pre-fill once for new jobs
+  useEffect(() => {
+    if (!isEdit && groupLocation && !form.location) {
+      setForm(prev => ({ ...prev, location: groupLocation }))
+    }
+  }, [groupLocation])
 
   const set = (field: keyof FormState, value: string | boolean) =>
     setForm(prev => ({ ...prev, [field]: value }))
@@ -97,6 +107,13 @@ function JobFormModal({ initial, onClose, onSaved }: JobFormModalProps) {
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-6 space-y-4">
+          {/* Nursery info banner */}
+          {groupName && (
+            <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 text-sm text-blue-700">
+              <Building2 size={15} className="shrink-0" />
+              <span>Posting on behalf of <strong>{groupName}</strong></span>
+            </div>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-gray-700 block mb-1">Job Title <span className="text-red-500">*</span></label>
@@ -205,6 +222,8 @@ export default function NurseryJobManagement() {
   const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editJob, setEditJob] = useState<Job | null>(null)
+  const [groupName, setGroupName] = useState<string>('')
+  const [groupLocation, setGroupLocation] = useState<string>('')
 
   const load = useCallback(() => {
     setLoading(true)
@@ -215,6 +234,17 @@ export default function NurseryJobManagement() {
   }, [])
 
   useEffect(() => { load() }, [load])
+
+  // Fetch group profile to auto-fill nursery name + location
+  useEffect(() => {
+    nurseryGroupService.getMyGroup('').then((res: any) => {
+      if (res?.success && res?.data) {
+        const g = res.data
+        setGroupName(g.name || '')
+        setGroupLocation(g.town || g.city || '')
+      }
+    }).catch(() => {})
+  }, [])
 
   if (plan !== 'platinum') {
     return (
@@ -377,6 +407,8 @@ export default function NurseryJobManagement() {
           initial={editJob}
           onClose={() => { setShowForm(false); setEditJob(null) }}
           onSaved={load}
+          groupName={groupName}
+          groupLocation={groupLocation}
         />
       )}
     </div>

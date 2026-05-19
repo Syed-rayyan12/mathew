@@ -259,7 +259,8 @@ export default function JobsContent() {
         job.title.toLowerCase().includes(q) ||
         (job.department && job.department.toLowerCase().includes(q)) ||
         (job.description && job.description.toLowerCase().includes(q)) ||
-        job.location.toLowerCase().includes(q)
+        job.location.toLowerCase().includes(q) ||
+        (job.nurseryName && job.nurseryName.toLowerCase().includes(q))
       const matchesLocation = !loc || job.location.toLowerCase().includes(loc)
       const matchesType = typeFilter === 'all' || job.type === typeFilter
       return matchesSearch && matchesLocation && matchesType

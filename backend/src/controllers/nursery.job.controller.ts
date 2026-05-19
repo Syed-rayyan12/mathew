@@ -25,21 +25,49 @@ export const nurseryCreateJob = async (req: Request, res: Response, next: NextFu
     const userId = getUserId(req);
     const { title, department, location, type, experience, description, responsibilities, requirements, image } = req.body;
 
-    if (!title || !department || !location || !experience || !description) {
-      return res.status(400).json({ success: false, message: 'title, department, location, experience and description are required' });
+    if (!title || !department || !experience || !description) {
+      return res.status(400).json({ success: false, message: 'title, department, experience and description are required' });
     }
 
-    // Fetch the nursery owner's nurseryName to stamp on the job
+    // Fetch the owner's group (preferred) or fall back to user profile
     const owner = await prisma.user.findUnique({
       where: { id: userId },
-      select: { nurseryName: true, firstName: true, lastName: true },
+      select: {
+        nurseryName: true,
+        firstName: true,
+        lastName: true,
+        groups: {
+          take: 1,
+          select: { name: true, city: true, town: true },
+        },
+      },
     });
+
+    const group = owner?.groups?.[0];
+
+    // Resolve nursery name: group name > user.nurseryName > full name
+    const resolvedNurseryName =
+      group?.name ||
+      owner?.nurseryName ||
+      `${owner?.firstName ?? ''} ${owner?.lastName ?? ''}`.trim() ||
+      null;
+
+    // Resolve location: use provided > group town > group city
+    const resolvedLocation =
+      (location && location.trim()) ||
+      group?.town ||
+      group?.city ||
+      '';
+
+    if (!resolvedLocation) {
+      return res.status(400).json({ success: false, message: 'location is required' });
+    }
 
     const job = await prisma.job.create({
       data: {
         title: title.trim(),
         department: department.trim(),
-        location: location.trim(),
+        location: resolvedLocation.trim(),
         type: type || 'FULL_TIME',
         experience: experience.trim(),
         description: description.trim(),
@@ -48,7 +76,7 @@ export const nurseryCreateJob = async (req: Request, res: Response, next: NextFu
         image: image || null,
         isActive: true,
         postedById: userId,
-        nurseryName: owner?.nurseryName || `${owner?.firstName ?? ''} ${owner?.lastName ?? ''}`.trim() || null,
+        nurseryName: resolvedNurseryName,
       },
     });
 
@@ -71,6 +99,22 @@ export const nurseryUpdateJob = async (req: Request, res: Response, next: NextFu
 
     const { title, department, location, type, experience, description, responsibilities, requirements, image, isActive } = req.body;
 
+    // Refresh nurseryName from group in case it changed
+    const owner = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        nurseryName: true,
+        firstName: true,
+        lastName: true,
+        groups: { take: 1, select: { name: true } },
+      },
+    });
+    const refreshedNurseryName =
+      owner?.groups?.[0]?.name ||
+      owner?.nurseryName ||
+      `${owner?.firstName ?? ''} ${owner?.lastName ?? ''}`.trim() ||
+      null;
+
     const job = await prisma.job.update({
       where: { id },
       data: {
@@ -84,6 +128,7 @@ export const nurseryUpdateJob = async (req: Request, res: Response, next: NextFu
         ...(requirements && { requirements }),
         ...(image !== undefined && { image }),
         ...(isActive !== undefined && { isActive }),
+        nurseryName: refreshedNurseryName,
       },
     });
 

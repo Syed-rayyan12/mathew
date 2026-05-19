@@ -330,7 +330,7 @@ export const getAllUsers = async (
       searchQuery = '',
       sortBy = 'createdAt',
       sortOrder = 'desc',
-      status = 'all', // all, online, offline
+      status = 'all', // all, active, pending, suspended
       role = 'all', // all, USER, PARENT
     } = req.query;
 
@@ -351,10 +351,17 @@ export const getAllUsers = async (
     }
 
     // Status filter
-    if (status === 'online') {
-      whereClause.isOnline = true;
-    } else if (status === 'offline') {
-      whereClause.isOnline = false;
+    if (status === 'active') {
+      // Active: account is activated
+      whereClause.isActive = true;
+    } else if (status === 'pending') {
+      // Pending: registered but not yet verified/activated
+      whereClause.isActive = false;
+      whereClause.isVerified = false;
+    } else if (status === 'suspended') {
+      // Suspended: was verified but account deactivated
+      whereClause.isActive = false;
+      whereClause.isVerified = true;
     }
 
     // Role filter
@@ -376,6 +383,7 @@ export const getAllUsers = async (
         phone: true,
         role: true,
         isVerified: true,
+        isActive: true,
         isOnline: true,
         createdAt: true,
         updatedAt: true,

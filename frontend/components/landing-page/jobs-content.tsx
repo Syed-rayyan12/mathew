@@ -233,6 +233,8 @@ export default function JobsContent() {
   const [loading, setLoading] = useState(true)
   const [localSearch, setLocalSearch] = useState('')
   const [appliedSearch, setAppliedSearch] = useState('')
+  const [localLocation, setLocalLocation] = useState('')
+  const [appliedLocation, setAppliedLocation] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const searchParams = useSearchParams()
   const urlSearch = searchParams.get('search') || ''
@@ -251,16 +253,18 @@ export default function JobsContent() {
 
   const filteredJobs = useMemo(() => {
     const q = appliedSearch.trim().toLowerCase()
+    const loc = appliedLocation.trim().toLowerCase()
     return jobs.filter(job => {
       const matchesSearch = !q ||
         job.title.toLowerCase().includes(q) ||
         (job.department && job.department.toLowerCase().includes(q)) ||
         (job.description && job.description.toLowerCase().includes(q)) ||
         job.location.toLowerCase().includes(q)
+      const matchesLocation = !loc || job.location.toLowerCase().includes(loc)
       const matchesType = typeFilter === 'all' || job.type === typeFilter
-      return matchesSearch && matchesType
+      return matchesSearch && matchesLocation && matchesType
     })
-  }, [jobs, appliedSearch, typeFilter])
+  }, [jobs, appliedSearch, appliedLocation, typeFilter])
 
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -276,27 +280,47 @@ export default function JobsContent() {
           Join our growing team and help shape the future of early years childcare across the UK.
         </p>
         {/* Search — sits at bottom edge of banner, half overlapping */}
-        <div className="relative max-w-xl mx-auto translate-y-1/2">
+        <div className="relative max-w-2xl mx-auto translate-y-1/2">
           <div className="flex items-center bg-white rounded-lg gap-2 overflow-hidden shadow-lg p-4 border border-gray-200">
+            {/* Keyword search */}
             <div className="relative flex-1 flex items-center border border-gray-100 rounded-lg">
-              <Search size={16} className="absolute left-3 text-gray-400 shrink-0  pointer-events-none" />
+              <Search size={16} className="absolute left-3 text-gray-400 shrink-0 pointer-events-none" />
               <input
                 type="text"
                 value={localSearch}
                 onChange={e => setLocalSearch(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && setAppliedSearch(localSearch)}
-                placeholder="Search job listings..."
+                onKeyDown={e => e.key === 'Enter' && (setAppliedSearch(localSearch), setAppliedLocation(localLocation))}
+                placeholder="Job title or keyword..."
                 className="w-full pl-9 pr-3 py-3 rounded-lg text-gray-700 text-sm outline-none bg-transparent placeholder-gray-400"
               />
+              {localSearch && (
+                <button onClick={() => { setLocalSearch(''); setAppliedSearch(''); }} className="text-gray-400 hover:text-gray-600 pr-2">
+                  <X size={14} />
+                </button>
+              )}
             </div>
-            {localSearch && (
-              <button onClick={() => { setLocalSearch(''); setAppliedSearch(''); }} className="text-gray-400 hover:text-gray-600 mr-2">
-                <X size={16} />
-              </button>
-            )}
+            {/* Divider */}
+            <div className="w-px h-8 bg-gray-200 shrink-0" />
+            {/* Location search */}
+            <div className="relative flex-1 flex items-center border border-gray-100 rounded-lg">
+              <MapPin size={16} className="absolute left-3 text-gray-400 shrink-0 pointer-events-none" />
+              <input
+                type="text"
+                value={localLocation}
+                onChange={e => setLocalLocation(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && (setAppliedSearch(localSearch), setAppliedLocation(localLocation))}
+                placeholder="City or location..."
+                className="w-full pl-9 pr-3 py-3 rounded-lg text-gray-700 text-sm outline-none bg-transparent placeholder-gray-400"
+              />
+              {localLocation && (
+                <button onClick={() => { setLocalLocation(''); setAppliedLocation(''); }} className="text-gray-400 hover:text-gray-600 pr-2">
+                  <X size={14} />
+                </button>
+              )}
+            </div>
             <button
-              onClick={() => setAppliedSearch(localSearch)}
-              className="px-6 py-3.5 text-white font-semibold text-sm rounded-lg"
+              onClick={() => { setAppliedSearch(localSearch); setAppliedLocation(localLocation); }}
+              className="px-6 py-3.5 text-white font-semibold text-sm rounded-lg shrink-0"
               style={{ backgroundColor: '#04b0d6' }}
             >
               Search
@@ -311,7 +335,8 @@ export default function JobsContent() {
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {loading ? 'Loading positions...' : (
               <>
-                <span className="font-semibold text-gray-900 dark:text-white">{filteredJobs.length}</span> {localSearch ? 'results found' : 'positions currently open'}
+                <span className="font-semibold text-gray-900 dark:text-white">{filteredJobs.length}</span>{' '}
+                {(appliedSearch || appliedLocation || typeFilter !== 'all') ? 'results found' : 'positions currently open'}
               </>
             )}
           </p>
@@ -373,10 +398,12 @@ export default function JobsContent() {
         {!loading && filteredJobs.length === 0 && (
           <div className="text-center py-20 text-gray-500">
             <Briefcase size={48} className="mx-auto mb-4 opacity-30" />
-            <p className="text-lg font-medium">{localSearch ? `No jobs found for "${localSearch}"` : 'No open positions at the moment'}</p>
-            <p className="text-sm mt-1">{localSearch ? 'Try a different search term.' : 'Check back soon for new opportunities.'}</p>
-            {localSearch && (
-              <button onClick={() => setLocalSearch('')} className="mt-4 text-sm text-primary underline">Clear search</button>
+            <p className="text-lg font-medium">
+              {(appliedSearch || appliedLocation) ? `No jobs found${appliedLocation ? ` in "${appliedLocation}"` : ''}${appliedSearch ? ` for "${appliedSearch}"` : ''}` : 'No open positions at the moment'}
+            </p>
+            <p className="text-sm mt-1">{(appliedSearch || appliedLocation) ? 'Try a different search or location.' : 'Check back soon for new opportunities.'}</p>
+            {(appliedSearch || appliedLocation || typeFilter !== 'all') && (
+              <button onClick={() => { setLocalSearch(''); setAppliedSearch(''); setLocalLocation(''); setAppliedLocation(''); setTypeFilter('all'); }} className="mt-4 text-sm text-primary underline">Clear all filters</button>
             )}
           </div>
         )}

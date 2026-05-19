@@ -233,6 +233,7 @@ export default function JobsContent() {
   const [loading, setLoading] = useState(true)
   const [localSearch, setLocalSearch] = useState('')
   const [appliedSearch, setAppliedSearch] = useState('')
+  const [typeFilter, setTypeFilter] = useState<string>('all')
   const searchParams = useSearchParams()
   const urlSearch = searchParams.get('search') || ''
 
@@ -250,14 +251,16 @@ export default function JobsContent() {
 
   const filteredJobs = useMemo(() => {
     const q = appliedSearch.trim().toLowerCase()
-    if (!q) return jobs
-    return jobs.filter(job =>
-      job.title.toLowerCase().includes(q) ||
-      (job.department && job.department.toLowerCase().includes(q)) ||
-      (job.description && job.description.toLowerCase().includes(q)) ||
-      job.location.toLowerCase().includes(q)
-    )
-  }, [jobs, appliedSearch])
+    return jobs.filter(job => {
+      const matchesSearch = !q ||
+        job.title.toLowerCase().includes(q) ||
+        (job.department && job.department.toLowerCase().includes(q)) ||
+        (job.description && job.description.toLowerCase().includes(q)) ||
+        job.location.toLowerCase().includes(q)
+      const matchesType = typeFilter === 'all' || job.type === typeFilter
+      return matchesSearch && matchesType
+    })
+  }, [jobs, appliedSearch, typeFilter])
 
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -313,10 +316,39 @@ export default function JobsContent() {
             )}
           </p>
           <div className="flex items-center gap-4 flex-wrap">
-            <div className="flex gap-4 text-sm text-gray-500">
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500 inline-block" /> Full-time</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> Part-time</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-500 inline-block" /> Contract</span>
+            <div className="flex gap-2 text-sm flex-wrap">
+              <button
+                onClick={() => setTypeFilter('all')}
+                className={`px-3 py-1 rounded-full border text-xs font-medium transition ${
+                  typeFilter === 'all' ? 'bg-gray-800 text-white border-gray-800' : 'text-gray-500 border-gray-300 hover:border-gray-500'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setTypeFilter(typeFilter === 'FULL_TIME' ? 'all' : 'FULL_TIME')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-medium transition ${
+                  typeFilter === 'FULL_TIME' ? 'bg-green-500 text-white border-green-500' : 'text-gray-500 border-gray-300 hover:border-green-400 hover:text-green-600'
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-green-500 inline-block" /> Full-time
+              </button>
+              <button
+                onClick={() => setTypeFilter(typeFilter === 'PART_TIME' ? 'all' : 'PART_TIME')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-medium transition ${
+                  typeFilter === 'PART_TIME' ? 'bg-blue-500 text-white border-blue-500' : 'text-gray-500 border-gray-300 hover:border-blue-400 hover:text-blue-600'
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> Part-time
+              </button>
+              <button
+                onClick={() => setTypeFilter(typeFilter === 'CONTRACT' ? 'all' : 'CONTRACT')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-medium transition ${
+                  typeFilter === 'CONTRACT' ? 'bg-orange-500 text-white border-orange-500' : 'text-gray-500 border-gray-300 hover:border-orange-400 hover:text-orange-600'
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-orange-500 inline-block" /> Contract
+              </button>
             </div>
           </div>
         </div>
@@ -433,6 +465,9 @@ export default function JobsContent() {
                 <div className="absolute bottom-0 left-0 right-0 px-5 py-3 bg-gradient-to-t from-black/70 to-transparent">
                   <p className="text-xs font-semibold text-white/70 uppercase tracking-wider">{selectedJob.department}</p>
                   <h2 className="text-xl font-bold text-white">{selectedJob.title}</h2>
+                  {selectedJob.nurseryName && (
+                    <p className="text-xs text-white/80 mt-0.5 font-medium">🏫 {selectedJob.nurseryName}</p>
+                  )}
                 </div>
               </div>
               <div className="flex items-center justify-between px-6 py-3 border-b dark:border-gray-800">
@@ -443,6 +478,9 @@ export default function JobsContent() {
               {/* Meta */}
               <div className="flex flex-wrap gap-3 text-sm text-gray-600 dark:text-gray-400">
                 <span className="flex items-center gap-1"><MapPin size={14} />{selectedJob.location}</span>
+                {selectedJob.nurseryName && (
+                  <span className="flex items-center gap-1"><Briefcase size={14} />{selectedJob.nurseryName}</span>
+                )}
                 {selectedJob.experience && <span className="flex items-center gap-1"><Clock size={14} />{selectedJob.experience}</span>}
                 <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${typeBadgeColor[selectedJob.type]}`}>
                   {JOB_TYPE_LABEL[selectedJob.type]}
@@ -462,7 +500,7 @@ export default function JobsContent() {
                   {selectedJob.responsibilities.map((r, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
                       <CheckCircle size={15} className="text-green-500 mt-0.5 shrink-0" />
-                      {r}
+                      <span className="break-words min-w-0">{r}</span>
                     </li>
                   ))}
                 </ul>
@@ -475,7 +513,7 @@ export default function JobsContent() {
                   {selectedJob.requirements.map((r, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
                       <ChevronRight size={15} className="text-primary mt-0.5 shrink-0" />
-                      {r}
+                      <span className="break-words min-w-0">{r}</span>
                     </li>
                   ))}
                 </ul>

@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { notificationService } from '@/lib/api/notification';
 
 interface Notification {
@@ -23,6 +23,7 @@ interface Notification {
 }
 
 export default function NotificationDropdown() {
+  const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -142,11 +143,12 @@ export default function NotificationDropdown() {
 
         <DropdownMenuSeparator />
 
-        <Link href="/admin-dashboard/notifications">
-          <DropdownMenuItem className="text-center justify-center font-semibold text-blue-600 hover:text-blue-700 cursor-pointer">
-            View All Notifications
-          </DropdownMenuItem>
-        </Link>
+        <DropdownMenuItem
+          className="text-center justify-center font-semibold text-blue-600 hover:text-blue-700 cursor-pointer"
+          onSelect={() => router.push('/admin-dashboard/notifications')}
+        >
+          View All Notifications
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

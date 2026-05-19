@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import AddUserModal from "./add-user-modal/add-user-modal";
 import ViewUserModal from "./view-user-modal/view-user-modal";
 import DeleteUserModal from "./delete-user-modal/delete-user-modal";
 import UsersTable from "./user-table/user-table";
@@ -22,7 +21,6 @@ export default function ManageUsers() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
-  const [openAddModal, setOpenAddModal] = useState(false);
   const [openViewModal, setOpenViewModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
@@ -190,12 +188,6 @@ export default function ManageUsers() {
       </div>
 
       {/* MODALS */}
-      <AddUserModal
-        open={openAddModal}
-        onClose={() => setOpenAddModal(false)}
-        onAdd={handleAddUser}
-      />
-
       <ViewUserModal
         open={openViewModal}
         user={selectedUser}

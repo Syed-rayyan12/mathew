@@ -31,7 +31,7 @@ const ClaimCTA = () => {
             href="/nursery-signup"
           className="bg-secondary hover:bg-secondary/90 text-white px-8 py-3 text-lg rounded-sm"
         >
-          Start Your Claim Now
+         Claim Your Place Today
         </Link>
       </div>
     </section>

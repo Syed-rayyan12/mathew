@@ -9,6 +9,18 @@ export interface AdminStats {
   pendingApprovals: number;
 }
 
+export interface AdminSubscription {
+  id: string;
+  ownerName: string;
+  email: string;
+  nurseryName?: string | null;
+  plan: string;
+  status: 'active' | 'pending' | 'suspended';
+  createdAt: string;
+  groups: Array<{ id: string; name: string }>;
+  nurseries: Array<{ id: string; name: string }>;
+}
+
 export interface AdminGroup {
   id: string;
   name: string;
@@ -193,6 +205,13 @@ export const adminService = {
   getStats: async () => {
     return adminApiClient.get<{ success: boolean; data: AdminStats }>(
       '/admin/stats',
+      true
+    );
+  },
+
+  getSubscriptions: async () => {
+    return adminApiClient.get<AdminSubscription[]>(
+      '/admin/subscriptions',
       true
     );
   },

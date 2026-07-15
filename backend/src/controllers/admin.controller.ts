@@ -483,6 +483,59 @@ export const getDashboardStats = async (
   }
 };
 
+// Get live nursery-owner plan data for the subscriptions dashboard
+export const getSubscriptions = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const owners = await prisma.user.findMany({
+      where: { role: 'NURSERY_OWNER' },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        nurseryName: true,
+        plan: true,
+        isActive: true,
+        isVerified: true,
+        createdAt: true,
+        groups: {
+          select: { id: true, name: true },
+          orderBy: { createdAt: 'asc' },
+        },
+        nurseries: {
+          select: { id: true, name: true },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const subscriptions = owners.map((owner) => ({
+      id: owner.id,
+      ownerName: `${owner.firstName} ${owner.lastName}`.trim(),
+      email: owner.email,
+      nurseryName: owner.nurseryName,
+      plan: owner.plan || 'standard',
+      status: owner.isActive
+        ? 'active'
+        : owner.isVerified
+          ? 'suspended'
+          : 'pending',
+      createdAt: owner.createdAt,
+      groups: owner.groups,
+      nurseries: owner.nurseries,
+    }));
+
+    res.json({ success: true, data: subscriptions });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Delete a group
 export const deleteGroup = async (
   req: AuthRequest,

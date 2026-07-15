@@ -8,6 +8,7 @@ import {
   getAllReviews,
   getAllArticles,
   getDashboardStats,
+  getSubscriptions,
   deleteGroup,
   deleteNursery,
   deleteUser,
@@ -38,6 +39,7 @@ router.get('/nursery-owners', getAllNurseryOwners);  // Nursery owners only
 router.get('/reviews', getAllReviews);  // All reviews
 router.get('/articles', getAllArticles);  // All articles
 router.get('/stats', getDashboardStats);
+router.get('/subscriptions', getSubscriptions);
 
 // Analytics routes
 router.get('/analytics/monthly-users', getMonthlyUserStats);

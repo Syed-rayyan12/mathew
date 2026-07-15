@@ -1,10 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../config/database';
-import { comparePassword, generateTokens, UnauthorizedError } from '../utils';
+import { generateTokens, UnauthorizedError } from '../utils';
 import { AuthRequest } from '../middleware';
 import { createNotification } from './notification.controller';
 
-// Admin Signin — validates against the ADMIN user row (seeded via create-admin.ts)
+const ADMIN_EMAIL = 'admin@mathew.com';
+const ADMIN_PASSWORD = 'Admin@123456';
+
+// Temporary fixed-credential admin signin.
 export const adminSignin = async (
   req: Request,
   res: Response,
@@ -13,23 +16,13 @@ export const adminSignin = async (
   try {
     const { email, password } = req.body;
 
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (!user || user.role !== 'ADMIN') {
-      throw new UnauthorizedError('Invalid email or password');
-    }
-
-    const isPasswordValid = await comparePassword(password, user.password);
-
-    if (!isPasswordValid) {
+    if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
       throw new UnauthorizedError('Invalid email or password');
     }
 
     const tokens = generateTokens({
-      userId: user.id,
-      email: user.email,
+      userId: 'admin',
+      email: ADMIN_EMAIL,
       role: 'ADMIN',
     });
 
@@ -37,7 +30,7 @@ export const adminSignin = async (
       success: true,
       message: 'Admin login successful',
       data: {
-        email: user.email,
+        email: ADMIN_EMAIL,
         role: 'ADMIN',
         ...tokens,
       },
@@ -1314,4 +1307,3 @@ export const updateGroupAdmin = async (
     next(error);
   }
 };
-

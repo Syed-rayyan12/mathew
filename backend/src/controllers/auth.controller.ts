@@ -471,8 +471,21 @@ export const refresh = async (
       throw new UnauthorizedError('Invalid refresh token');
     }
 
+    // The temporary hardcoded admin account has no database row.
+    if (payload.userId === 'admin' && payload.role === 'ADMIN') {
+      const tokens = generateTokens({
+        userId: 'admin',
+        email: 'admin@mathew.com',
+        role: 'ADMIN',
+      });
+
+      return res.json({
+        success: true,
+        data: tokens,
+      });
+    }
+
     // Re-check the account so deactivated users can't renew sessions.
-    // Legacy synthetic admin tokens (userId 'admin') have no DB row and fail here.
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
       select: { id: true, email: true, role: true, isActive: true },

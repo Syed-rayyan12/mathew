@@ -2,20 +2,10 @@ import { Request, Response, NextFunction } from 'express';
 import Stripe from 'stripe';
 import prisma from '../config/database';
 import { config } from '../config';
-import { hashPassword, ConflictError } from '../utils';
+import { hashPassword } from '../utils';
 import { generateShortId } from '../utils/id-generator';
+import { ensurePlanProducts, getStripe } from '../utils/stripe';
 
-// Lazy Stripe instance — avoids crash on startup if env var is missing
-let _stripe: Stripe | null = null;
-function getStripe(): Stripe {
-  if (!config.stripe.secretKey) {
-    throw new Error('STRIPE_SECRET_KEY environment variable is not set');
-  }
-  if (!_stripe) {
-    _stripe = new Stripe(config.stripe.secretKey, { timeout: 10000 });
-  }
-  return _stripe;
-}
 
 /**
  * POST /api/stripe/create-checkout-session
@@ -73,18 +63,17 @@ export const createCheckoutSession = async (
     const hashedPassword = existingUser ? '' : await hashPassword(password);
 
     const stripe = getStripe();
+    const products = await ensurePlanProducts();
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment',
+      allow_promotion_codes: true,
       customer_email: email,
       line_items: [
         {
           price_data: {
             currency: 'gbp',
-            product_data: {
-              name: planConfig.label,
-              description: planConfig.description,
-            },
+            product: products[planKey],
             unit_amount: planConfig.unitAmount,
           },
           quantity: 1,
@@ -156,7 +145,7 @@ export const stripeWebhook = async (
     const session = event.data.object as any;
 
     // Only process if payment was successful
-    if (session.payment_status !== 'paid') {
+    if (!['paid', 'no_payment_required'].includes(session.payment_status)) {
       console.log('Payment not completed, skipping account creation');
       return res.json({ received: true });
     }
@@ -298,19 +287,18 @@ export const createUpgradeSession = async (
     } as const;
     const planConfig = UPGRADE_CONFIG[billing];
     const stripe = getStripe();
+    const products = await ensurePlanProducts();
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment',
+      allow_promotion_codes: true,
       customer_email: user.email,
       line_items: [
         {
           price_data: {
             currency: 'gbp',
-            product_data: {
-              name: planConfig.label,
-              description: planConfig.description,
-            },
+            product: products.platinum,
             unit_amount: planConfig.unitAmount,
           },
           quantity: 1,
@@ -362,7 +350,7 @@ export const verifyUpgradeSession = async (
     const stripe = getStripe();
     const session = await stripe.checkout.sessions.retrieve(sessionId);
 
-    if (!session || session.payment_status !== 'paid') {
+    if (!session || !['paid', 'no_payment_required'].includes(session.payment_status)) {
       return res.status(400).json({ success: false, message: 'Payment not completed.' });
     }
 
@@ -413,7 +401,7 @@ export const verifySession = async (
     const stripe = getStripe();
     const session = await stripe.checkout.sessions.retrieve(sessionId);
 
-    if (!session || session.payment_status !== 'paid') {
+    if (!session || !['paid', 'no_payment_required'].includes(session.payment_status)) {
       return res.status(400).json({ success: false, message: 'Payment not completed.' });
     }
 

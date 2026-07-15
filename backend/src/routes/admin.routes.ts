@@ -23,6 +23,7 @@ import {
   updateGroupAdmin,
 } from '../controllers/admin.controller';
 import { authenticate, authorize, authRateLimiter } from '../middleware';
+import { createCoupon, deactivateCoupon, listCoupons } from '../controllers/coupon.controller';
 
 const router = Router();
 
@@ -40,6 +41,9 @@ router.get('/reviews', getAllReviews);  // All reviews
 router.get('/articles', getAllArticles);  // All articles
 router.get('/stats', getDashboardStats);
 router.get('/subscriptions', getSubscriptions);
+router.get('/coupons', listCoupons);
+router.post('/coupons', createCoupon);
+router.patch('/coupons/:id/deactivate', deactivateCoupon);
 
 // Analytics routes
 router.get('/analytics/monthly-users', getMonthlyUserStats);

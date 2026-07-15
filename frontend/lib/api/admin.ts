@@ -21,6 +21,16 @@ export interface AdminSubscription {
   nurseries: Array<{ id: string; name: string }>;
 }
 
+export interface AdminCoupon {
+  id: string;
+  code: string;
+  active: boolean;
+  percentOff: number;
+  plans: Array<'standard' | 'platinum'>;
+  timesRedeemed: number;
+  createdAt: string;
+}
+
 export interface AdminGroup {
   id: string;
   name: string;
@@ -212,6 +222,26 @@ export const adminService = {
   getSubscriptions: async () => {
     return adminApiClient.get<AdminSubscription[]>(
       '/admin/subscriptions',
+      true
+    );
+  },
+
+  getCoupons: async () => {
+    return adminApiClient.get<AdminCoupon[]>('/admin/coupons', true);
+  },
+
+  createCoupon: async (data: {
+    code: string;
+    percentOff: number;
+    plans: Array<'standard' | 'platinum'>;
+  }) => {
+    return adminApiClient.post<AdminCoupon>('/admin/coupons', data, true);
+  },
+
+  deactivateCoupon: async (id: string) => {
+    return adminApiClient.patch<AdminCoupon>(
+      `/admin/coupons/${id}/deactivate`,
+      {},
       true
     );
   },

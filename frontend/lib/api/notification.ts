@@ -1,5 +1,5 @@
 import { API_CONFIG } from './config';
-import { apiClient, nurseryApiClient, ApiResponse } from './client';
+import { adminApiClient, apiClient, nurseryApiClient, ApiResponse } from './client';
 
 export interface Notification {
   id: string;
@@ -31,7 +31,7 @@ export const notificationService = {
       query.append('isRead', isRead.toString());
     }
     
-    return apiClient.get<NotificationResponse>(
+    return adminApiClient.get<NotificationResponse>(
       `/notifications?${query.toString()}`,
       true  // requireAuth = true
     );
@@ -39,7 +39,7 @@ export const notificationService = {
 
   // Get recent notifications (for header dropdown)
   getRecentNotifications: async (limit = 10) => {
-    return apiClient.get<NotificationResponse>(
+    return adminApiClient.get<NotificationResponse>(
       `/notifications/recent?limit=${limit}`,
       true  // requireAuth = true
     );
@@ -47,7 +47,7 @@ export const notificationService = {
 
   // Get notification statistics
   getNotificationStats: async () => {
-    return apiClient.get<any>(
+    return adminApiClient.get<any>(
       '/notifications/stats',
       true  // requireAuth = true
     );
@@ -55,7 +55,7 @@ export const notificationService = {
 
   // Mark a single notification as read
   markAsRead: async (notificationId: string) => {
-    return apiClient.put<{ success: boolean }>(
+    return adminApiClient.put<{ success: boolean }>(
       `/notifications/${notificationId}/read`,
       {},
       true  // requireAuth = true
@@ -64,7 +64,7 @@ export const notificationService = {
 
   // Mark all notifications as read
   markAllAsRead: async () => {
-    return apiClient.put<{ success: boolean }>(
+    return adminApiClient.put<{ success: boolean }>(
       '/notifications/read-all',
       {},
       true  // requireAuth = true
@@ -73,7 +73,7 @@ export const notificationService = {
 
   // Delete a single notification
   deleteNotification: async (notificationId: string) => {
-    return apiClient.delete<{ success: boolean }>(
+    return adminApiClient.delete<{ success: boolean }>(
       `/notifications/${notificationId}`,
       true  // requireAuth = true
     );
@@ -81,7 +81,7 @@ export const notificationService = {
 
   // Clear all notifications
   clearAllNotifications: async () => {
-    return apiClient.delete<{ success: boolean }>(
+    return adminApiClient.delete<{ success: boolean }>(
       '/notifications',
       true  // requireAuth = true
     );

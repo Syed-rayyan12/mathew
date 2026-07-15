@@ -1,9 +1,31 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../config/database';
-import { NotFoundError, BadRequestError } from '../utils';
+import { NotFoundError, BadRequestError, ForbiddenError } from '../utils';
 import { AuthRequest } from '../middleware';
 import { generateShortId } from '../utils/id-generator';
 import { createNotification } from './notification.controller';
+
+// Nursery owners may only moderate reviews of nurseries they own; admins may moderate any
+const assertCanModerateReview = async (req: AuthRequest, reviewId: string) => {
+  const review = await prisma.review.findUnique({
+    where: { id: reviewId },
+    select: { nurseryId: true },
+  });
+
+  if (!review) {
+    throw new NotFoundError('Review not found');
+  }
+
+  if (req.user?.role !== 'ADMIN') {
+    const ownedNursery = await prisma.nursery.findFirst({
+      where: { id: review.nurseryId, ownerId: req.user?.userId },
+    });
+
+    if (!ownedNursery) {
+      throw new ForbiddenError('Not authorised to manage reviews for this nursery');
+    }
+  }
+};
 
 // Submit a review for a nursery (authentication optional)
 export const submitReview = async (
@@ -229,15 +251,6 @@ export const getUserReviews = async (
       orderBy: { createdAt: 'desc' },
     });
 
-    console.log('✅ Found reviews:', reviews.length);
-    if (reviews.length > 0) {
-      reviews.forEach((r: any) => {
-        console.log(`   - Review ${r.id}: ${r.nursery.name}, rating: ${r.overallRating}, userId: ${r.userId || 'NULL'}, email: ${r.email}`);
-      });
-    } else {
-      console.log('   No reviews found for userId:', userId, 'or email:', userEmail);
-    }
-
     res.json({
       success: true,
       data: reviews,
@@ -255,9 +268,11 @@ export const approveReview = async (
   try {
     const { id } = req.params;
 
+    await assertCanModerateReview(req, id);
+
     const review = await prisma.review.update({
       where: { id },
-      data: { 
+      data: {
         isApproved: true,
         isRejected: false,
         rejectedAt: null,
@@ -310,9 +325,11 @@ export const unapproveReview = async (
   try {
     const { id } = req.params;
 
+    await assertCanModerateReview(req, id);
+
     const review = await prisma.review.update({
       where: { id },
-      data: { 
+      data: {
         isApproved: false,
         isRejected: false,
         rejectedAt: null,
@@ -359,6 +376,8 @@ export const rejectReview = async (
     if (req.user?.role !== 'ADMIN' && req.user?.role !== 'NURSERY_OWNER') {
       throw new Error('Only admins or nursery owners can reject reviews');
     }
+
+    await assertCanModerateReview(req, id);
 
     const review = await prisma.review.update({
       where: { id },

@@ -55,22 +55,14 @@ export const optionalAuthenticate = (
   try {
     const authHeader = req.headers.authorization;
 
-    console.log('🔐 Optional Auth Middleware:');
-    console.log('  - Authorization Header:', authHeader ? 'Present' : 'Missing');
-
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.split(' ')[1];
-      console.log('  - Token:', token.substring(0, 20) + '...');
       const decoded = verifyAccessToken(token);
       req.user = decoded;
-      console.log('  - Decoded User:', decoded);
-    } else {
-      console.log('  - No valid token, continuing without auth');
     }
     // Continue even if no token provided
     next();
   } catch (error) {
-    console.log('  - Token verification failed:', error);
     // Continue even if token is invalid (for optional auth)
     next();
   }

@@ -10,6 +10,9 @@ export const ENDPOINTS = {
   AUTH: {
     USER_SIGNUP: '/auth/user-signup',
     USER_SIGNIN: '/auth/user-signin',
+    NURSERY_SIGNIN: '/auth/nursery-signin',
+    REFRESH: '/auth/refresh',
+    LOGOUT: '/auth/logout',
     PROFILE: '/auth/profile',
     CHANGE_PASSWORD: '/auth/change-password',
   },

@@ -4,9 +4,21 @@
 import Header from '@/components/nursery-dashboard-panel/header';
 import Sidebar from '@/components/nursery-dashboard-panel/sidebar';
 import React, { useState } from 'react';
+import { useSessionGuard } from '@/hooks/use-session-guard';
 
 export default function ParentDashboardLayout({ children }  : { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { ready } = useSessionGuard('nursery', ['NURSERY_OWNER']);
+
+  if (ready === false) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (ready === null) return null;
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">

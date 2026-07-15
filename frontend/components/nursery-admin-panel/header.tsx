@@ -14,6 +14,7 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import NotificationDropdown from '@/components/nursery-admin-panel/notification-dropdown';
+import { clearSessionCookie } from '@/lib/auth/session-cookie';
 
 interface AdminHeaderProps {
   onMenuClick: () => void;
@@ -60,6 +61,7 @@ const AdminHeader = ({ onMenuClick }: AdminHeaderProps) => {
     localStorage.removeItem('adminEmail');
     localStorage.removeItem('adminRole');
     localStorage.removeItem('adminUser');
+    clearSessionCookie('admin');
     
     // Redirect to admin login
     router.push('/admin-login');

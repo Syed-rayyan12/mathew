@@ -14,6 +14,7 @@ import { Bell, ClosedCaption, HatGlassesIcon, Search, X, Menu } from 'lucide-rea
 import { Separator } from '@/components/ui/separator'; // ✅ correct import
 import { Button } from '@/components/ui/button';
 import NurseryNotificationDropdown from './nursery-notification-dropdown';
+import { nurseryAuthService } from '@/lib/api/auth';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -71,33 +72,8 @@ const Header = ({ onMenuClick }: HeaderProps) => {
   }, []);
 
   const handleLogout = async () => {
-    try {
-      // Call backend logout API to update status
-      const token = localStorage.getItem('nurseryAccessToken');
-      if (token) {
-        await fetch('https://mathew-production.up.railway.app/api/auth/logout', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Logout API error:', error);
-    } finally {
-      // Clear ONLY nursery authentication data — do NOT touch user session
-      localStorage.removeItem('nurseryAccessToken');
-      localStorage.removeItem('nurseryEmail');
-      
-      // Clear browser history and prevent back navigation
-      window.history.go(-(window.history.length - 1));
-      
-      // Use replace to avoid adding to history
-      setTimeout(() => {
-        window.location.replace('/nursery-login');
-      }, 100);
-    }
+    await nurseryAuthService.nurseryLogout();
+    window.location.replace('/nursery-login');
   };
 
   return (

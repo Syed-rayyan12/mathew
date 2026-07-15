@@ -9,6 +9,13 @@ import { useRouter } from 'next/navigation'
 import { adminService } from '@/lib/api/admin'
 import { toast } from 'sonner'
 import { Eye, EyeOff } from 'lucide-react'
+import { setSessionCookie, safeReturnTo } from '@/lib/auth/session-cookie'
+
+// Read from window.location to avoid the useSearchParams/Suspense requirement
+const getReturnTo = (): string | null => {
+  if (typeof window === 'undefined') return null
+  return safeReturnTo(new URLSearchParams(window.location.search).get('returnTo'))
+}
 
 const AdminSignInPage = () => {
   const router = useRouter()
@@ -27,12 +34,21 @@ const AdminSignInPage = () => {
 
   // Load saved email on component mount
   useEffect(() => {
+    const accessToken = localStorage.getItem('adminAccessToken')
+    const adminUser = localStorage.getItem('adminUser')
+
+    if (accessToken && adminUser) {
+      setSessionCookie('admin', 'ADMIN')
+      router.replace(getReturnTo() || '/admin-dashboard')
+      return
+    }
+
     const savedEmail = localStorage.getItem('adminRememberEmail')
     if (savedEmail) {
       setFormData(prev => ({ ...prev, email: savedEmail }))
       setRememberMe(true)
     }
-  }, [])
+  }, [router])
 
   const validateForm = (): boolean => {
     const newErrors = {
@@ -96,20 +112,12 @@ const AdminSignInPage = () => {
     try {
       const response = await adminService.signin(formData.email, formData.password)
 
-      console.log('Admin login response:', response)
-
       if (!response.success || !response.data) {
         throw new Error('Invalid credentials')
       }
 
       // Store admin token - response has nested data structure
       const adminData: any = response.data;
-      
-      console.log('Storing admin data:', {
-        hasAccessToken: !!adminData.accessToken,
-        role: adminData.role,
-        email: adminData.email
-      })
 
       // Use separate admin keys to avoid conflicts with regular user auth
       localStorage.setItem('adminAccessToken', adminData.accessToken)
@@ -122,6 +130,7 @@ const AdminSignInPage = () => {
         firstName: 'Admin',
         lastName: 'User'
       }))
+      setSessionCookie('admin', adminData.role)
 
       // Handle Remember Me
       if (rememberMe) {
@@ -133,7 +142,7 @@ const AdminSignInPage = () => {
       toast.success('Welcome Admin!')
 
       setTimeout(() => {
-        router.push('/admin-dashboard')
+        router.push(getReturnTo() || '/admin-dashboard')
         clearTimeout(loaderTimeout)
         setShowLoader(false)
         setLoading(false)

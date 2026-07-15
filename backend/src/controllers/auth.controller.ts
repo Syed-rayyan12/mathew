@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../config/database';
-import { hashPassword, comparePassword, generateTokens, ConflictError, UnauthorizedError, NotFoundError } from '../utils';
+import { hashPassword, comparePassword, generateTokens, verifyRefreshToken, ConflictError, UnauthorizedError, NotFoundError } from '../utils';
 import { AuthRequest } from '../middleware';
 import { generateShortId } from '../utils/id-generator';
 import { createNotification } from './notification.controller';
@@ -79,20 +79,13 @@ export const signup = async (
       // Don't fail the signup if notification fails
     }
 
-    // Generate tokens
-    const tokens = generateTokens({
-      userId: user.id,
-      email: user.email,
-      role: user.role,
-    });
-
+    // No tokens on signup — the account is inactive until admin approval
     res.status(201).json({
       success: true,
       message: 'Account created successfully! Your account is pending admin approval. You will be able to login once approved.',
       pendingApproval: true,
       data: {
         user,
-        ...tokens,
       },
     });
   } catch (error) {
@@ -262,8 +255,6 @@ export const changePassword = async (
       throw new Error('Failed to update password');
     }
 
-    console.log(`✅ Password changed successfully for user: ${userId} (role: ${userRole})`);
-
     res.json({
       success: true,
       message: 'Password changed successfully',
@@ -349,20 +340,13 @@ export const nurserySignup = async (
 
     const user = result.user;
 
-    // Generate tokens
-    const tokens = generateTokens({
-      userId: user.id,
-      email: user.email,
-      role: user.role,
-    });
-
+    // No tokens on signup — the account is inactive until admin approval
     res.status(201).json({
       success: true,
       message: 'Nursery owner account created successfully! Your account is pending admin approval. You will be able to login once approved.',
       pendingApproval: true,
       data: {
         user,
-        ...tokens,
       },
     });
   } catch (error) {
@@ -461,6 +445,53 @@ export const nurserySignin = async (
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Refresh - exchange a valid refresh token for a new token pair (stateless)
+export const refresh = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken || typeof refreshToken !== 'string') {
+      throw new UnauthorizedError('Invalid refresh token');
+    }
+
+    let payload;
+    try {
+      payload = verifyRefreshToken(refreshToken);
+    } catch {
+      throw new UnauthorizedError('Invalid refresh token');
+    }
+
+    // Re-check the account so deactivated users can't renew sessions.
+    // Legacy synthetic admin tokens (userId 'admin') have no DB row and fail here.
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: { id: true, email: true, role: true, isActive: true },
+    });
+
+    if (!user || !user.isActive) {
+      throw new UnauthorizedError('Invalid refresh token');
+    }
+
+    // Issue with fresh email/role from DB, not the old token's claims
+    const tokens = generateTokens({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    res.json({
+      success: true,
+      data: tokens,
     });
   } catch (error) {
     next(error);

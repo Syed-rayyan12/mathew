@@ -17,6 +17,7 @@ import { authService } from '@/lib/api/auth';
 import { userNotificationService, Notification } from '@/lib/api/notification';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { clearSessionCookie } from '@/lib/auth/session-cookie';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -111,56 +112,20 @@ const Header = ({ onMenuClick }: HeaderProps) => {
   };
 
   const handleLogout = async () => {
-    try {
-      // Check if this is admin or regular user
-      const isAdmin = localStorage.getItem('adminRole') === 'ADMIN';
-      
-      if (isAdmin) {
-        // Admin logout - clear admin tokens only
-        localStorage.removeItem('adminAccessToken');
-        localStorage.removeItem('adminRefreshToken');
-        localStorage.removeItem('adminEmail');
-        localStorage.removeItem('adminRole');
-        localStorage.removeItem('adminUser');
-        router.push('/admin-login');
-        return;
-      }
+    const isAdmin = localStorage.getItem('adminRole') === 'ADMIN';
 
-      // Regular user logout - call backend API
-      const token = localStorage.getItem('accessToken');
-      if (token) {
-        await fetch('https://mathew-production.up.railway.app/api/auth/logout', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Logout API error:', error);
-    } finally {
-      // Check role BEFORE removing it
-      const role = localStorage.getItem('role');
-      
-      // Clear all tokens and user data (regular users)
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('email');
-      localStorage.removeItem('role');
-      localStorage.removeItem('user');
-      localStorage.removeItem('firstName');
-      localStorage.removeItem('lastName');
-      localStorage.removeItem('phone');
-      localStorage.removeItem('nurseryName');
-      
-      // Redirect based on role
-      if (role === 'ADMIN') {
-        router.push('/admin-login');
-      } else {
-        router.push('/');
-      }
+    if (isAdmin) {
+      localStorage.removeItem('adminAccessToken');
+      localStorage.removeItem('adminRefreshToken');
+      localStorage.removeItem('adminEmail');
+      localStorage.removeItem('adminRole');
+      localStorage.removeItem('adminUser');
+      clearSessionCookie('admin');
+      router.push('/admin-login');
+      return;
     }
+
+    await authService.logout();
   };
 
   return (

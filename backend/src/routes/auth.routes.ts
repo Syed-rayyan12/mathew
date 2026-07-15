@@ -1,16 +1,19 @@
 import { Router } from 'express';
-import { signup, signin, updateProfile, changePassword, nurserySignup, nurserySignin, logout, deleteAccount } from '../controllers/auth.controller';
-import { authenticate } from '../middleware';
+import { signup, signin, updateProfile, changePassword, nurserySignup, nurserySignin, refresh, logout, deleteAccount } from '../controllers/auth.controller';
+import { authenticate, authRateLimiter, refreshRateLimiter } from '../middleware';
 
 const router = Router();
 
 // Public routes
-router.post('/user-signup', signup);
-router.post('/user-signin', signin);
+router.post('/user-signup', authRateLimiter, signup);
+router.post('/user-signin', authRateLimiter, signin);
 
 // Nursery owner routes
-router.post('/nursery-signup', nurserySignup);
-router.post('/nursery-signin', nurserySignin);
+router.post('/nursery-signup', authRateLimiter, nurserySignup);
+router.post('/nursery-signin', authRateLimiter, nurserySignin);
+
+// Token refresh
+router.post('/refresh', refreshRateLimiter, refresh);
 
 // Protected routes
 router.post('/logout', authenticate, logout);

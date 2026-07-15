@@ -1,4 +1,10 @@
 import { API_CONFIG } from './config';
+import {
+  SessionType,
+  LOGIN_PATHS,
+  setSessionCookie,
+  clearSessionCookie,
+} from '../auth/session-cookie';
 
 // Types
 export interface ApiResponse<T = any> {
@@ -13,8 +19,21 @@ export interface ApiError {
   statusCode: number;
 }
 
+export interface ITokenManager {
+  sessionType: SessionType;
+  getAccessToken: () => string | null;
+  getRefreshToken: () => string | null;
+  setTokens: (accessToken: string, refreshToken: string) => void;
+  clearTokens: () => void;
+  getUser: () => any;
+  setUser: (user: any) => void;
+}
+
+export { setSessionCookie, clearSessionCookie };
+
 // Token Management
-export const TokenManager = {
+export const TokenManager: ITokenManager = {
+  sessionType: 'parent',
   getAccessToken: (): string | null => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('accessToken');
@@ -42,6 +61,7 @@ export const TokenManager = {
       localStorage.removeItem('email');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
+      clearSessionCookie('parent');
     }
   },
 
@@ -67,7 +87,8 @@ export const TokenManager = {
 };
 
 // Admin Token Management
-export const AdminTokenManager = {
+export const AdminTokenManager: ITokenManager = {
+  sessionType: 'admin',
   getAccessToken: (): string | null => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('adminAccessToken');
@@ -96,6 +117,7 @@ export const AdminTokenManager = {
       localStorage.removeItem('adminEmail');
       localStorage.removeItem('adminRole');
       localStorage.removeItem('adminUser');
+      clearSessionCookie('admin');
     }
   },
 
@@ -131,16 +153,66 @@ interface RequestOptions {
   body?: any;
   headers?: Record<string, string>;
   requireAuth?: boolean;
+  isRetry?: boolean;
 }
 
 // API Client Class
 class ApiClient {
   private baseUrl: string;
-  private tokenManager: typeof TokenManager;
+  private tokenManager: ITokenManager;
+  private refreshPromise: Promise<boolean> | null = null;
 
-  constructor(baseUrl: string, tokenManager: typeof TokenManager = TokenManager) {
+  constructor(baseUrl: string, tokenManager: ITokenManager = TokenManager) {
     this.baseUrl = baseUrl;
     this.tokenManager = tokenManager;
+  }
+
+  // Exchange the stored refresh token for a new pair. Single-flight so
+  // concurrent 401s trigger only one refresh call.
+  private tryRefresh(): Promise<boolean> {
+    if (!this.refreshPromise) {
+      this.refreshPromise = this.doRefresh().finally(() => {
+        this.refreshPromise = null;
+      });
+    }
+    return this.refreshPromise;
+  }
+
+  private async doRefresh(): Promise<boolean> {
+    const refreshToken = this.tokenManager.getRefreshToken();
+    if (!refreshToken) return false;
+
+    try {
+      // Raw fetch, not request() — avoids recursing into 401 handling
+      const response = await fetch(`${this.baseUrl}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+      if (!response.ok) return false;
+
+      const data = await response.json();
+      if (!data?.data?.accessToken || !data?.data?.refreshToken) return false;
+
+      this.tokenManager.setTokens(data.data.accessToken, data.data.refreshToken);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private handleSessionExpired(): never {
+    this.tokenManager.clearTokens();
+    if (typeof window !== 'undefined') {
+      const loginPath = LOGIN_PATHS[this.tokenManager.sessionType];
+      if (!window.location.pathname.startsWith(loginPath)) {
+        const returnTo = encodeURIComponent(
+          window.location.pathname + window.location.search
+        );
+        window.location.href = `${loginPath}?returnTo=${returnTo}`;
+      }
+    }
+    throw new ApiException('Session expired', 401);
   }
 
   private async request<T>(
@@ -152,6 +224,7 @@ class ApiClient {
       body,
       headers = {},
       requireAuth = false,
+      isRetry = false,
     } = options;
 
     // Build headers
@@ -181,6 +254,15 @@ class ApiClient {
 
     try {
       const response = await fetch(`${this.baseUrl}${endpoint}`, config);
+
+      // Expired access token: refresh once and retry, else force re-login
+      if (response.status === 401 && requireAuth && !isRetry) {
+        if (await this.tryRefresh()) {
+          return this.request<T>(endpoint, { ...options, isRetry: true });
+        }
+        this.handleSessionExpired();
+      }
+
       const data = await response.json();
 
       if (!response.ok) {
@@ -242,7 +324,8 @@ class ApiClient {
   async uploadFile<T>(
     endpoint: string,
     file: File,
-    fieldName = 'file'
+    fieldName = 'file',
+    isRetry = false
   ): Promise<ApiResponse<T>> {
     const formData = new FormData();
     formData.append(fieldName, file);
@@ -259,6 +342,12 @@ class ApiClient {
         headers,
         body: formData,
       });
+      if (response.status === 401 && !isRetry) {
+        if (await this.tryRefresh()) {
+          return this.uploadFile<T>(endpoint, file, fieldName, true);
+        }
+        this.handleSessionExpired();
+      }
       const data = await response.json();
       if (!response.ok) {
         throw new ApiException(data.message || 'Upload failed', response.status);
@@ -277,7 +366,8 @@ class ApiClient {
   async uploadFiles<T>(
     endpoint: string,
     files: File[],
-    fieldName = 'files'
+    fieldName = 'files',
+    isRetry = false
   ): Promise<ApiResponse<T>> {
     const formData = new FormData();
     files.forEach((file) => formData.append(fieldName, file));
@@ -294,6 +384,12 @@ class ApiClient {
         headers,
         body: formData,
       });
+      if (response.status === 401 && !isRetry) {
+        if (await this.tryRefresh()) {
+          return this.uploadFiles<T>(endpoint, files, fieldName, true);
+        }
+        this.handleSessionExpired();
+      }
       const data = await response.json();
       if (!response.ok) {
         throw new ApiException(data.message || 'Upload failed', response.status);
@@ -313,24 +409,57 @@ class ApiClient {
 export const apiClient = new ApiClient(API_CONFIG.BASE_URL, TokenManager);
 export const adminApiClient = new ApiClient(API_CONFIG.BASE_URL, AdminTokenManager);
 
-// Nursery Token Manager — reads from nurseryAccessToken (separate from user session)
-export const NurseryTokenManager = {
+// Nursery Token Manager — separate session from the regular user one
+export const NurseryTokenManager: ITokenManager = {
+  sessionType: 'nursery',
   getAccessToken: (): string | null => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('nurseryAccessToken');
     }
     return null;
   },
-  getRefreshToken: (): string | null => null,
-  setTokens: (_a: string, _r: string): void => {},
+  getRefreshToken: (): string | null => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('nurseryRefreshToken');
+    }
+    return null;
+  },
+  setTokens: (accessToken: string, refreshToken: string): void => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('nurseryAccessToken', accessToken);
+      localStorage.setItem('nurseryRefreshToken', refreshToken);
+    }
+  },
   clearTokens: (): void => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('nurseryAccessToken');
-      localStorage.removeItem('nurseryEmail');
+      localStorage.removeItem('nurseryRefreshToken');
       localStorage.removeItem('nurseryUser');
+      // Legacy scattered keys written by the old login page
+      localStorage.removeItem('nurseryEmail');
+      localStorage.removeItem('firstName');
+      localStorage.removeItem('lastName');
+      localStorage.removeItem('phone');
+      localStorage.removeItem('nurseryName');
+      clearSessionCookie('nursery');
     }
   },
-  getUser: () => null,
-  setUser: (_u: any): void => {},
+  getUser: () => {
+    if (typeof window !== 'undefined') {
+      try {
+        const user = localStorage.getItem('nurseryUser');
+        return user ? JSON.parse(user) : null;
+      } catch {
+        localStorage.removeItem('nurseryUser');
+        return null;
+      }
+    }
+    return null;
+  },
+  setUser: (user: any): void => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('nurseryUser', JSON.stringify(user));
+    }
+  },
 };
 export const nurseryApiClient = new ApiClient(API_CONFIG.BASE_URL, NurseryTokenManager);

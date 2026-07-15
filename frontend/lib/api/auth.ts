@@ -1,5 +1,6 @@
-import { apiClient, nurseryApiClient, TokenManager, ApiResponse } from './client';
+import { apiClient, nurseryApiClient, TokenManager, NurseryTokenManager, ApiResponse } from './client';
 import { ENDPOINTS } from './config';
+import { setSessionCookie } from '../auth/session-cookie';
 
 // Types
 export interface SignupData {
@@ -91,6 +92,7 @@ export const authService = {
         response.data.refreshToken
       );
       TokenManager.setUser(response.data.user);
+      setSessionCookie('parent', response.data.user.role);
       // Save email separately so nursery-dashboard auth check passes for NURSERY_OWNER
       if (typeof window !== 'undefined') {
         localStorage.setItem('email', response.data.user.email);
@@ -104,7 +106,7 @@ export const authService = {
   logout: async (): Promise<void> => {
     try {
       // Call backend logout API to update status
-      await apiClient.post('/auth/logout', {}, true);
+      await apiClient.post(ENDPOINTS.AUTH.LOGOUT, {}, true);
     } catch (error) {
       console.error('Logout API error:', error);
       // Continue with logout even if API call fails
@@ -176,5 +178,47 @@ export const authService = {
       } catch { /* ignore parse errors */ }
     }
     return response;
+  },
+};
+
+// Nursery Auth Service — separate session (nursery* keys) from the parent one
+export const nurseryAuthService = {
+  nurserySignin: async (data: SigninData): Promise<ApiResponse<AuthResponse>> => {
+    const response = await nurseryApiClient.post<AuthResponse>(
+      ENDPOINTS.AUTH.NURSERY_SIGNIN,
+      data
+    );
+
+    if (response.success && response.data) {
+      NurseryTokenManager.setTokens(
+        response.data.accessToken,
+        response.data.refreshToken
+      );
+      NurseryTokenManager.setUser(response.data.user);
+      setSessionCookie('nursery', response.data.user.role || 'NURSERY_OWNER');
+      // Legacy scattered keys still read by /settings and dashboard headers
+      if (typeof window !== 'undefined') {
+        const user = response.data.user;
+        localStorage.setItem('nurseryEmail', user.email);
+        localStorage.setItem('email', user.email);
+        localStorage.setItem('firstName', user.firstName || '');
+        localStorage.setItem('lastName', user.lastName || '');
+        localStorage.setItem('phone', user.phone || '');
+        localStorage.setItem('nurseryName', user.nurseryName || '');
+      }
+    }
+
+    return response;
+  },
+
+  nurseryLogout: async (): Promise<void> => {
+    try {
+      await nurseryApiClient.post(ENDPOINTS.AUTH.LOGOUT, {}, true);
+    } catch (error) {
+      console.error('Logout API error:', error);
+      // Continue with logout even if API call fails
+    } finally {
+      NurseryTokenManager.clearTokens();
+    }
   },
 };

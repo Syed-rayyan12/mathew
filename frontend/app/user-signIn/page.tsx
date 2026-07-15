@@ -11,6 +11,13 @@ import { authService } from '@/lib/api/auth'
 import { TokenManager } from '@/lib/api/client'
 import { toast } from 'sonner'
 import { Eye, EyeOff } from 'lucide-react'
+import { safeReturnTo, setSessionCookie } from '@/lib/auth/session-cookie'
+
+// Read from window.location to avoid the useSearchParams/Suspense requirement
+const getReturnTo = (): string | null => {
+  if (typeof window === 'undefined') return null
+  return safeReturnTo(new URLSearchParams(window.location.search).get('returnTo'))
+}
 
 const UserSignInPage = () => {
   const router = useRouter()
@@ -31,7 +38,8 @@ const UserSignInPage = () => {
       // Only redirect if role belongs to this login page (USER or PARENT)
       // If NURSERY_OWNER ended up here, clear their token so they can re-login correctly
       if (currentUser.role === 'USER' || currentUser.role === 'PARENT') {
-        router.replace('/parent-dashboard');
+        setSessionCookie('parent', currentUser.role)
+        router.replace(getReturnTo() || '/parent-dashboard');
         return;
       } else {
         // Wrong role for this login — clear tokens so user can login fresh
@@ -101,7 +109,7 @@ const UserSignInPage = () => {
       // Keep loader visible during redirect
       // Navigate to home page without full page reload
       setTimeout(() => {
-        router.push('/')
+        router.push(getReturnTo() || '/')
         clearTimeout(loaderTimeout)
         setShowLoader(false)
         setLoading(false)

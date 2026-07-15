@@ -2,9 +2,16 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const nodeEnv = process.env.NODE_ENV || 'development';
+
+// Predictable JWT secrets make every token forgeable — refuse to start in production
+if (nodeEnv === 'production' && (!process.env.JWT_SECRET || !process.env.JWT_REFRESH_SECRET)) {
+  throw new Error('JWT_SECRET and JWT_REFRESH_SECRET must be set in production');
+}
+
 export const config = {
   // Server
-  nodeEnv: process.env.NODE_ENV || 'development',
+  nodeEnv,
   port: parseInt(process.env.PORT || '5000', 10),
 
   // Database
@@ -12,9 +19,9 @@ export const config = {
 
   // JWT
   jwt: {
-    secret: process.env.JWT_SECRET || 'your-secret-key',
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
-    refreshSecret: process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-key',
+    secret: process.env.JWT_SECRET || 'dev-secret-do-not-use-in-prod',
+    expiresIn: process.env.JWT_EXPIRES_IN || '1h',
+    refreshSecret: process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret-do-not-use-in-prod',
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d',
   },
 
@@ -23,6 +30,10 @@ export const config = {
 
   // CORS
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
+  frontendUrls: (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || 'http://localhost:3000')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean),
 
   // Stripe
   stripe: {

@@ -10,6 +10,14 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 import { nurseryDashboardService } from "@/lib/api/nursery";
+import { nurseryAuthService } from "@/lib/api/auth";
+import { setSessionCookie, safeReturnTo } from "@/lib/auth/session-cookie";
+
+// Read from window.location to avoid the useSearchParams/Suspense requirement
+const getReturnTo = (): string | null => {
+  if (typeof window === "undefined") return null;
+  return safeReturnTo(new URLSearchParams(window.location.search).get("returnTo"));
+};
 
 export default function NurseryLoginPage() {
   const router = useRouter();
@@ -30,8 +38,16 @@ export default function NurseryLoginPage() {
     const checkLoginStatus = async () => {
       const accessToken = localStorage.getItem('nurseryAccessToken');
       const email = localStorage.getItem('nurseryEmail');
-      
+
       if (accessToken && email) {
+        // Heal sessions from before the middleware cookie existed, so the
+        // gate lets them back in without re-entering credentials
+        setSessionCookie('nursery', 'NURSERY_OWNER');
+        const returnTo = getReturnTo();
+        if (returnTo) {
+          router.replace(returnTo);
+          return;
+        }
         try {
           // Check if nursery exists
           const response = await nurseryDashboardService.getMyNursery();
@@ -115,29 +131,10 @@ export default function NurseryLoginPage() {
     setShowLoader(true);
 
     try {
-      const response = await fetch("https://mathew-production.up.railway.app/api/auth/nursery-signin", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
+      // Stores tokens + nurseryUser + legacy keys and sets the session cookie
+      const data = await nurseryAuthService.nurserySignin(formData);
 
-      const data = await response.json();
-      console.log("LOGIN RESPONSE 👉", data);
-
-      if (response.ok && data.success) {
-        // Store nursery-specific tokens (separate from user session)
-        localStorage.setItem("nurseryAccessToken", data.data.accessToken);
-        localStorage.setItem("nurseryEmail", data.data.user.email);
-        localStorage.setItem("email", data.data.user.email);
-        localStorage.setItem("firstName", data.data.user.firstName || "");
-        localStorage.setItem("lastName", data.data.user.lastName || "");
-        localStorage.setItem("phone", data.data.user.phone || "");
-        localStorage.setItem("nurseryName", data.data.user.nurseryName || "");
-        // Store nursery owner user object under nursery-specific key (not shared 'user' key used by parents)
-        localStorage.setItem("nurseryUser", JSON.stringify(data.data.user));
-
+      if (data.success && data.data) {
         // Handle Remember Me
         if (rememberMe) {
           localStorage.setItem('nurseryRememberEmail', formData.email);
@@ -145,11 +142,18 @@ export default function NurseryLoginPage() {
           localStorage.removeItem('nurseryRememberEmail');
         }
 
+        const returnTo = getReturnTo();
+        if (returnTo) {
+          toast.success("Login successful!");
+          router.replace(returnTo);
+          return;
+        }
+
         // Check if nursery exists to determine redirect
         try {
           const nurseryResponse = await nurseryDashboardService.getMyNursery();
           const nurseriesData = Array.isArray(nurseryResponse.data) ? nurseryResponse.data : [];
-          
+
           if (nurseryResponse.success && nurseriesData.length > 0) {
             toast.success("Login successful!");
             router.replace('/nursery-dashboard');
@@ -165,9 +169,8 @@ export default function NurseryLoginPage() {
         toast.error(data.message || "Login failed. Please check your credentials.");
         setShowLoader(false);
       }
-    } catch (error) {
-      toast.error("An error occurred. Please try again later.");
-      console.error("Login error:", error);
+    } catch (error: any) {
+      toast.error(error?.message || "An error occurred. Please try again later.");
       setShowLoader(false);
     }
   };

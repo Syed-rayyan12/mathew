@@ -9,10 +9,24 @@ import { PrismaClient } from '@prisma/client';
 const app = express();
 const prisma = new PrismaClient();
 
+// Behind Railway's proxy — needed so rate limiting keys on real client IPs
+app.set('trust proxy', 1);
+
 // ── CORS ──────────────────────────────────────────────────────────────────────
-// Allow all origins so Railway/Vercel domain mismatches never cause 503s.
-// Tighten this per-env once everything is working.
-app.use(cors({ origin: true, credentials: true }));
+// Allowlist from FRONTEND_URLS (comma-separated). Requests without an Origin
+// header (curl, health checks, Stripe webhooks) are allowed through.
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || config.frontendUrls.includes(origin)) {
+      return callback(null, true);
+    }
+    if (/^https:\/\/[a-z0-9-]+\.vercel\.app$/.test(origin)) {
+      return callback(null, true); // Vercel preview deploys
+    }
+    callback(null, false);
+  },
+  credentials: true,
+}));
 
 // ── Stripe webhook (MUST be before express.json so raw body is preserved) ─────
 import { stripeWebhook } from './controllers/stripe.controller';
@@ -55,9 +69,8 @@ async function startServer() {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📚 Environment: ${config.nodeEnv}`);
-    console.log(`🌐 CORS: open (all origins)`);
+    console.log(`🌐 CORS allowlist: ${config.frontendUrls.join(', ')} (+ *.vercel.app previews)`);
     console.log(`🔑 STRIPE_SECRET_KEY set: ${!!config.stripe.secretKey}`);
-    console.log(`🔗 FRONTEND_URL: ${config.frontendUrl}`);
   });
 }
 

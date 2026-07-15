@@ -21,42 +21,44 @@ import {
   updateNurseryAdmin,
   updateGroupAdmin,
 } from '../controllers/admin.controller';
-import { authenticate } from '../middleware';
+import { authenticate, authorize, authRateLimiter } from '../middleware';
 
 const router = Router();
 
 // Public route
-router.post('/signin', adminSignin);
+router.post('/signin', authRateLimiter, adminSignin);
 
-// Protected admin routes
-router.get('/groups', authenticate, getAllGroups);
-router.get('/nurseries', authenticate, getAllNurseriesAdmin);
-router.get('/users', authenticate, getAllUsers);  // Regular users only
-router.get('/nursery-owners', authenticate, getAllNurseryOwners);  // Nursery owners only
-router.get('/reviews', authenticate, getAllReviews);  // All reviews
-router.get('/articles', authenticate, getAllArticles);  // All articles
-router.get('/stats', authenticate, getDashboardStats);
+// Everything below requires a valid token with the ADMIN role
+router.use(authenticate, authorize('ADMIN'));
+
+router.get('/groups', getAllGroups);
+router.get('/nurseries', getAllNurseriesAdmin);
+router.get('/users', getAllUsers);  // Regular users only
+router.get('/nursery-owners', getAllNurseryOwners);  // Nursery owners only
+router.get('/reviews', getAllReviews);  // All reviews
+router.get('/articles', getAllArticles);  // All articles
+router.get('/stats', getDashboardStats);
 
 // Analytics routes
-router.get('/analytics/monthly-users', authenticate, getMonthlyUserStats);
-router.get('/analytics/monthly-reviews', authenticate, getMonthlyReviewStats);
+router.get('/analytics/monthly-users', getMonthlyUserStats);
+router.get('/analytics/monthly-reviews', getMonthlyReviewStats);
 
 // Delete routes
-router.delete('/groups/:id', authenticate, deleteGroup);
-router.delete('/nurseries/:id', authenticate, deleteNursery);
-router.delete('/users/:id', authenticate, deleteUser);
+router.delete('/groups/:id', deleteGroup);
+router.delete('/nurseries/:id', deleteNursery);
+router.delete('/users/:id', deleteUser);
 
 // Toggle active status routes
-router.patch('/groups/:id/toggle-status', authenticate, toggleGroupStatus);
-router.patch('/nurseries/:id/toggle-status', authenticate, toggleNurseryStatus);
+router.patch('/groups/:id/toggle-status', toggleGroupStatus);
+router.patch('/nurseries/:id/toggle-status', toggleNurseryStatus);
 
 // Update routes
-router.put('/nurseries/:id', authenticate, updateNurseryAdmin);
-router.put('/groups/:id', authenticate, updateGroupAdmin);
+router.put('/nurseries/:id', updateNurseryAdmin);
+router.put('/groups/:id', updateGroupAdmin);
 
 // User approval routes
-router.get('/approvals/pending', authenticate, getUsersPendingApproval);
-router.put('/approvals/:id/approve', authenticate, approveUser);
-router.delete('/approvals/:id/reject', authenticate, rejectUser);
+router.get('/approvals/pending', getUsersPendingApproval);
+router.put('/approvals/:id/approve', approveUser);
+router.delete('/approvals/:id/reject', rejectUser);
 
 export default router;

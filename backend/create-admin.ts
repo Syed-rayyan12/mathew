@@ -11,32 +11,38 @@ const prisma = new PrismaClient({
 
 async function createAdmin() {
   try {
-    console.log('Creating admin user...');
-    
-    const hashedPassword = await bcrypt.hash('Admin@123456', 10);
-    
-    const admin = await prisma.user.create({
-      data: {
+    const email = process.env.ADMIN_EMAIL || 'admin@mathew.com';
+    const password = process.env.ADMIN_PASSWORD;
+
+    if (!password) {
+      throw new Error('ADMIN_PASSWORD must be set');
+    }
+
+    console.log('Creating or updating admin user...');
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const admin = await prisma.user.upsert({
+      where: { email },
+      create: {
         id: 'USR-ADMIN-001',
-        email: 'admin@mathew.com',
+        email,
         password: hashedPassword,
         firstName: 'Admin',
         lastName: 'User',
         role: 'ADMIN',
         isActive: true,
       },
+      update: {
+        password: hashedPassword,
+        role: 'ADMIN',
+        isActive: true,
+      },
     });
 
-    console.log('✅ Admin user created successfully!');
-    console.log('Email: admin@mathew.com');
-    console.log('Password: Admin@123456');
-    console.log('Please change this password after first login!');
-  } catch (error: any) {
-    if (error.code === 'P2002') {
-      console.log('⚠️ Admin user already exists');
-    } else {
-      console.error('Error creating admin:', error);
-    }
+    console.log(`Admin user ready: ${admin.email}`);
+  } catch (error) {
+    console.error('Error creating admin:', error);
+    process.exitCode = 1;
   } finally {
     await prisma.$disconnect();
   }

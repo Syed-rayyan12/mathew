@@ -52,10 +52,11 @@ const pricingPlans = [
             "Full Notification System",
             "Priority Placement in Search Results",
             "Dashboard Analytics (ratings, reviews, performance)",
+            "Job Listings",
         ],
         buttonText: "Start Platinum",
         buttonClasses: "bg-transparent border-secondary py-4 px-6 hover:bg-secondary hover:text-white transition-colors duration-200",
-        priceLabel: "per month per nursery group",
+        priceLabel: "per month per nursery",
     },
 ];
 
@@ -346,6 +347,11 @@ export default function PricingSection() {
                                 </tr>
                                 <tr>
                                     <td className="p-4">Dashboard Analytics (ratings, reviews, performance)</td>
+                                    <td className="text-center"><X className="text-red-500" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
+                                </tr>
+                                <tr>
+                                    <td className="p-4">Job Listings</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>

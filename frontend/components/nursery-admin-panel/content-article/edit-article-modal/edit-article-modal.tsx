@@ -21,6 +21,7 @@ import {
 import { Plus, X, Image as ImageIcon } from "lucide-react";
 import { adminService } from "@/lib/api/admin";
 import { toast } from "sonner";
+import { adminUploadService } from "@/lib/api/upload";
 
 interface Section {
   heading: string;
@@ -33,6 +34,7 @@ interface ListItem {
 
 export default function EditArticleModal({ open, onClose, article, onUpdate }: any) {
   const [loading, setLoading] = useState(false);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
   const [cardImagePreview, setCardImagePreview] = useState<string>("");
   const [slugImagePreview, setSlugImagePreview] = useState<string>("");
   const [form, setForm] = useState({
@@ -88,29 +90,37 @@ export default function EditArticleModal({ open, onClose, article, onUpdate }: a
     setForm({ ...form, category: value });
   };
 
-  const handleCardImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCardImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setForm({ ...form, cardImage: base64String });
-        setCardImagePreview(base64String);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+    setUploadingMedia(true);
+    try {
+      const url = await adminUploadService.uploadImage(file);
+      setForm(prev => ({ ...prev, cardImage: url }));
+      setCardImagePreview(url);
+      toast.success('Card image uploaded');
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to upload card image');
+    } finally {
+      setUploadingMedia(false);
+      e.target.value = '';
     }
   };
 
-  const handleSlugImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSlugImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setForm({ ...form, slugImage: base64String });
-        setSlugImagePreview(base64String);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+    setUploadingMedia(true);
+    try {
+      const url = await adminUploadService.uploadImage(file);
+      setForm(prev => ({ ...prev, slugImage: url }));
+      setSlugImagePreview(url);
+      toast.success('Article image uploaded');
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to upload article image');
+    } finally {
+      setUploadingMedia(false);
+      e.target.value = '';
     }
   };
 
@@ -157,6 +167,10 @@ export default function EditArticleModal({ open, onClose, article, onUpdate }: a
   };
 
   const handleSubmit = async () => {
+    if (uploadingMedia) {
+      toast.error('Please wait for the image upload to finish');
+      return;
+    }
     // Validate required fields
     if (!form.name || !form.cardHeading || !form.cardParagraph) {
       toast.error("Please fill in name, card heading, and card paragraph");
@@ -465,11 +479,11 @@ export default function EditArticleModal({ open, onClose, article, onUpdate }: a
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={loading}>
+          <Button variant="outline" onClick={onClose} disabled={loading || uploadingMedia}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={loading}>
-            {loading ? "Updating..." : "Update Article"}
+          <Button onClick={handleSubmit} disabled={loading || uploadingMedia}>
+            {uploadingMedia ? "Uploading images..." : loading ? "Updating..." : "Update Article"}
           </Button>
         </DialogFooter>
       </DialogContent>

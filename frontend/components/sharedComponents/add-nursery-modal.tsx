@@ -26,6 +26,7 @@ import { UK_CITIES } from "@/lib/data/uk-cities";
 import { UK_TOWNS } from "@/lib/data/uk-towns";
 import WeeklyTimings, { getDefaultTimings, formatTimingsForAPI } from "./weekly-timings";
 import type { DayTiming } from "./weekly-timings";
+import { uploadService } from "@/lib/api/upload";
 
 export default function AddNurseryModal({
   open,
@@ -38,6 +39,7 @@ export default function AddNurseryModal({
 }) {
   const { canUploadVideo, canManageTeamMembers } = usePlanFeatures();
   const [loading, setLoading] = useState(false);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
   const [cityPopoverOpen, setCityPopoverOpen] = useState(false);
   const [townPopoverOpen, setTownPopoverOpen] = useState(false);
   const [cardImagePreview, setCardImagePreview] = useState<string>('');
@@ -105,22 +107,71 @@ export default function AddNurseryModal({
     );
   };
 
-  const handleMultipleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      const fileArray = Array.from(files);
-      const newPreviews: string[] = [];
+  const handleMultipleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-      fileArray.forEach((file) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          newPreviews.push(reader.result as string);
-          if (newPreviews.length === fileArray.length) {
-            setImagePreviews([...imagePreviews, ...newPreviews]);
-          }
-        };
-        reader.readAsDataURL(file);
-      });
+    setUploadingMedia(true);
+    try {
+      const urls = await uploadService.uploadImages(files);
+      setImagePreviews(prev => [...prev, ...urls]);
+      toast.success('Gallery images uploaded');
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to upload gallery images');
+    } finally {
+      setUploadingMedia(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleCardImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingMedia(true);
+    try {
+      setCardImagePreview(await uploadService.uploadImage(file));
+      toast.success('Card image uploaded');
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to upload card image');
+    } finally {
+      setUploadingMedia(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingMedia(true);
+    try {
+      const url = await uploadService.uploadVideo(file);
+      setVideoPreview(url);
+      setFormData(prev => ({ ...prev, videoUrl: url }));
+      toast.success('Video uploaded');
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to upload video');
+    } finally {
+      setUploadingMedia(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleTeamMemberImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingMedia(true);
+    try {
+      const url = await uploadService.uploadImage(file);
+      setNewMember(prev => ({ ...prev, image: url }));
+      toast.success('Team member photo uploaded');
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to upload team member photo');
+    } finally {
+      setUploadingMedia(false);
+      e.target.value = '';
     }
   };
 
@@ -130,6 +181,10 @@ export default function AddNurseryModal({
   };
 
   const handleSubmit = async () => {
+    if (uploadingMedia) {
+      toast.error('Please wait for the media upload to finish');
+      return;
+    }
     if (!formData.nurseryName) {
       toast.error('Please fill in the nursery name');
       return;
@@ -513,18 +568,9 @@ export default function AddNurseryModal({
                     <span>Change Card Image</span>
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/jpeg,image/png,image/gif,image/webp"
                       className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const reader = new FileReader();
-                          reader.onloadend = () => {
-                            setCardImagePreview(reader.result as string);
-                          };
-                          reader.readAsDataURL(file);
-                        }
-                      }}
+                      onChange={handleCardImageUpload}
                     />
                   </label>
                 </div>
@@ -535,18 +581,9 @@ export default function AddNurseryModal({
                   <span className="text-sm text-gray-500">Click to select a single image for cards</span>
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/gif,image/webp"
                     className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                          setCardImagePreview(reader.result as string);
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
+                    onChange={handleCardImageUpload}
                   />
                 </label>
               )}
@@ -585,7 +622,7 @@ export default function AddNurseryModal({
                     <span>Add More Images</span>
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/jpeg,image/png,image/gif,image/webp"
                       multiple
                       className="hidden"
                       onChange={handleMultipleImageUpload}
@@ -599,7 +636,7 @@ export default function AddNurseryModal({
                   <span className="text-sm text-gray-500">Click to select multiple images</span>
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/gif,image/webp"
                     multiple
                     className="hidden"
                     onChange={handleMultipleImageUpload}
@@ -642,16 +679,9 @@ export default function AddNurseryModal({
                     <span>Change Video</span>
                     <input
                       type="file"
-                      accept="video/*"
+                      accept="video/mp4,video/quicktime,video/webm,video/x-msvideo"
                       className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0]
-                        if (file) {
-                          const videoUrl = URL.createObjectURL(file)
-                          setVideoPreview(videoUrl)
-                          setFormData({ ...formData, videoUrl })
-                        }
-                      }}
+                      onChange={handleVideoUpload}
                     />
                   </label>
                 </div>
@@ -662,16 +692,9 @@ export default function AddNurseryModal({
                   <span className="text-sm text-gray-500">Click to select a video file</span>
                   <input
                     type="file"
-                    accept="video/*"
+                    accept="video/mp4,video/quicktime,video/webm,video/x-msvideo"
                     className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0]
-                      if (file) {
-                        const videoUrl = URL.createObjectURL(file)
-                        setVideoPreview(videoUrl)
-                        setFormData({ ...formData, videoUrl })
-                      }
-                    }}
+                    onChange={handleVideoUpload}
                   />
                 </label>
               )}
@@ -903,16 +926,9 @@ export default function AddNurseryModal({
                       Upload photo
                       <input
                         type="file"
-                        accept="image/*"
+                        accept="image/jpeg,image/png,image/gif,image/webp"
                         className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            const reader = new FileReader();
-                            reader.onloadend = () => setNewMember(p => ({ ...p, image: reader.result as string }));
-                            reader.readAsDataURL(file);
-                          }
-                        }}
+                        onChange={handleTeamMemberImageUpload}
                       />
                     </label>
                   )}
@@ -947,16 +963,16 @@ export default function AddNurseryModal({
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={loading}
+            disabled={loading || uploadingMedia}
           >
             Cancel
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={loading}
+            disabled={loading || uploadingMedia}
             className="bg-secondary hover:bg-secondary/90"
           >
-            {loading ? 'Creating...' : 'Create Nursery'}
+            {uploadingMedia ? 'Uploading media...' : loading ? 'Creating...' : 'Create Nursery'}
           </Button>
         </DialogFooter>
       </DialogContent>

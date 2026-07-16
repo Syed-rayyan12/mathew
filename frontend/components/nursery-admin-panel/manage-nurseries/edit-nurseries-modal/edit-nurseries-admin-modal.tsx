@@ -19,6 +19,7 @@ import { teamMemberService } from "@/lib/api/nursery";
 import WeeklyTimings, { getDefaultTimings, parseTimingsFromOpeningHours, formatTimingsForAPI } from "@/components/sharedComponents/weekly-timings";
 import type { DayTiming } from "@/components/sharedComponents/weekly-timings";
 import { QualificationCheckboxes } from "@/components/sharedComponents/QualificationCheckboxes";
+import { adminUploadService } from "@/lib/api/upload";
 
 function getTeamService() {
   if (typeof window !== 'undefined' && localStorage.getItem('adminAccessToken')) {
@@ -29,6 +30,7 @@ function getTeamService() {
 
 export default function EditNurseryAdminModal({ open, nursery, onClose, onSuccess }: any) {
   const [loading, setLoading] = useState(false);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
   const [careTypes, setCareTypes] = useState<string[]>([]);
   const [services, setServices] = useState<string[]>([]);
   const [facilities, setFacilities] = useState<string[]>([]);
@@ -51,6 +53,7 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
     aboutUs: "",
     philosophy: "",
     videoUrl: "",
+    logo: "",
     cardImage: "",
   });
 
@@ -71,6 +74,7 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
         aboutUs: nursery.aboutUs || "",
         philosophy: nursery.philosophy || "",
         videoUrl: nursery.videoUrl || "",
+        logo: nursery.logo || "",
         cardImage: nursery.cardImage || "",
       });
 
@@ -174,29 +178,37 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
     setFacilities(newFacilities);
   };
 
-  // const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   const file = e.target.files?.[0];
-  //   if (file) {
-  //     const reader = new FileReader();
-  //     reader.onloadend = () => {
-  //       const base64String = reader.result as string;
-  //       setFormData({ ...formData, logo: base64String });
-  //       setLogoPreview(base64String);
-  //     };
-  //     reader.readAsDataURL(file);
-  //   }
-  // };
-
-  const handleCardImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setFormData({ ...formData, cardImage: base64String });
-        setCardImagePreview(base64String);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+    setUploadingMedia(true);
+    try {
+      const url = await adminUploadService.uploadImage(file);
+      setFormData(prev => ({ ...prev, logo: url }));
+      setLogoPreview(url);
+      toast.success('Logo uploaded');
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to upload logo');
+    } finally {
+      setUploadingMedia(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleCardImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingMedia(true);
+    try {
+      const url = await adminUploadService.uploadImage(file);
+      setFormData(prev => ({ ...prev, cardImage: url }));
+      setCardImagePreview(url);
+      toast.success('Card image uploaded');
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to upload card image');
+    } finally {
+      setUploadingMedia(false);
+      e.target.value = '';
     }
   };
 
@@ -210,22 +222,19 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
     setCardImagePreview("");
   };
 
-  const handleMultipleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      const fileArray = Array.from(files);
-      const newPreviews: string[] = [];
-
-      fileArray.forEach((file) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          newPreviews.push(reader.result as string);
-          if (newPreviews.length === fileArray.length) {
-            setImagePreviews([...imagePreviews, ...newPreviews]);
-          }
-        };
-        reader.readAsDataURL(file);
-      });
+  const handleMultipleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    setUploadingMedia(true);
+    try {
+      const urls = await adminUploadService.uploadImages(files);
+      setImagePreviews(prev => [...prev, ...urls]);
+      toast.success('Gallery images uploaded');
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to upload gallery images');
+    } finally {
+      setUploadingMedia(false);
+      e.target.value = '';
     }
   };
 
@@ -234,22 +243,20 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
     setImagePreviews(newPreviews);
   };
 
-  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      // Check if file is a video
-      if (!file.type.startsWith('video/')) {
-        toast.error('Please select a valid video file');
-        return;
-      }
-      
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setFormData({ ...formData, videoUrl: base64String });
-        setVideoPreview(base64String);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+    setUploadingMedia(true);
+    try {
+      const url = await adminUploadService.uploadVideo(file);
+      setFormData(prev => ({ ...prev, videoUrl: url }));
+      setVideoPreview(url);
+      toast.success('Video uploaded');
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to upload video');
+    } finally {
+      setUploadingMedia(false);
+      e.target.value = '';
     }
   };
 
@@ -309,6 +316,10 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
   };
 
   const handleSubmit = async () => {
+    if (uploadingMedia) {
+      toast.error('Please wait for the media upload to finish');
+      return;
+    }
     if (!formData.name || !formData.city) {
       toast.error('Please fill in nursery name and city');
       return;
@@ -333,7 +344,7 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
         aboutUs: formData.aboutUs,
         philosophy: formData.philosophy,
         videoUrl: formData.videoUrl,
-        // logo: formData.logo,
+        logo: formData.logo,
         cardImage: formData.cardImage,
         images: imagePreviews.filter(img => img.trim() !== ''),
         facilities: allFacilities,
@@ -796,12 +807,19 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
                             <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">
                               <Upload size={14} />
                               Upload photo
-                              <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                              <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" disabled={uploadingMedia} onChange={async (e) => {
                                 const file = e.target.files?.[0];
-                                if (file) {
-                                  const reader = new FileReader();
-                                  reader.onloadend = () => setEditingMember({ ...editingMember, image: reader.result as string });
-                                  reader.readAsDataURL(file);
+                                if (!file) return;
+                                setUploadingMedia(true);
+                                try {
+                                  const url = await adminUploadService.uploadImage(file);
+                                  setEditingMember({ ...editingMember, image: url });
+                                  toast.success('Team member photo uploaded');
+                                } catch (error: any) {
+                                  toast.error(error?.message || 'Failed to upload team member photo');
+                                } finally {
+                                  setUploadingMedia(false);
+                                  e.target.value = '';
                                 }
                               }} />
                             </label>
@@ -886,12 +904,19 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
                   <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">
                     <Upload size={14} />
                     Upload photo
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                    <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" disabled={uploadingMedia} onChange={async (e) => {
                       const file = e.target.files?.[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onloadend = () => setNewMember({ ...newMember, image: reader.result as string });
-                        reader.readAsDataURL(file);
+                      if (!file) return;
+                      setUploadingMedia(true);
+                      try {
+                        const url = await adminUploadService.uploadImage(file);
+                        setNewMember({ ...newMember, image: url });
+                        toast.success('Team member photo uploaded');
+                      } catch (error: any) {
+                        toast.error(error?.message || 'Failed to upload team member photo');
+                      } finally {
+                        setUploadingMedia(false);
+                        e.target.value = '';
                       }
                     }} />
                   </label>
@@ -923,16 +948,16 @@ export default function EditNurseryAdminModal({ open, nursery, onClose, onSucces
           <Button
             variant="outline"
             onClick={onClose}
-            disabled={loading}
+            disabled={loading || uploadingMedia}
           >
             Cancel
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={loading}
+            disabled={loading || uploadingMedia}
             className="bg-secondary hover:bg-secondary/90"
           >
-            {loading ? 'Updating...' : 'Update Nursery'}
+            {uploadingMedia ? 'Uploading media...' : loading ? 'Updating...' : 'Update Nursery'}
           </Button>
         </DialogFooter>
       </DialogContent>

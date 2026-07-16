@@ -1128,12 +1128,19 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
                                                         <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">
                                                             <UserPlus size={14} />
                                                             Upload photo
-                                                            <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                                                            <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" disabled={uploading} onChange={async (e) => {
                                                                 const file = e.target.files?.[0];
-                                                                if (file) {
-                                                                    const reader = new FileReader();
-                                                                    reader.onloadend = () => setEditingMember({ ...editingMember, image: reader.result as string });
-                                                                    reader.readAsDataURL(file);
+                                                                if (!file) return;
+                                                                setUploading(true);
+                                                                try {
+                                                                    const url = await uploadService.uploadImage(file);
+                                                                    setEditingMember({ ...editingMember, image: url });
+                                                                    toast.success('Team member photo uploaded');
+                                                                } catch (error: any) {
+                                                                    toast.error(error?.message || 'Failed to upload team member photo');
+                                                                } finally {
+                                                                    setUploading(false);
+                                                                    e.target.value = '';
                                                                 }
                                                             }} />
                                                         </label>
@@ -1201,12 +1208,19 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
                                     <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">
                                         <UserPlus size={14} />
                                         Upload photo
-                                        <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                                        <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" disabled={uploading} onChange={async (e) => {
                                             const file = e.target.files?.[0];
-                                            if (file) {
-                                                const reader = new FileReader();
-                                                reader.onloadend = () => setNewTeamMember({ ...newTeamMember, image: reader.result as string });
-                                                reader.readAsDataURL(file);
+                                            if (!file) return;
+                                            setUploading(true);
+                                            try {
+                                                const url = await uploadService.uploadImage(file);
+                                                setNewTeamMember({ ...newTeamMember, image: url });
+                                                toast.success('Team member photo uploaded');
+                                            } catch (error: any) {
+                                                toast.error(error?.message || 'Failed to upload team member photo');
+                                            } finally {
+                                                setUploading(false);
+                                                e.target.value = '';
                                             }
                                         }} />
                                     </label>

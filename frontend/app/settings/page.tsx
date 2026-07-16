@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Upload, X, Plus, Trash2, Star } from 'lucide-react'
 import { toast } from 'sonner'
+import { uploadService } from '@/lib/api/upload'
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -17,6 +18,7 @@ export default function SettingsPage() {
   const [cardImagePreview, setCardImagePreview] = useState<string>('')
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
+  const [uploadingMedia, setUploadingMedia] = useState(false)
   const [nurseryId, setNurseryId] = useState<string>('')
 
   const [formData, setFormData] = useState({
@@ -159,22 +161,20 @@ export default function SettingsPage() {
     })
   }
 
-  const handleMultipleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (files) {
-      const fileArray = Array.from(files)
-      const newPreviews: string[] = []
+  const handleMultipleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
 
-      fileArray.forEach((file) => {
-        const reader = new FileReader()
-        reader.onloadend = () => {
-          newPreviews.push(reader.result as string)
-          if (newPreviews.length === fileArray.length) {
-            setImagePreviews([...imagePreviews, ...newPreviews])
-          }
-        }
-        reader.readAsDataURL(file)
-      })
+    setUploadingMedia(true)
+    try {
+      const urls = await uploadService.uploadImages(files)
+      setImagePreviews(prev => [...prev, ...urls])
+      toast.success('Gallery images uploaded')
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to upload gallery images')
+    } finally {
+      setUploadingMedia(false)
+      e.target.value = ''
     }
   }
 
@@ -183,19 +183,44 @@ export default function SettingsPage() {
     setImagePreviews(newPreviews)
   }
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setLogoPreview(reader.result as string)
-      }
-      reader.readAsDataURL(file)
+    if (!file) return
+
+    setUploadingMedia(true)
+    try {
+      setLogoPreview(await uploadService.uploadImage(file))
+      toast.success('Logo uploaded')
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to upload logo')
+    } finally {
+      setUploadingMedia(false)
+      e.target.value = ''
+    }
+  }
+
+  const handleCardImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadingMedia(true)
+    try {
+      setCardImagePreview(await uploadService.uploadImage(file))
+      toast.success('Card image uploaded')
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to upload card image')
+    } finally {
+      setUploadingMedia(false)
+      e.target.value = ''
     }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (uploadingMedia) {
+      toast.error('Please wait for the media upload to finish')
+      return
+    }
     setLoading(true)
 
     try {
@@ -316,7 +341,7 @@ export default function SettingsPage() {
                       <span>Change Logo</span>
                       <input
                         type="file"
-                        accept="image/*"
+                        accept="image/jpeg,image/png,image/gif,image/webp"
                         className="hidden"
                         onChange={handleLogoUpload}
                       />
@@ -329,7 +354,7 @@ export default function SettingsPage() {
                     <span className="text-sm text-gray-500">Click to select your logo</span>
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/jpeg,image/png,image/gif,image/webp"
                       className="hidden"
                       onChange={handleLogoUpload}
                     />
@@ -366,18 +391,9 @@ export default function SettingsPage() {
                       <span>Change Card Image</span>
                       <input
                         type="file"
-                        accept="image/*"
+                        accept="image/jpeg,image/png,image/gif,image/webp"
                         className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0]
-                          if (file) {
-                            const reader = new FileReader()
-                            reader.onloadend = () => {
-                              setCardImagePreview(reader.result as string)
-                            }
-                            reader.readAsDataURL(file)
-                          }
-                        }}
+                        onChange={handleCardImageUpload}
                       />
                     </label>
                   </div>
@@ -388,18 +404,9 @@ export default function SettingsPage() {
                     <span className="text-sm text-gray-500">Click to select a single image for cards</span>
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/jpeg,image/png,image/gif,image/webp"
                       className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0]
-                        if (file) {
-                          const reader = new FileReader()
-                          reader.onloadend = () => {
-                            setCardImagePreview(reader.result as string)
-                          }
-                          reader.readAsDataURL(file)
-                        }
-                      }}
+                      onChange={handleCardImageUpload}
                     />
                   </label>
                 )}
@@ -439,7 +446,7 @@ export default function SettingsPage() {
                       <span>Add More Images</span>
                       <input
                         type="file"
-                        accept="image/*"
+                        accept="image/jpeg,image/png,image/gif,image/webp"
                         multiple
                         className="hidden"
                         onChange={handleMultipleImageUpload}
@@ -454,7 +461,7 @@ export default function SettingsPage() {
                     <span className="text-sm text-gray-500">Click to select multiple images</span>
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/jpeg,image/png,image/gif,image/webp"
                       multiple
                       className="hidden"
                       onChange={handleMultipleImageUpload}
@@ -555,10 +562,11 @@ export default function SettingsPage() {
             <div className="flex gap-4 pt-6">
               <Button
                 type="submit"
+                disabled={loading || uploadingMedia}
                 className="flex-1 bg-primary hover:bg-primary/90 text-white py-6 text-lg font-semibold"
                 
               >
-                {loading ? 'Saving...' : 'Save & Continue to Dashboard'}
+                {uploadingMedia ? 'Uploading media...' : loading ? 'Saving...' : 'Save & Continue to Dashboard'}
               </Button>
               <Button
                 type="button"

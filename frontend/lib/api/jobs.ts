@@ -10,7 +10,7 @@ export interface Job {
   description: string;
   responsibilities: string[];
   requirements: string[];
-  image?: string;
+  image?: string | null;
   isActive: boolean;
   nurseryName?: string | null;
   postedById?: string | null;

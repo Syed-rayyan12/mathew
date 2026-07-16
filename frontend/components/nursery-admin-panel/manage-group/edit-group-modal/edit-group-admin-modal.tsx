@@ -15,9 +15,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { adminService } from "@/lib/api/admin";
 import { Plus, X, Upload } from "lucide-react";
+import { adminUploadService } from "@/lib/api/upload";
 
 export default function EditGroupAdminModal({ open, group, onClose, onSuccess }: any) {
   const [loading, setLoading] = useState(false);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
   const [images, setImages] = useState<string[]>([]);
   const [logoPreview, setLogoPreview] = useState<string>("");
   const [cardImagePreview, setCardImagePreview] = useState<string>("");
@@ -110,49 +112,54 @@ export default function EditGroupAdminModal({ open, group, onClose, onSuccess }:
     setImages(newImages);
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setFormData({ ...formData, logo: base64String });
-        setLogoPreview(base64String);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+    setUploadingMedia(true);
+    try {
+      const url = await adminUploadService.uploadImage(file);
+      setFormData(prev => ({ ...prev, logo: url }));
+      setLogoPreview(url);
+      toast.success('Logo uploaded');
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to upload logo');
+    } finally {
+      setUploadingMedia(false);
+      e.target.value = '';
     }
   };
 
-  const handleCardImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCardImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setFormData({ ...formData, cardImage: base64String });
-        setCardImagePreview(base64String);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+    setUploadingMedia(true);
+    try {
+      const url = await adminUploadService.uploadImage(file);
+      setFormData(prev => ({ ...prev, cardImage: url }));
+      setCardImagePreview(url);
+      toast.success('Card image uploaded');
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to upload card image');
+    } finally {
+      setUploadingMedia(false);
+      e.target.value = '';
     }
   };
 
-  const handleMultipleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      const fileArray = Array.from(files);
-      const newPreviews: string[] = [];
-
-      fileArray.forEach((file) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          newPreviews.push(reader.result as string);
-          if (newPreviews.length === fileArray.length) {
-            setImagePreviews([...imagePreviews, ...newPreviews]);
-            setImages([...images, ...newPreviews]);
-          }
-        };
-        reader.readAsDataURL(file);
-      });
+  const handleMultipleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    setUploadingMedia(true);
+    try {
+      const urls = await adminUploadService.uploadImages(files);
+      setImagePreviews(prev => [...prev, ...urls]);
+      setImages(prev => [...prev, ...urls]);
+      toast.success('Gallery images uploaded');
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to upload gallery images');
+    } finally {
+      setUploadingMedia(false);
+      e.target.value = '';
     }
   };
 
@@ -173,6 +180,10 @@ export default function EditGroupAdminModal({ open, group, onClose, onSuccess }:
   };
 
   const handleSubmit = async () => {
+    if (uploadingMedia) {
+      toast.error('Please wait for the media upload to finish');
+      return;
+    }
     if (!formData.name || !formData.city) {
       toast.error('Please fill in group name and city');
       return;
@@ -486,16 +497,16 @@ export default function EditGroupAdminModal({ open, group, onClose, onSuccess }:
           <Button
             variant="outline"
             onClick={onClose}
-            disabled={loading}
+            disabled={loading || uploadingMedia}
           >
             Cancel
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={loading}
+            disabled={loading || uploadingMedia}
             className="bg-secondary hover:bg-secondary/90"
           >
-            {loading ? 'Updating...' : 'Update Group'}
+            {uploadingMedia ? 'Uploading media...' : loading ? 'Updating...' : 'Update Group'}
           </Button>
         </DialogFooter>
       </DialogContent>

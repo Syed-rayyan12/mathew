@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Loader2, X, Users, Search } from 'lucide-react'
+import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Loader2, X, Users, Search, Upload } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select'
 import { jobService, Job, JOB_TYPE_LABEL } from '@/lib/api/jobs'
 import { toast } from 'sonner'
+import { adminUploadService } from '@/lib/api/upload'
 
 const JOB_TYPES = [
   { value: 'FULL_TIME', label: 'Full-time' },
@@ -55,9 +56,28 @@ function JobFormModal({ initial, onClose, onSaved }: JobFormModalProps) {
       : { ...EMPTY_FORM }
   )
   const [saving, setSaving] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
 
   const set = (field: keyof FormState, value: string | boolean) =>
     setForm(prev => ({ ...prev, [field]: value }))
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const input = event.currentTarget
+    const file = input.files?.[0]
+    if (!file) return
+
+    setUploadingImage(true)
+    try {
+      const url = await adminUploadService.uploadImage(file)
+      set('image', url)
+      toast.success('Job image uploaded')
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to upload image')
+    } finally {
+      setUploadingImage(false)
+      input.value = ''
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -73,7 +93,7 @@ function JobFormModal({ initial, onClose, onSaved }: JobFormModalProps) {
           .split('\n')
           .map(s => s.trim())
           .filter(Boolean),
-        image: form.image.trim() || undefined,
+        image: form.image.trim() || null,
       }
 
       const res = isEdit
@@ -255,18 +275,39 @@ function JobFormModal({ initial, onClose, onSaved }: JobFormModalProps) {
             />
           </div>
 
-          {/* Image URL */}
           <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">
-              Image URL <span className="text-xs text-gray-400 font-normal">(optional)</span>
-            </label>
-            <input
-              type="url"
-              value={form.image}
-              onChange={e => set('image', e.target.value)}
-              placeholder="https://..."
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <label className="text-sm font-medium text-gray-700 block mb-1">Job Image <span className="text-xs text-gray-400 font-normal">(optional)</span></label>
+            <div className="rounded-lg border-2 border-dashed border-gray-200 p-3">
+              {form.image ? (
+                <div className="space-y-3">
+                  <div className="relative overflow-hidden rounded-lg bg-gray-100 aspect-[16/7]">
+                    <img src={form.image} alt="Job image preview" className="h-full w-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => set('image', '')}
+                      disabled={uploadingImage}
+                      aria-label="Remove job image"
+                      title="Remove image"
+                      className="absolute right-2 top-2 rounded-full bg-black/70 p-1.5 text-white hover:bg-black disabled:opacity-50"
+                    >
+                      <X size={15} />
+                    </button>
+                  </div>
+                  <label className={`inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium hover:bg-gray-50 ${uploadingImage ? 'pointer-events-none opacity-50' : ''}`}>
+                    {uploadingImage ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                    {uploadingImage ? 'Uploading...' : 'Replace image'}
+                    <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" onChange={handleImageUpload} disabled={uploadingImage} className="hidden" />
+                  </label>
+                </div>
+              ) : (
+                <label className={`flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-md text-center hover:bg-gray-50 ${uploadingImage ? 'pointer-events-none opacity-50' : ''}`}>
+                  {uploadingImage ? <Loader2 size={28} className="mb-2 animate-spin text-gray-400" /> : <Upload size={28} className="mb-2 text-gray-400" />}
+                  <span className="text-sm font-medium text-gray-700">{uploadingImage ? 'Uploading image...' : 'Choose an image from your computer'}</span>
+                  <span className="mt-1 text-xs text-gray-400">JPEG, PNG, GIF or WebP, up to 10 MB</span>
+                  <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" onChange={handleImageUpload} disabled={uploadingImage} className="hidden" />
+                </label>
+              )}
+            </div>
           </div>
 
           {/* Actions */}
@@ -280,7 +321,7 @@ function JobFormModal({ initial, onClose, onSaved }: JobFormModalProps) {
             </button>
             <button
               type="submit"
-              disabled={saving}
+              disabled={saving || uploadingImage}
               className="flex-1 py-2.5 bg-blue-500 text-white rounded-lg text-sm font-semibold hover:bg-blue-600 transition flex items-center justify-center gap-2 disabled:opacity-60"
             >
               {saving && <Loader2 size={15} className="animate-spin" />}

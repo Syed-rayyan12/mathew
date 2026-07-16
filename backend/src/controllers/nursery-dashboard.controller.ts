@@ -90,8 +90,6 @@ export const createNursery = async (
       pricingFeatures,
     } = req.body;
 
-    console.log('Creating nursery with data:', { name, city, userId });
-
     if (!name) {
       return res.status(400).json({
         success: false,
@@ -131,8 +129,6 @@ export const createNursery = async (
     // Generate custom short ID
     const nurseryId = await generateShortId('NUR');
 
-    console.log('Creating nursery with ID:', nurseryId);
-
     // Create nursery
     try {
       const newNursery = await prisma.nursery.create({
@@ -161,8 +157,6 @@ export const createNursery = async (
         },
       });
 
-      console.log('Nursery created successfully:', newNursery.id);
-
       // Create notification for new nursery creation
       try {
         await createNotification(
@@ -181,7 +175,6 @@ export const createNursery = async (
         data: newNursery,
       });
     } catch (createError: any) {
-      console.error('Error creating nursery:', createError);
       throw new Error(`Failed to create nursery: ${createError.message}`);
     }
   } catch (error) {

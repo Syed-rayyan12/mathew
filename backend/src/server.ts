@@ -59,7 +59,6 @@ const PORT = config.port;
 async function startServer() {
   try {
     await prisma.$connect();
-    console.log('✅ Database connected successfully');
   } catch (error) {
     // Log but do NOT exit — let the server start so Railway healthcheck passes.
     // Individual requests that need DB will fail gracefully via Prisma errors.
@@ -67,10 +66,7 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`📚 Environment: ${config.nodeEnv}`);
-    console.log(`🌐 CORS allowlist: ${config.frontendUrls.join(', ')} (+ *.vercel.app previews)`);
-    console.log(`🔑 STRIPE_SECRET_KEY set: ${!!config.stripe.secretKey}`);
+    console.log(`Server running on port ${PORT} (${config.nodeEnv})`);
   });
 }
 

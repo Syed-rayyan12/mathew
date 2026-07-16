@@ -90,7 +90,6 @@ export const uploadSingleFile = async (
       data: { url },
     });
   } catch (error) {
-    console.error('Upload error:', error);
     next(error);
   }
 };
@@ -119,7 +118,6 @@ export const uploadMultipleFiles = async (
       data: { urls },
     });
   } catch (error) {
-    console.error('Upload error:', error);
     next(error);
   }
 };

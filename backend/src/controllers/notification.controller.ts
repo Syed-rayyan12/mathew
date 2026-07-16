@@ -10,8 +10,6 @@ export const createNotification = async (
   entityId: string
 ) => {
   try {
-    console.log('🔔 Creating notification:', { title, message, entity, entityId });
-    
     const notification = await prisma.notification.create({
       data: {
         title,
@@ -21,10 +19,8 @@ export const createNotification = async (
       },
     });
     
-    console.log('✅ Notification created successfully:', notification.id);
     return notification;
   } catch (error) {
-    console.error('❌ Error creating notification:', error);
     throw error;
   }
 };
@@ -45,8 +41,6 @@ export const getAllNotifications = async (
       where.isRead = isRead === 'true';
     }
 
-    console.log('📋 Fetching notifications:', { page, limit, isRead, skip, where });
-
     const [notifications, total] = await Promise.all([
       prisma.notification.findMany({
         where,
@@ -56,8 +50,6 @@ export const getAllNotifications = async (
       }),
       prisma.notification.count({ where }),
     ]);
-
-    console.log(`✅ Found ${notifications.length} notifications out of ${total} total`);
 
     res.json({
       success: true,
@@ -85,8 +77,6 @@ export const getRecentNotifications = async (
   try {
     const { limit = 10 } = req.query;
 
-    console.log('📬 Fetching recent notifications:', { limit });
-
     const notifications = await prisma.notification.findMany({
       take: Number(limit),
       orderBy: { createdAt: 'desc' },
@@ -96,8 +86,6 @@ export const getRecentNotifications = async (
     const unreadCount = await prisma.notification.count({
       where: { isRead: false },
     });
-
-    console.log(`✅ Found ${notifications.length} recent notifications, ${unreadCount} unread`);
 
     res.json({
       success: true,
@@ -344,9 +332,6 @@ export const getNurseryNotifications = async (
       select: { id: true },
     });
     const nurseryIds = ownedNurseries.map((n) => n.id);
-
-    console.log('🔔 getNurseryNotifications → userId:', userId);
-    console.log('🔔 getNurseryNotifications → nurseryIds:', nurseryIds);
 
     if (nurseryIds.length === 0) {
       return res.json({

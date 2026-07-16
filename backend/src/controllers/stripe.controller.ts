@@ -148,7 +148,6 @@ export const stripeWebhook = async (
 
     // Only process if payment was successful
     if (!['paid', 'no_payment_required'].includes(session.payment_status)) {
-      console.log('Payment not completed, skipping account creation');
       return res.json({ received: true });
     }
 
@@ -183,7 +182,6 @@ export const stripeWebhook = async (
           },
         });
 
-        console.log(`✅ New nursery group created for existing owner ${meta.email} after payment`);
       } else {
         // New user — check idempotency first
         const alreadyExists = await prisma.user.findUnique({
@@ -191,7 +189,6 @@ export const stripeWebhook = async (
         });
 
         if (alreadyExists) {
-          console.log(`User ${meta.email} already exists, skipping creation`);
           return res.json({ received: true });
         }
 
@@ -235,7 +232,6 @@ export const stripeWebhook = async (
         });
       });
 
-        console.log(`✅ Nursery owner account created for ${meta.email} after payment`);
       }
     } catch (err) {
       console.error('❌ Error creating nursery account from webhook:', err);
@@ -259,9 +255,6 @@ export const createUpgradeSession = async (
   try {
     const authReq = req as any;
     const userId: string = authReq.user?.userId;
-
-    console.log('🔼 createUpgradeSession — userId from token:', userId);
-    console.log('🔼 createUpgradeSession — Authorization header:', req.headers.authorization ? 'present' : 'MISSING');
 
     if (!userId) {
       return res.status(401).json({ success: false, message: 'Unauthorised.' });
@@ -373,7 +366,6 @@ export const verifyUpgradeSession = async (
       data: { plan: meta.plan || 'platinum' },
     });
 
-    console.log(`✅ Plan upgraded to ${meta.plan} for user ${meta.userId}`);
     return res.json({ success: true, data: { plan: meta.plan } });
   } catch (error: any) {
     console.error('❌ verifyUpgradeSession error:', error?.message || error);
@@ -461,7 +453,6 @@ export const verifySession = async (
       });
     });
 
-    console.log(`✅ Account created via session verification for ${meta.email}`);
     return res.json({ success: true, alreadyExists: false });
   } catch (error: any) {
     console.error('❌ verifySession error:', error?.message || error);

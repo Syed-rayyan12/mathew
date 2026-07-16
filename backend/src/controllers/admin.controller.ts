@@ -127,17 +127,6 @@ export const getAllGroups = async (
       const townValue = group.town || nurseryTown;
       const cityValue = group.city || nurseryCity;
       
-      console.log(`📋 Group ${group.name}:`, {
-        groupTown: group.town,
-        nurseryTown: nurseryTown,
-        finalTown: townValue,
-        groupCity: group.city,
-        nurseryCity: nurseryCity,
-        finalCity: cityValue,
-        totalNurseries: group.nurseries?.length,
-        nurseriesWithTown: group.nurseries?.filter((n: any) => n.town).length
-      });
-      
       return {
         id: group.id,
         name: group.name,
@@ -757,8 +746,6 @@ export const getAllReviews = async (
       orderBy[sortBy as string] = sortOrder as string;
     }
 
-    console.log('📋 Fetching reviews with filters:', { status, searchQuery, sortBy, sortOrder, page, limit });
-
     const [reviews, totalCount] = await Promise.all([
       prisma.review.findMany({
         where: whereClause,
@@ -785,8 +772,6 @@ export const getAllReviews = async (
       }),
       prisma.review.count({ where: whereClause }),
     ]);
-
-    console.log(`✅ Found ${reviews.length} reviews out of ${totalCount} total`);
 
     const formattedReviews = reviews.map((review: any) => ({
       id: review.id,

@@ -61,11 +61,6 @@ export const submitReview = async (
     // Get userId if user is authenticated (optional)
     const userId = req.user?.userId || null;
 
-    console.log('🔍 Review Submission Debug:');
-    console.log('  - Auth Header:', req.headers.authorization ? 'Present' : 'Missing');
-    console.log('  - User Object:', req.user);
-    console.log('  - Extracted UserId:', userId);
-
     // Check if nursery exists
     const nursery = await prisma.nursery.findUnique({
       where: { id: nurseryId },
@@ -77,7 +72,6 @@ export const submitReview = async (
 
     // Generate custom short ID
     const reviewId = await generateShortId('REV');
-    console.log('📝 Creating new review with ID:', reviewId, 'for nursery:', nurseryId);
 
     // Create review
     const review = await prisma.review.create({
@@ -121,40 +115,25 @@ export const submitReview = async (
       },
     });
 
-    console.log(`📊 Found ${reviews.length} approved reviews for nursery ${nurseryId}`);
-
     // Update nursery review count only (rating is calculated from reviews)
-    const updateResult = await prisma.nursery.update({
+    await prisma.nursery.update({
       where: { id: nurseryId },
       data: {
         reviewCount: reviews.length,
       },
     });
 
-    console.log(`✅ Updated review count for nursery ${nurseryId}: ${updateResult.reviewCount}`);
-
     // Create notification for new review — entityId = nurseryId so nursery dashboard can filter it
     try {
-      const notification = await createNotification(
+      await createNotification(
         'New Review Received',
         `${firstName} ${lastName} has submitted a review for "${nursery.name}" with ${overallRating} star(s)`,
         'REVIEW',
         nurseryId
       );
-      console.log(`🔔 Notification created with ID: ${notification.id}`);
     } catch (notificationError) {
       console.error('❌ Failed to create notification:', notificationError);
     }
-
-    console.log(`✅ Review created successfully:`, {
-      id: review.id,
-      nurseryId: review.nurseryId,
-      firstName: review.firstName,
-      lastName: review.lastName,
-      rating: review.overallRating,
-      isApproved: review.isApproved,
-      createdAt: review.createdAt,
-    });
     
     res.status(201).json({
       success: true,
@@ -231,9 +210,6 @@ export const getUserReviews = async (
   try {
     const userId = req.user!.userId;
     const userEmail = req.user!.email;
-    const userRole = req.user!.role;
-
-    console.log('🔍 Fetching reviews for user:', { userId, userEmail, userRole });
 
     // Find reviews by userId OR by email (for reviews submitted before userId was saved)
     const reviews = await prisma.review.findMany({

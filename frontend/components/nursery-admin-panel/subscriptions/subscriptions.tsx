@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Plus, RefreshCw } from 'lucide-react';
+import { Download, ExternalLink, Plus, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { adminService, AdminCoupon, AdminSubscription } from '@/lib/api/admin';
+import { adminService, AdminCoupon, AdminPaymentRecord, AdminSubscription } from '@/lib/api/admin';
 import { toast } from 'sonner';
 
 const TAB_OPTIONS = [
@@ -27,6 +27,12 @@ const STATUS_STYLES: Record<AdminSubscription['status'], string> = {
   suspended: 'bg-red-100 text-red-700',
 };
 
+const PAYMENT_STATUS_STYLES: Record<AdminPaymentRecord['paymentStatus'], string> = {
+  paid: 'bg-green-100 text-green-700',
+  unpaid: 'bg-red-100 text-red-700',
+  no_payment_required: 'bg-blue-100 text-blue-700',
+};
+
 const PLAN_LABELS: Record<string, string> = {
   standard: 'Standard',
   platinum: 'Platinum',
@@ -40,6 +46,18 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
+function formatCurrency(amount: number, currency: string) {
+  return new Intl.NumberFormat('en-GB', {
+    style: 'currency',
+    currency: currency.toUpperCase(),
+  }).format(amount / 100);
+}
+
+function paymentStatusLabel(status: AdminPaymentRecord['paymentStatus']) {
+  if (status === 'no_payment_required') return 'Free';
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
 function namesOrFallback(items: Array<{ id: string; name: string }>, fallback: string) {
   if (items.length === 0) return fallback;
   return items.map((item) => item.name).join(', ');
@@ -49,9 +67,12 @@ export default function Subscriptions() {
   const [tab, setTab] = useState('subscriptions');
   const [subscriptions, setSubscriptions] = useState<AdminSubscription[]>([]);
   const [coupons, setCoupons] = useState<AdminCoupon[]>([]);
+  const [payments, setPayments] = useState<AdminPaymentRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [couponsLoading, setCouponsLoading] = useState(true);
+  const [paymentsLoading, setPaymentsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [paymentsError, setPaymentsError] = useState<string | null>(null);
   const [couponDialogOpen, setCouponDialogOpen] = useState(false);
   const [savingCoupon, setSavingCoupon] = useState(false);
   const [couponForm, setCouponForm] = useState({
@@ -92,10 +113,27 @@ export default function Subscriptions() {
     }
   }, []);
 
+  const loadPayments = useCallback(async () => {
+    setPaymentsLoading(true);
+    setPaymentsError(null);
+    try {
+      const response = await adminService.getInvoiceHistory();
+      if (!response.success || !response.data) {
+        throw new Error(response.message || 'Failed to load invoice history');
+      }
+      setPayments(response.data);
+    } catch (err) {
+      setPaymentsError(err instanceof Error ? err.message : 'Failed to load invoice history');
+    } finally {
+      setPaymentsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadSubscriptions();
     loadCoupons();
-  }, [loadCoupons, loadSubscriptions]);
+    loadPayments();
+  }, [loadCoupons, loadPayments, loadSubscriptions]);
 
   const togglePlan = (plan: 'standard' | 'platinum') => {
     setCouponForm((current) => ({
@@ -165,8 +203,8 @@ export default function Subscriptions() {
           <p className="text-muted-foreground">Nursery owner plans and account status</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => { loadSubscriptions(); loadCoupons(); }} disabled={loading || couponsLoading}>
-            <RefreshCw className={`h-4 w-4 ${loading || couponsLoading ? 'animate-spin' : ''}`} />
+          <Button variant="outline" onClick={() => { loadSubscriptions(); loadCoupons(); loadPayments(); }} disabled={loading || couponsLoading || paymentsLoading}>
+            <RefreshCw className={`h-4 w-4 ${loading || couponsLoading || paymentsLoading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
           <Button onClick={() => setCouponDialogOpen(true)}>
@@ -267,8 +305,86 @@ export default function Subscriptions() {
       {tab === 'invoices' && (
         <Card>
           <CardHeader><CardTitle>Invoice History</CardTitle></CardHeader>
-          <CardContent className="py-12 text-center text-muted-foreground">
-            Invoice records are not stored by the application. Payment history remains available in Stripe.
+          <CardContent>
+            {paymentsError ? (
+              <div className="py-10 text-center text-red-600">{paymentsError}</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[1100px]">
+                  <thead>
+                    <tr className="h-14 border-2 border-gray-300 bg-[#F8F8F8]">
+                      <th className="p-3 text-left">Date</th>
+                      <th className="p-3 text-left">Customer</th>
+                      <th className="p-3 text-left">Plan</th>
+                      <th className="p-3 text-left">Billing</th>
+                      <th className="p-3 text-right">Subtotal</th>
+                      <th className="p-3 text-right">Discount</th>
+                      <th className="p-3 text-right">Paid</th>
+                      <th className="p-3 text-left">Status</th>
+                      <th className="p-3 text-left">Documents</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paymentsLoading ? (
+                      <tr><td colSpan={9} className="py-12 text-center text-muted-foreground">Loading payment history...</td></tr>
+                    ) : payments.length === 0 ? (
+                      <tr><td colSpan={9} className="py-12 text-center text-muted-foreground">No completed Stripe payments found.</td></tr>
+                    ) : payments.map((payment) => (
+                      <tr key={payment.id} className="border-b hover:bg-gray-50">
+                        <td className="px-3 py-5 text-sm text-muted-foreground">
+                          <p>{formatDate(payment.createdAt)}</p>
+                          <p className="mt-1 max-w-32 truncate font-mono text-xs" title={payment.invoiceNumber || payment.id}>
+                            {payment.invoiceNumber || payment.id}
+                          </p>
+                        </td>
+                        <td className="px-3 py-5">
+                          <p className="font-semibold">{payment.customerName || 'Nursery owner'}</p>
+                          <p className="text-sm text-muted-foreground">{payment.customerEmail || 'Email unavailable'}</p>
+                        </td>
+                        <td className="px-3 py-5 font-medium">{PLAN_LABELS[payment.plan] || payment.plan}</td>
+                        <td className="px-3 py-5 capitalize">{payment.billingPeriod || 'Unknown'}</td>
+                        <td className="px-3 py-5 text-right">{formatCurrency(payment.subtotal, payment.currency)}</td>
+                        <td className="px-3 py-5 text-right">{formatCurrency(payment.discount, payment.currency)}</td>
+                        <td className="px-3 py-5 text-right font-semibold">{formatCurrency(payment.total, payment.currency)}</td>
+                        <td className="px-3 py-5">
+                          <Badge className={PAYMENT_STATUS_STYLES[payment.paymentStatus]}>
+                            {paymentStatusLabel(payment.paymentStatus)}
+                          </Badge>
+                        </td>
+                        <td className="px-3 py-5">
+                          <div className="flex flex-wrap gap-2">
+                            {payment.hostedInvoiceUrl && (
+                              <Button asChild variant="outline" size="sm">
+                                <a href={payment.hostedInvoiceUrl} target="_blank" rel="noreferrer">
+                                  <ExternalLink className="h-4 w-4" /> Invoice
+                                </a>
+                              </Button>
+                            )}
+                            {payment.invoicePdf && (
+                              <Button asChild variant="outline" size="sm">
+                                <a href={payment.invoicePdf} target="_blank" rel="noreferrer">
+                                  <Download className="h-4 w-4" /> PDF
+                                </a>
+                              </Button>
+                            )}
+                            {!payment.hostedInvoiceUrl && payment.receiptUrl && (
+                              <Button asChild variant="outline" size="sm">
+                                <a href={payment.receiptUrl} target="_blank" rel="noreferrer">
+                                  <ExternalLink className="h-4 w-4" /> Receipt
+                                </a>
+                              </Button>
+                            )}
+                            {!payment.hostedInvoiceUrl && !payment.invoicePdf && !payment.receiptUrl && (
+                              <span className="text-sm text-muted-foreground">Unavailable</span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

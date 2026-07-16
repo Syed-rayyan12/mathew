@@ -31,6 +31,24 @@ export interface AdminCoupon {
   createdAt: string;
 }
 
+export interface AdminPaymentRecord {
+  id: string;
+  customerName?: string | null;
+  customerEmail?: string | null;
+  plan: 'standard' | 'platinum';
+  billingPeriod?: 'monthly' | 'annual' | null;
+  currency: string;
+  subtotal: number;
+  discount: number;
+  total: number;
+  paymentStatus: 'paid' | 'unpaid' | 'no_payment_required';
+  createdAt: string;
+  invoiceNumber?: string | null;
+  hostedInvoiceUrl?: string | null;
+  invoicePdf?: string | null;
+  receiptUrl?: string | null;
+}
+
 export interface AdminGroup {
   id: string;
   name: string;
@@ -224,6 +242,10 @@ export const adminService = {
       '/admin/subscriptions',
       true
     );
+  },
+
+  getInvoiceHistory: async () => {
+    return adminApiClient.get<AdminPaymentRecord[]>('/admin/invoices', true);
   },
 
   getCoupons: async () => {

@@ -24,6 +24,7 @@ import {
 } from '../controllers/admin.controller';
 import { authenticate, authorize, authRateLimiter } from '../middleware';
 import { createCoupon, deactivateCoupon, listCoupons } from '../controllers/coupon.controller';
+import { listPaymentHistory } from '../controllers/payment-history.controller';
 
 const router = Router();
 
@@ -41,6 +42,7 @@ router.get('/reviews', getAllReviews);  // All reviews
 router.get('/articles', getAllArticles);  // All articles
 router.get('/stats', getDashboardStats);
 router.get('/subscriptions', getSubscriptions);
+router.get('/invoices', listPaymentHistory);
 router.get('/coupons', listCoupons);
 router.post('/coupons', createCoupon);
 router.patch('/coupons/:id/deactivate', deactivateCoupon);

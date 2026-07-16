@@ -68,6 +68,7 @@ export const createCheckoutSession = async (
       payment_method_types: ['card'],
       mode: 'payment',
       allow_promotion_codes: true,
+      invoice_creation: { enabled: true },
       customer_email: email,
       line_items: [
         {
@@ -89,6 +90,7 @@ export const createCheckoutSession = async (
         town: town || '',
         hashedPassword,
         plan: plan || 'standard',
+        billingPeriod: billing,
         existingUserId: existingUser?.id || '',
       },
       custom_text: {
@@ -293,6 +295,7 @@ export const createUpgradeSession = async (
       payment_method_types: ['card'],
       mode: 'payment',
       allow_promotion_codes: true,
+      invoice_creation: { enabled: true },
       customer_email: user.email,
       line_items: [
         {
@@ -308,6 +311,7 @@ export const createUpgradeSession = async (
         upgrade: 'true',
         userId,
         plan,
+        billingPeriod: billing,
       },
       custom_text: {
         submit: {

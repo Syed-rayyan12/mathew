@@ -262,7 +262,7 @@ export default function NurseryGroupPage({ params }: { params: Promise<{ slug: s
                       <span className="text-xs md:text-sm ml-2 text-foreground">{nursery.reviewCount || 0} reviews</span>
                     </div>
 
-                    <Link href={`/profile?slug=${nursery.slug}`}>
+                    <Link href={`/products/${nursery.slug}`}>
                       <div className='mt-2 md:mt-4 flex items-center pt-2'>
                         <Button className='text-secondary bg-transparent hover:bg-transparent cursor-pointer font-heading text-base md:text-[20px] uppercase px-2'>View Nursery</Button>
                         <ArrowRight className='text-secondary size-5' />
@@ -286,4 +286,4 @@ export default function NurseryGroupPage({ params }: { params: Promise<{ slug: s
       <Footer />
     </>
   );
-} 
+}

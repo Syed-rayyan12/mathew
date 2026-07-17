@@ -108,6 +108,9 @@ export const getAllGroups = async (
             town: true,
             city: true,
           },
+          // Only need one nursery for the town/city fallback — prefer one with a town set
+          orderBy: { town: { sort: 'asc', nulls: 'last' } },
+          take: 1,
         },
         _count: {
           select: {
@@ -980,37 +983,34 @@ export const getMonthlyUserStats = async (
     // Get users from last N months
     const startDate = new Date(now.getFullYear(), now.getMonth() - monthsCount + 1, 1);
 
-    const users = await prisma.user.findMany({
-      where: {
-        createdAt: {
-          gte: startDate,
-        },
-      },
-      select: {
-        createdAt: true,
-      },
-    });
+    // Aggregate per month in the DB instead of loading every user row
+    const rows = await prisma.$queryRaw<{ month: Date; count: number }[]>`
+      SELECT date_trunc('month', "createdAt") AS month, COUNT(*)::int AS count
+      FROM users
+      WHERE "createdAt" >= ${startDate}
+      GROUP BY 1
+    `;
 
-    // Group by month
     const monthlyData: { [key: string]: number } = {};
-    
+
     for (let i = monthsCount - 1; i >= 0; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthKey = date.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short' 
+      const monthKey = date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short'
       });
       monthlyData[monthKey] = 0;
     }
 
-    // Count users per month
-    users.forEach((user: any) => {
-      const monthKey = new Date(user.createdAt).toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short' 
+    let totalUsers = 0;
+    rows.forEach((row) => {
+      const monthKey = new Date(row.month).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short'
       });
+      totalUsers += row.count;
       if (monthlyData[monthKey] !== undefined) {
-        monthlyData[monthKey]++;
+        monthlyData[monthKey] += row.count;
       }
     });
 
@@ -1024,7 +1024,7 @@ export const getMonthlyUserStats = async (
       success: true,
       data: {
         monthlyUsers: chartData,
-        totalUsers: users.length,
+        totalUsers,
       },
     });
   } catch (error) {
@@ -1110,19 +1110,16 @@ export const getMonthlyReviewStats = async (
     // Get reviews from last N months
     const startDate = new Date(now.getFullYear(), now.getMonth() - monthsCount + 1, 1);
 
-    const reviews = await prisma.review.findMany({
-      where: {
-        createdAt: {
-          gte: startDate,
-        },
-      },
-      select: {
-        createdAt: true,
-        isApproved: true,
-      },
-    });
+    // Aggregate per month in the DB instead of loading every review row
+    const rows = await prisma.$queryRaw<{ month: Date; total: number; approved: number }[]>`
+      SELECT date_trunc('month', "createdAt") AS month,
+             COUNT(*)::int AS total,
+             COUNT(*) FILTER (WHERE "isApproved")::int AS approved
+      FROM reviews
+      WHERE "createdAt" >= ${startDate}
+      GROUP BY 1
+    `;
 
-    // Group by month
     const monthlyData: {
       [key: string]: {
         total: number;
@@ -1139,17 +1136,16 @@ export const getMonthlyReviewStats = async (
       monthlyData[monthKey] = { total: 0, approved: 0 };
     }
 
-    // Count reviews per month
-    reviews.forEach((review: any) => {
-      const monthKey = new Date(review.createdAt).toLocaleDateString('en-US', {
+    let totalReviews = 0;
+    rows.forEach((row) => {
+      const monthKey = new Date(row.month).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short'
       });
+      totalReviews += row.total;
       if (monthlyData[monthKey] !== undefined) {
-        monthlyData[monthKey].total++;
-        if (review.isApproved) {
-          monthlyData[monthKey].approved++;
-        }
+        monthlyData[monthKey].total += row.total;
+        monthlyData[monthKey].approved += row.approved;
       }
     });
 
@@ -1165,8 +1161,8 @@ export const getMonthlyReviewStats = async (
       success: true,
       data: {
         monthlyReviews: chartData,
-        totalReviews: reviews.length,
-        totalApproved: reviews.filter((r: any) => r.isApproved).length,
+        totalReviews,
+        totalApproved: rows.reduce((sum, r) => sum + r.approved, 0),
       },
     });
   } catch (error) {

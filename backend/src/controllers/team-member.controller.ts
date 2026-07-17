@@ -4,9 +4,9 @@ import { AuthRequest } from '../middleware';
 import { UnauthorizedError, NotFoundError } from '../utils';
 
 async function generateTeamMemberId(): Promise<string> {
-  // Find the highest existing tm### ID
+  // Find the highest existing tm### ID — all ids are generated here so no
+  // startsWith filter is needed (lets Postgres use the PK index directly)
   const last = await (prisma as any).teamMember.findFirst({
-    where: { id: { startsWith: 'tm' } },
     orderBy: { id: 'desc' },
     select: { id: true },
   });

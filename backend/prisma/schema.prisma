@@ -106,6 +106,7 @@ model Nursery {
   @@index([town])
   @@index([isApproved, groupId])
   @@index([isApproved, createdAt])
+  @@index([ownerId])
 }
 
 model Review {
@@ -195,6 +196,8 @@ model Article {
   updatedAt       DateTime        @updatedAt
 
   @@map("articles")
+  @@index([category, isPublished, publishedAt])
+  @@index([isPublished, publishedAt])
 }
 
 model ContactSubmission {
@@ -257,6 +260,10 @@ model Notification {
   createdAt DateTime @default(now())
 
   @@map("notifications")
+  @@index([createdAt])
+  @@index([isRead])
+  @@index([entity, entityId, createdAt])
+  @@index([entity, entityId, isRead])
 }
 
 enum NotificationEntity {

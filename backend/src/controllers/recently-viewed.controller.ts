@@ -57,6 +57,11 @@ export const getRecentlyViewed = async (
       take: 10,
     });
 
+    if (viewed.length === 0) {
+      res.json({ success: true, data: [] });
+      return;
+    }
+
     // Aggregate averages in the DB, scoped to the viewed nurseries only
     const avgRatings = await db.review.groupBy({
       by: ['nurseryId'],

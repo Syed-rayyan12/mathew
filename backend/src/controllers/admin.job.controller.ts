@@ -75,13 +75,21 @@ export const deleteJob = async (req: Request, res: Response, next: NextFunction)
 // ── Admin: get all jobs (including inactive) ──────────────────────────────────
 export const getAllJobsAdmin = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const jobs = await prisma.job.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: {
-        _count: { select: { applications: true } },
-      },
-    });
-    res.json({ success: true, data: jobs });
+    const { page = 1, limit = 200 } = req.query;
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const [jobs, total] = await Promise.all([
+      prisma.job.findMany({
+        skip,
+        take: Number(limit),
+        orderBy: { createdAt: 'desc' },
+        include: {
+          _count: { select: { applications: true } },
+        },
+      }),
+      prisma.job.count(),
+    ]);
+    res.json({ success: true, data: jobs, count: total });
   } catch (error) {
     next(error);
   }
@@ -90,23 +98,30 @@ export const getAllJobsAdmin = async (req: Request, res: Response, next: NextFun
 // ── Admin: get all applicants (optionally filtered by jobId) ──────────────────
 export const getApplications = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { jobId, status } = req.query;
+    const { jobId, status, page = 1, limit = 500 } = req.query;
 
     const where: any = {};
     if (jobId) where.jobId = jobId as string;
     if (status) where.status = status as string;
 
-    const applications = await prisma.jobApplication.findMany({
-      where,
-      include: {
-        job: {
-          select: { id: true, title: true, department: true, location: true },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    const skip = (Number(page) - 1) * Number(limit);
 
-    res.json({ success: true, data: applications, count: applications.length });
+    const [applications, total] = await Promise.all([
+      prisma.jobApplication.findMany({
+        where,
+        skip,
+        take: Number(limit),
+        include: {
+          job: {
+            select: { id: true, title: true, department: true, location: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.jobApplication.count({ where }),
+    ]);
+
+    res.json({ success: true, data: applications, count: total });
   } catch (error) {
     next(error);
   }

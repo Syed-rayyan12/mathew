@@ -33,6 +33,11 @@ export const getMyShortlist = async (
       orderBy: { createdAt: 'desc' },
     });
 
+    if (shortlist.length === 0) {
+      res.json({ success: true, data: [] });
+      return;
+    }
+
     // Aggregate averages in the DB, scoped to shortlisted nurseries only
     const avgRatings = await prisma.review.groupBy({
       by: ['nurseryId'],

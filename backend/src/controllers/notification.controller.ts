@@ -77,15 +77,15 @@ export const getRecentNotifications = async (
   try {
     const { limit = 10 } = req.query;
 
-    const notifications = await prisma.notification.findMany({
-      take: Number(limit),
-      orderBy: { createdAt: 'desc' },
-    });
-
-    // Get unread count
-    const unreadCount = await prisma.notification.count({
-      where: { isRead: false },
-    });
+    const [notifications, unreadCount] = await Promise.all([
+      prisma.notification.findMany({
+        take: Number(limit),
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.notification.count({
+        where: { isRead: false },
+      }),
+    ]);
 
     res.json({
       success: true,

@@ -104,23 +104,14 @@ export const submitReview = async (
       },
     });
 
-    // Update nursery rating and review count
-    const reviews = await prisma.review.findMany({
-      where: {
-        nurseryId,
-        isApproved: true,
-      },
-      select: {
-        overallRating: true,
-      },
+    // Update nursery review count only (rating is calculated from reviews)
+    const reviewCount = await prisma.review.count({
+      where: { nurseryId, isApproved: true },
     });
 
-    // Update nursery review count only (rating is calculated from reviews)
     await prisma.nursery.update({
       where: { id: nurseryId },
-      data: {
-        reviewCount: reviews.length,
-      },
+      data: { reviewCount },
     });
 
     // Create notification for new review — entityId = nurseryId so nursery dashboard can filter it
@@ -257,15 +248,13 @@ export const approveReview = async (
     });
 
     // Update nursery review count only
-    const reviews = await prisma.review.findMany({
+    const reviewCount = await prisma.review.count({
       where: { nurseryId: review.nurseryId, isApproved: true },
     });
 
     await prisma.nursery.update({
       where: { id: review.nurseryId },
-      data: {
-        reviewCount: reviews.length,
-      },
+      data: { reviewCount },
     });
 
     // Notify the parent that their review has been published
@@ -314,9 +303,9 @@ export const unapproveReview = async (
     });
 
     // Update nursery review count - exclude unapproved reviews
-    const reviews = await prisma.review.findMany({
-      where: { 
-        nurseryId: review.nurseryId, 
+    const reviewCount = await prisma.review.count({
+      where: {
+        nurseryId: review.nurseryId,
         isApproved: true,
         isRejected: false
       },
@@ -324,9 +313,7 @@ export const unapproveReview = async (
 
     await prisma.nursery.update({
       where: { id: review.nurseryId },
-      data: {
-        reviewCount: reviews.length,
-      },
+      data: { reviewCount },
     });
 
     res.json({
@@ -366,9 +353,9 @@ export const rejectReview = async (
     });
 
     // Update nursery review count - exclude rejected reviews
-    const reviews = await prisma.review.findMany({
-      where: { 
-        nurseryId: review.nurseryId, 
+    const reviewCount = await prisma.review.count({
+      where: {
+        nurseryId: review.nurseryId,
         isApproved: true,
         isRejected: false
       },
@@ -376,9 +363,7 @@ export const rejectReview = async (
 
     await prisma.nursery.update({
       where: { id: review.nurseryId },
-      data: {
-        reviewCount: reviews.length,
-      },
+      data: { reviewCount },
     });
 
     // Notify the parent that their review has been rejected
@@ -429,9 +414,9 @@ export const unrejectReview = async (
     });
 
     // Update nursery review count
-    const reviews = await prisma.review.findMany({
-      where: { 
-        nurseryId: review.nurseryId, 
+    const reviewCount = await prisma.review.count({
+      where: {
+        nurseryId: review.nurseryId,
         isApproved: true,
         isRejected: false
       },
@@ -439,9 +424,7 @@ export const unrejectReview = async (
 
     await prisma.nursery.update({
       where: { id: review.nurseryId },
-      data: {
-        reviewCount: reviews.length,
-      },
+      data: { reviewCount },
     });
 
     res.json({

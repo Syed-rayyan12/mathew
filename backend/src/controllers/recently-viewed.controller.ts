@@ -50,10 +50,6 @@ export const getRecentlyViewed = async (
             town: true,
             cardImage: true,
             reviewCount: true,
-            reviews: {
-              where: { isApproved: true },
-              select: { overallRating: true },
-            },
           },
         },
       },
@@ -61,16 +57,25 @@ export const getRecentlyViewed = async (
       take: 10,
     });
 
-    // Compute average rating
-    const data = viewed.map((entry: any) => {
-      const reviews = entry.nursery.reviews as { overallRating: number }[];
-      const avgRating =
-        reviews.length > 0
-          ? Math.round((reviews.reduce((s: number, r: { overallRating: number }) => s + r.overallRating, 0) / reviews.length) * 10) / 10
-          : 0;
-      const { reviews: _r, ...nursery } = entry.nursery;
-      return { ...entry, nursery: { ...nursery, averageRating: avgRating } };
+    // Aggregate averages in the DB, scoped to the viewed nurseries only
+    const avgRatings = await db.review.groupBy({
+      by: ['nurseryId'],
+      where: {
+        nurseryId: { in: viewed.map((e: any) => e.nurseryId) },
+        isApproved: true,
+        isRejected: false,
+      },
+      _avg: { overallRating: true },
     });
+    const ratingMap = new Map(avgRatings.map((r: any) => [r.nurseryId, r._avg.overallRating ?? 0]));
+
+    const data = viewed.map((entry: any) => ({
+      ...entry,
+      nursery: {
+        ...entry.nursery,
+        averageRating: Math.round(((ratingMap.get(entry.nurseryId) as number) ?? 0) * 10) / 10,
+      },
+    }));
 
     res.json({ success: true, data });
   } catch (error) {

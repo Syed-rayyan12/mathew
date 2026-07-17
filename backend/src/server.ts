@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import { config } from './config';
 import routes from './routes';
@@ -11,6 +12,9 @@ const prisma = new PrismaClient();
 
 // Behind Railway's proxy — needed so rate limiting keys on real client IPs
 app.set('trust proxy', 1);
+
+// Gzip JSON responses — large nursery lists shrink significantly over the wire
+app.use(compression());
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 // Allowlist from FRONTEND_URLS (comma-separated). Requests without an Origin

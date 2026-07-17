@@ -33,6 +33,11 @@ export const shortlistService = {
     return apiClient.delete<void>(`/shortlist/${nurseryId}`, true);
   },
 
+  // Get all shortlisted nursery ids in one call (for batch status checks)
+  getMyShortlistIds: (): Promise<ApiResponse<{ nurseryIds: string[] }>> => {
+    return apiClient.get<{ nurseryIds: string[] }>('/shortlist/ids', true);
+  },
+
   // Check if a nursery is shortlisted
   checkShortlisted: (nurseryId: string): Promise<ApiResponse<{ isShortlisted: boolean }>> => {
     return apiClient.get<{ isShortlisted: boolean }>(`/shortlist/check/${nurseryId}`, true);

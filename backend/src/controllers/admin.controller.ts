@@ -231,23 +231,27 @@ export const getAllNurseriesAdmin = async (
             name: true,
           },
         },
-        reviews: {
-          where: { 
-            isApproved: true,
-            isRejected: false 
-          },
-          select: { overallRating: true },
-        },
       },
       orderBy,
     });
 
-    // Calculate average rating and flatten data
+    // Aggregate averages in the DB instead of loading every review row
+    const avgRatings = await prisma.review.groupBy({
+      by: ['nurseryId'],
+      where: {
+        nurseryId: { in: nurseries.map((n: any) => n.id) },
+        isApproved: true,
+        isRejected: false,
+      },
+      _avg: { overallRating: true },
+      _count: { _all: true },
+    });
+    const ratingMap = new Map(avgRatings.map((r: any) => [r.nurseryId, r._avg.overallRating ?? 0]));
+    const countMap = new Map(avgRatings.map((r: any) => [r.nurseryId, r._count._all ?? 0]));
+
+    // Flatten data
     const nurseriesWithRatings = nurseries.map((nursery: any) => {
-      const approvedReviews = nursery.reviews;
-      const averageRating = approvedReviews.length > 0
-        ? approvedReviews.reduce((sum: number, r: any) => sum + r.overallRating, 0) / approvedReviews.length
-        : 0;
+      const averageRating = (ratingMap.get(nursery.id) as number) ?? 0;
 
       return {
         id: nursery.id,
@@ -287,7 +291,7 @@ export const getAllNurseriesAdmin = async (
         ownerIsOnline: nursery.owner.isOnline,
         groupName: nursery.group?.name || null,
         averageRating: Math.round(averageRating * 10) / 10,
-        reviewsCount: approvedReviews.length,
+        reviewsCount: (countMap.get(nursery.id) as number) ?? 0,
       };
     });
 

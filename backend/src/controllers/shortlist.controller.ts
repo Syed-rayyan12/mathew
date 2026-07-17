@@ -27,30 +27,58 @@ export const getMyShortlist = async (
             cardImage: true,
             logo: true,
             reviewCount: true,
-            reviews: {
-              where: { isApproved: true },
-              select: { overallRating: true },
-            },
           },
         },
       },
       orderBy: { createdAt: 'desc' },
     });
 
-    // Compute average rating for each nursery
-    const data = shortlist.map((entry) => {
-      const reviews = entry.nursery.reviews;
-      const avgRating =
-        reviews.length > 0
-          ? Math.round((reviews.reduce((s, r) => s + r.overallRating, 0) / reviews.length) * 10) / 10
-          : 0;
-      const { reviews: _r, ...nursery } = entry.nursery;
-      return { ...entry, nursery: { ...nursery, averageRating: avgRating } };
+    // Aggregate averages in the DB, scoped to shortlisted nurseries only
+    const avgRatings = await prisma.review.groupBy({
+      by: ['nurseryId'],
+      where: {
+        nurseryId: { in: shortlist.map((e) => e.nurseryId) },
+        isApproved: true,
+        isRejected: false,
+      },
+      _avg: { overallRating: true },
     });
+    const ratingMap = new Map(avgRatings.map((r) => [r.nurseryId, r._avg.overallRating ?? 0]));
+
+    const data = shortlist.map((entry) => ({
+      ...entry,
+      nursery: {
+        ...entry.nursery,
+        averageRating: Math.round((ratingMap.get(entry.nurseryId) ?? 0) * 10) / 10,
+      },
+    }));
 
     res.json({
       success: true,
       data,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET /shortlist/ids — lightweight list of shortlisted nursery ids for batch status checks
+export const getMyShortlistIds = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user!.userId;
+
+    const entries = await prisma.shortlist.findMany({
+      where: { userId },
+      select: { nurseryId: true },
+    });
+
+    res.json({
+      success: true,
+      data: { nurseryIds: entries.map((e) => e.nurseryId) },
     });
   } catch (error) {
     next(error);

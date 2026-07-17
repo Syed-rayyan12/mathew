@@ -593,8 +593,8 @@ export const getAllNurseries = async (
       }
     }
 
-    // Run all 3 DB queries in parallel — review averages no longer block nursery fetch
-    const [nurseries, total, allAvgRatings] = await Promise.all([
+    // Run nursery fetch + count in parallel, then aggregate ratings scoped to the fetched ids
+    const [nurseries, total] = await Promise.all([
       prisma.nursery.findMany({
         where,
         skip,
@@ -624,21 +624,26 @@ export const getAllNurseries = async (
         orderBy: { createdAt: 'desc' },
       }),
       prisma.nursery.count({ where }),
-      // Fetch all approved review averages in parallel — merged after all 3 resolve
-      prisma.review.groupBy({
-        by: ['nurseryId'],
-        where: {
-          isApproved: true,
-          isRejected: false,
-        },
-        _avg: { overallRating: true },
-      }),
     ]);
 
-    const ratingMap = new Map(allAvgRatings.map(r => [r.nurseryId, r._avg.overallRating ?? 0]));
+    // Aggregate averages only for the nurseries on this page (uses [nurseryId, isApproved, isRejected] index)
+    const avgRatings = await prisma.review.groupBy({
+      by: ['nurseryId'],
+      where: {
+        nurseryId: { in: nurseries.map(n => n.id) },
+        isApproved: true,
+        isRejected: false,
+      },
+      _avg: { overallRating: true },
+    });
+
+    const ratingMap = new Map(avgRatings.map(r => [r.nurseryId, r._avg.overallRating ?? 0]));
 
     const nurseriesWithRatings = nurseries.map(nursery => ({
       ...nursery,
+      // Trim list payload: cards only need a short blurb and one fallback image
+      description: nursery.description ? nursery.description.slice(0, 160) : nursery.description,
+      images: nursery.images?.slice(0, 1) ?? [],
       averageRating: Math.round((ratingMap.get(nursery.id) ?? 0) * 10) / 10,
     }));
 

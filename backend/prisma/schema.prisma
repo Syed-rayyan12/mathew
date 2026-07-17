@@ -105,6 +105,7 @@ model Nursery {
   @@index([city])
   @@index([town])
   @@index([isApproved, groupId])
+  @@index([isApproved, createdAt])
 }
 
 model Review {

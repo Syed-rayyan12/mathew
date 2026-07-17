@@ -47,14 +47,14 @@ const NurseryCardsSection = () => {
 
     const checkShortlistStatuses = async (ids: string[]) => {
         if (!authService.isAuthenticated() || ids.length === 0) return;
-        const results = await Promise.allSettled(ids.map(id => shortlistService.checkShortlisted(id)));
-        const shortlisted = new Set<string>();
-        results.forEach((result, i) => {
-            if (result.status === 'fulfilled' && result.value?.data?.isShortlisted) {
-                shortlisted.add(ids[i]);
-            }
-        });
-        setShortlistedIds(shortlisted);
+        try {
+            // One batched call instead of one request per nursery
+            const response = await shortlistService.getMyShortlistIds();
+            const myIds = new Set(response?.data?.nurseryIds ?? []);
+            setShortlistedIds(new Set(ids.filter(id => myIds.has(id))));
+        } catch {
+            // Non-critical — leave shortlist state empty on failure
+        }
     };
 
     const toggleShortlist = async (e: React.MouseEvent, nurseryId: string) => {
@@ -85,7 +85,7 @@ const NurseryCardsSection = () => {
         try {
             setLoading(true);
             setError(null);
-            const response = await nurseryService.getAll({ limit: 12 });
+            const response = await nurseryService.getAll({ limit: 6 });
 
             if (response.success && Array.isArray(response.data)) {
                 // Get first 6 nurseries or all available

@@ -639,11 +639,16 @@ export const getAllNurseries = async (
 
     const ratingMap = new Map(avgRatings.map(r => [r.nurseryId, r._avg.overallRating ?? 0]));
 
+    // Legacy records store images as base64 data URIs (hundreds of KB each) — exclude
+    // them from list payloads; the frontend falls back to a placeholder image.
+    const isUrl = (img?: string | null) => !!img && !img.startsWith('data:');
+
     const nurseriesWithRatings = nurseries.map(nursery => ({
       ...nursery,
       // Trim list payload: cards only need a short blurb and one fallback image
       description: nursery.description ? nursery.description.slice(0, 160) : nursery.description,
-      images: nursery.images?.slice(0, 1) ?? [],
+      cardImage: isUrl(nursery.cardImage) ? nursery.cardImage : null,
+      images: (nursery.images ?? []).filter(isUrl).slice(0, 1),
       averageRating: Math.round((ratingMap.get(nursery.id) ?? 0) * 10) / 10,
     }));
 

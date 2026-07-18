@@ -282,11 +282,11 @@ const NurseryCardsSection = () => {
                                         </button>
                                         <div className="mt-[-160px] left-0 right-0 px-4 py-6 mx-4 shadow-lg bg-white rounded-lg relative">
                                             <div className="flex items-center justify-between gap-2 mb-2">
-                                                <div className='w-full'>
+                                                <div className='flex-1 min-w-0'>
                                                 <h3 className="font-heading text-[24px] truncate  font-medium text-[#044A55]">{nursery.name}</h3>
                                                 </div>
                                                 {(nursery.city || nursery.town) && (
-                                                    <span className="text-sm font-ubuntu flex items-center gap-1 text-foreground whitespace-nowrap overflow-hidden text-ellipsis">
+                                                    <span className="text-sm font-ubuntu flex items-center gap-1 text-foreground whitespace-nowrap shrink-0 max-w-[60%]">
                                                         <MapPin size={16} className='text-secondary shrink-0' />
                                                         <span className='truncate'>
                                                         {[nursery.town, nursery.city].filter(Boolean).join(', ')}

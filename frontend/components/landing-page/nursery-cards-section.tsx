@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { ArrowRight, LocationEditIcon, Star, Heart } from 'lucide-react';
+import { ArrowRight, MapPin, Star, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { nurseryService } from '@/lib/api/nursery';
 import { shortlistService } from '@/lib/api/shortlist';
@@ -286,9 +286,9 @@ const NurseryCardsSection = () => {
                                                 <h3 className="font-heading text-[24px] truncate  font-medium text-[#044A55]">{nursery.name}</h3>
                                                 </div>
                                                 {(nursery.city || nursery.town) && (
-                                                    <span className="text-sm font-ubuntu flex items-center text-foreground whitespace-nowrap overflow-hidden text-ellipsis">
-                                                        <LocationEditIcon className='text-secondary' />
-                                                        <span className='turncate'>
+                                                    <span className="text-sm font-ubuntu flex items-center gap-1 text-foreground whitespace-nowrap overflow-hidden text-ellipsis">
+                                                        <MapPin size={16} className='text-secondary shrink-0' />
+                                                        <span className='truncate'>
                                                         {[nursery.town, nursery.city].filter(Boolean).join(', ')}
                                                         </span>
                                                     </span>

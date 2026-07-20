@@ -116,71 +116,9 @@ const NurseryCardsSection = () => {
         }
     };
 
-    // Fallback data if API fails
-    const fallbackNurseries: NurseryCardData[] = [
-        {
-            id: '1',
-            name: 'Bright Horizons Early Learning',
-            slug: 'bright-horizons',
-            cardImage: '/images/nursery-1.png',
-            reviewCount: 45,
-            description: 'Award-winning early years centre helping children grow with confidence.',
-            city: 'London',
-            group: { name: 'Bright Horizons', slug: 'bright-horizons' },
-        },
-        {
-            id: '2',
-            name: 'Little Steps Nursery',
-            slug: 'little-steps',
-            cardImage: '/images/nursery-2.png',
-            reviewCount: 38,
-            description: 'A warm, nurturing nursery offering early learning and creative play.',
-            city: 'Manchester',
-            group: { name: 'Little Steps', slug: 'little-steps' },
-        },
-        {
-            id: '3',
-            name: 'Happy Tots Daycare',
-            slug: 'happy-tots',
-            cardImage: '/images/nursery-3.png',
-            reviewCount: 52,
-            description: 'Safe, stimulating and family-focused childcare loved by parents.',
-            city: 'Birmingham',
-            group: { name: 'Happy Tots', slug: 'happy-tots' },
-        },
-        {
-            id: '4',
-            name: 'Sunshine Kids',
-            slug: 'sunshine-kids',
-            cardImage: '/images/nursery-1.png',
-            reviewCount: 29,
-            description: 'Bright and cheerful environment for early learners.',
-            city: 'Leeds',
-            group: { name: 'Sunshine Kids', slug: 'sunshine-kids' },
-        },
-        {
-            id: '5',
-            name: 'Tiny Treasures',
-            slug: 'tiny-treasures',
-            cardImage: '/images/nursery-2.png',
-            reviewCount: 34,
-            description: 'A place where every child is a treasure.',
-            city: 'Liverpool',
-            group: { name: 'Tiny Treasures', slug: 'tiny-treasures' },
-        },
-        {
-            id: '6',
-            name: 'Little Explorers',
-            slug: 'little-explorers',
-            cardImage: '/images/nursery-3.png',
-            reviewCount: 41,
-            description: 'Encouraging curiosity and adventure in every child.',
-            city: 'Bristol',
-            group: { name: 'Little Explorers', slug: 'little-explorers' },
-        },
-    ];
-
-    const displayNurseries = nurseries.length > 0 ? nurseries : (loading ? [] : fallbackNurseries);
+    // Show only real nurseries from the API — no placeholder data, so we never
+    // render cards that link to nurseries that don't exist.
+    const displayNurseries = nurseries;
 
     const renderStars = (count: number = 5) => {
         return Array.from({ length: 5 }, (_, i) => (
@@ -227,7 +165,7 @@ const NurseryCardsSection = () => {
                         <div className="flex justify-center items-center h-80">
                             <div className="text-center">
                                 <p className="text-muted-foreground mb-4">{error}</p>
-                                <p className="text-sm text-gray-500">Showing featured nurseries instead</p>
+                                <p className="text-sm text-gray-500">Please try again later</p>
                             </div>
                         </div>
                     ) : displayNurseries.length === 0 ? (

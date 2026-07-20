@@ -26,40 +26,6 @@ const ArticleNews = () => {
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true, amount: 0.2 });
 
-    // Fallback data if API fails
-    const fallbackArticles: Article[] = [
-        {
-            id: '1',
-            name: 'Tips for Choosing the Right Nursery',
-            cardHeading: 'Tips for Choosing the Right Nursery',
-            cardParagraph: 'Discover what really matters when selecting a nursery for your little one — from staff qualifications to emotional wellbeing.',
-            slug: 'tips-choosing-nursery',
-            cardImage: '/images/nursery-1.png',
-            category: 'NURSERY_UPDATES',
-            publishedAt: 'August 15, 2023',
-        },
-        {
-            id: '2',
-            name: 'Early Learning Activities at Home',
-            cardHeading: 'Early Learning Activities at Home',
-            cardParagraph: 'Simple yet effective activities to support your child\'s development and learning while having fun together.',
-            slug: 'early-learning-home',
-            cardImage: '/images/nursery-2.png',
-            category: 'ACTIVITIES_LEARNING',
-            publishedAt: 'August 10, 2023',
-        },
-        {
-            id: '3',
-            name: 'Understanding Nursery Costs',
-            cardHeading: 'Understanding Nursery Costs',
-            cardParagraph: 'A guide to nursery fees, funding options, and how to budget for quality childcare for your family.',
-            slug: 'nursery-costs-guide',
-            cardImage: '/images/nursery-3.png',
-            category: 'FUNDING_COSTS',
-            publishedAt: 'August 5, 2023',
-        },
-    ];
-
     useEffect(() => {
         fetchArticles();
     }, []);
@@ -80,7 +46,9 @@ const ArticleNews = () => {
       }
 
 
-    const displayArticles = articles.length > 0 ? articles : fallbackArticles;
+    // Show only real articles from the API — no placeholder data, so we never
+    // render cards that link to articles that don't exist.
+    const displayArticles = articles;
 
     return (
         <div className="py-16 px-24 max-sm:px-4 relative bg-white" ref={ref}>
@@ -108,7 +76,7 @@ const ArticleNews = () => {
                         <div className="flex justify-center items-center h-80">
                             <div className="text-center">
                                 <p className="text-muted-foreground mb-4">{error}</p>
-                                <p className="text-sm text-gray-500">Showing featured articles instead</p>
+                                <p className="text-sm text-gray-500">Please try again later</p>
                             </div>
                         </div>
                     ) : displayArticles.length > 0 ? (

@@ -279,7 +279,7 @@ export default function JobsContent() {
           backgroundRepeat: 'no-repeat',
         }}
       >
-        <div className="absolute inset-0 flex items-end justify-center pb-24 max-md:pb-14">
+        <div className="absolute inset-0 flex items-end justify-center pb-44 max-md:pb-24">
           <div className="relative w-full px-24 max-md:px-14 max-xl:px-16 flex flex-col gap-4">
             {/* Heading */}
             <p className="text-sm font-medium uppercase tracking-widest text-white/80">We're Hiring</p>

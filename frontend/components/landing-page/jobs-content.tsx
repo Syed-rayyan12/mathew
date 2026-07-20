@@ -270,68 +270,80 @@ export default function JobsContent() {
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Banner */}
-      <section className="bg-primary text-white pt-16 pb-0 px-6 text-center relative">
-        <p className="text-sm font-medium uppercase tracking-widest text-white/70 mb-2">We're Hiring</p>
-        <h1 className="text-4xl md:text-5xl font-bold mb-2 flex items-center justify-center gap-6">
-          <Briefcase size={36} className="text-white/80" />
-          <span className="border-b border-white pb-3 pt-3">Current Openings</span>
-          <Briefcase size={36} className="text-white/80" />
-        </h1>
-        <p className="text-white/80 max-w-xl mx-auto text-base mb-10">
-          Join our growing team and help shape the future of early years childcare across the UK.
-        </p>
-        {/* Search — sits at bottom edge of banner, half overlapping */}
-        <div className="relative max-w-2xl mx-auto translate-y-1/2">
-          <div className="flex items-center bg-white rounded-lg gap-2 overflow-hidden shadow-lg p-4 border border-gray-200">
-            {/* Keyword search */}
-            <div className="relative flex-1 flex items-center border border-gray-100 rounded-lg">
-              <Search size={16} className="absolute left-3 text-gray-400 shrink-0 pointer-events-none" />
-              <input
-                type="text"
-                value={localSearch}
-                onChange={e => setLocalSearch(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && (setAppliedSearch(localSearch), setAppliedLocation(localLocation))}
-                placeholder="Job title or keyword..."
-                className="w-full pl-9 pr-3 py-3 rounded-lg text-gray-700 text-sm outline-none bg-transparent placeholder-gray-400"
-              />
-              {localSearch && (
-                <button onClick={() => { setLocalSearch(''); setAppliedSearch(''); }} className="text-gray-400 hover:text-gray-600 pr-2">
-                  <X size={14} />
+      <section
+        className="w-full h-[600px] max-md:h-[520px] relative flex justify-center"
+        style={{
+          backgroundImage: "url('/images/jobs-banner.jpg')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+        }}
+      >
+        <div className="absolute inset-0 flex items-end justify-center pb-24 max-md:pb-14">
+          <div className="relative w-full px-24 max-md:px-14 max-xl:px-16 flex flex-col gap-4">
+            {/* Heading */}
+            <p className="text-sm font-medium uppercase tracking-widest text-white/80">We're Hiring</p>
+            <h1 className="text-[55px] max-sm:text-[40px] font-heading font-medium text-white leading-tight">
+              Current Openings
+            </h1>
+            <p className="text-white text-lg leading-relaxed max-w-xl">
+              Join our growing team and help shape the future of early years childcare across the UK.
+            </p>
+
+            {/* Search — job title + location, sits bottom-left */}
+            <div className="w-full max-w-2xl mt-2">
+              <div className="flex items-center bg-white rounded-lg gap-2 shadow-lg p-3 border border-gray-200 max-sm:flex-col max-sm:items-stretch">
+                {/* Keyword search */}
+                <div className="relative flex-1 flex items-center border border-gray-100 rounded-lg w-full">
+                  <Search size={16} className="absolute left-3 text-gray-400 shrink-0 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={localSearch}
+                    onChange={e => setLocalSearch(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && (setAppliedSearch(localSearch), setAppliedLocation(localLocation))}
+                    placeholder="Job title or keyword..."
+                    className="w-full pl-9 pr-3 py-3 rounded-lg text-gray-700 text-sm outline-none bg-transparent placeholder-gray-400"
+                  />
+                  {localSearch && (
+                    <button onClick={() => { setLocalSearch(''); setAppliedSearch(''); }} className="text-gray-400 hover:text-gray-600 pr-2">
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+                {/* Divider */}
+                <div className="w-px h-8 bg-gray-200 shrink-0 max-sm:hidden" />
+                {/* Location search */}
+                <div className="relative flex-1 flex items-center border border-gray-100 rounded-lg w-full">
+                  <MapPin size={16} className="absolute left-3 text-gray-400 shrink-0 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={localLocation}
+                    onChange={e => setLocalLocation(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && (setAppliedSearch(localSearch), setAppliedLocation(localLocation))}
+                    placeholder="City or location..."
+                    className="w-full pl-9 pr-3 py-3 rounded-lg text-gray-700 text-sm outline-none bg-transparent placeholder-gray-400"
+                  />
+                  {localLocation && (
+                    <button onClick={() => { setLocalLocation(''); setAppliedLocation(''); }} className="text-gray-400 hover:text-gray-600 pr-2">
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+                <button
+                  onClick={() => { setAppliedSearch(localSearch); setAppliedLocation(localLocation); }}
+                  className="px-6 py-3.5 text-white font-semibold text-sm rounded-lg shrink-0 max-sm:w-full"
+                  style={{ backgroundColor: '#04b0d6' }}
+                >
+                  Search
                 </button>
-              )}
+              </div>
             </div>
-            {/* Divider */}
-            <div className="w-px h-8 bg-gray-200 shrink-0" />
-            {/* Location search */}
-            <div className="relative flex-1 flex items-center border border-gray-100 rounded-lg">
-              <MapPin size={16} className="absolute left-3 text-gray-400 shrink-0 pointer-events-none" />
-              <input
-                type="text"
-                value={localLocation}
-                onChange={e => setLocalLocation(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && (setAppliedSearch(localSearch), setAppliedLocation(localLocation))}
-                placeholder="City or location..."
-                className="w-full pl-9 pr-3 py-3 rounded-lg text-gray-700 text-sm outline-none bg-transparent placeholder-gray-400"
-              />
-              {localLocation && (
-                <button onClick={() => { setLocalLocation(''); setAppliedLocation(''); }} className="text-gray-400 hover:text-gray-600 pr-2">
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-            <button
-              onClick={() => { setAppliedSearch(localSearch); setAppliedLocation(localLocation); }}
-              className="px-6 py-3.5 text-white font-semibold text-sm rounded-lg shrink-0"
-              style={{ backgroundColor: '#04b0d6' }}
-            >
-              Search
-            </button>
           </div>
         </div>
       </section>
 
       {/* Stats Bar */}
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 pt-10">
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
         <div className="max-w-6xl mx-auto px-6 py-4 flex flex-wrap gap-6 items-center justify-between">
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {loading ? 'Loading positions...' : (

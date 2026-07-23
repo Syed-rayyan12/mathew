@@ -38,7 +38,7 @@ export default function PaymentCancelledPage() {
 
           {/* Actions */}
           <div className="space-y-3 pt-2">
-            <Link href="/nursery-signup?plan=premium" className="block">
+            <Link href="/nursery-signup?plan=standard" className="block">
               <Button className="w-full bg-secondary hover:bg-secondary/90 text-white py-5 font-semibold">
                 <RefreshCw className="mr-2 w-4 h-4" />
                 Try Again

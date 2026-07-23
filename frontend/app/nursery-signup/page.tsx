@@ -18,14 +18,14 @@ import { API_CONFIG } from "@/lib/api/config";
 function NurserySignupContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const selectedPlan = searchParams.get('plan') || 'standard';
+  const planFromUrl = searchParams.get('plan') === 'platinum' ? 'platinum' : 'standard';
   const billingFromUrl = searchParams.get('billing') === 'annual' ? 'annual' : 'monthly';
 
   const PLAN_PRICING = {
     standard: { label: 'Standard Nursery Listing', monthly: '£23.95', annual: '£287.40' },
     platinum: { label: 'Platinum Nursery Listing', monthly: '£38.60', annual: '£463.20' },
   } as const;
-  const planKey = (selectedPlan in PLAN_PRICING) ? selectedPlan as keyof typeof PLAN_PRICING : 'standard';
+  const [planKey, setPlanKey] = useState<keyof typeof PLAN_PRICING>(planFromUrl);
   const planInfo = PLAN_PRICING[planKey];
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>(billingFromUrl);
   const [isLoading, setIsLoading] = useState(false);
@@ -215,7 +215,7 @@ function NurserySignupContent() {
         const response = await fetch(`${API_CONFIG.BASE_URL}/stripe/create-checkout-session`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...formData, plan: selectedPlan, billingPeriod }),
+          body: JSON.stringify({ ...formData, plan: planKey, billingPeriod }),
         });
 
         const data = await response.json();
@@ -513,46 +513,77 @@ function NurserySignupContent() {
 
             {/* Submit Button */}
             <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 space-y-4">
-              {/* Billing toggle */}
+              {/* Plan selector */}
               <div>
-                <p className="text-xs text-gray-500 text-center mb-2">Billing period</p>
-                <div className="flex items-center gap-1 p-1 bg-gray-200 rounded-lg w-fit mx-auto">
-                  <button
-                    type="button"
-                    onClick={() => setBillingPeriod('monthly')}
-                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
-                      billingPeriod === 'monthly' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-800'
-                    }`}
-                  >
-                    Monthly
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setBillingPeriod('annual')}
-                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
-                      billingPeriod === 'annual' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-800'
-                    }`}
-                  >
-                    Annual
-                  </button>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-medium text-gray-700">Choose your plan</p>
+                  {/* Billing toggle */}
+                  <div className="flex items-center gap-1 p-1 bg-gray-200 rounded-lg">
+                    <button
+                      type="button"
+                      onClick={() => setBillingPeriod('monthly')}
+                      className={`px-3 py-1 rounded-md text-xs font-medium transition ${
+                        billingPeriod === 'monthly' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-800'
+                      }`}
+                    >
+                      Monthly
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBillingPeriod('annual')}
+                      className={`px-3 py-1 rounded-md text-xs font-medium transition ${
+                        billingPeriod === 'annual' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-800'
+                      }`}
+                    >
+                      Annual
+                    </button>
+                  </div>
+                </div>
+
+                {/* Plan cards */}
+                <div className="grid grid-cols-2 gap-3">
+                  {(Object.keys(PLAN_PRICING) as Array<keyof typeof PLAN_PRICING>).map((key) => {
+                    const info = PLAN_PRICING[key];
+                    const price = billingPeriod === 'monthly' ? info.monthly : info.annual;
+                    const selected = planKey === key;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setPlanKey(key)}
+                        className={`relative text-left rounded-lg border p-3 bg-white transition ${
+                          selected
+                            ? 'border-secondary ring-2 ring-secondary/30'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        {selected && (
+                          <span className="absolute top-2 right-2 flex items-center justify-center w-4 h-4 rounded-full bg-secondary text-white text-[10px] leading-none">
+                            ✓
+                          </span>
+                        )}
+                        <p className="text-sm font-semibold text-gray-900 capitalize">{key}</p>
+                        <p className="text-lg font-bold text-secondary mt-1">
+                          {price}
+                          <span className="text-xs font-normal text-gray-500 ml-0.5">
+                            /{billingPeriod === 'monthly' ? 'mo' : 'yr'}
+                          </span>
+                        </p>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* Price summary */}
+              {/* Summary line */}
               <div className="text-center">
-                <p className="text-sm text-gray-600">
-                  {billingPeriod === 'monthly' ? 'Monthly payment' : 'Annual payment (paid upfront)'}:
-                  <span className="font-bold text-lg text-secondary ml-1">
-                    {billingPeriod === 'monthly' ? planInfo.monthly : planInfo.annual}
-                  </span>
-                </p>
                 {billingPeriod === 'annual' && (
-                  <p className="text-xs text-green-600 mt-0.5">
-                    Equivalent to {planInfo.monthly}/month
+                  <p className="text-xs text-green-600">
+                    Equivalent to {planInfo.monthly}/month · paid upfront
                   </p>
                 )}
                 <p className="text-xs text-gray-400 mt-1">
-                  Plan: {planInfo.label} · Recurring · 90 days notice to cancel
+                  {planInfo.label} · Recurring · 90 days notice to cancel
                 </p>
               </div>
 

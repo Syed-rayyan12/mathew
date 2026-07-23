@@ -29,7 +29,7 @@ const CTASection = () => {
                        Join My Nursery <span className="text-secondary">Platform</span> Today
                     </h2>
                     <p className='text-[16px] text-muted-foreground font-sans mb-8'>Get your first 6 months completely FREE when you sign up.</p>
-                    <Link href="/nursery-signup" className="bg-secondary hover:bg-secondary/80 text-white px-6 rounded-[6px] py-4">
+                    <Link href="/pricing" className="bg-secondary hover:bg-secondary/80 text-white px-6 rounded-[6px] py-4">
                               Sign Up & Get Started — It's Free!
                     </Link >
                 </motion.div>

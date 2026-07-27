@@ -19,9 +19,17 @@ const ChildcareBanner = () => {
 
                     {/* Paragraph */}
                     <p className="text-white text-lg leading-relaxed">
-                        Learn about government funding, tax-free childcare, and financial<br /> support options tomake childcare more affordable for your family.  
+                        Learn about government funding, tax-free childcare, and financial<br /> support options tomake childcare more affordable for your family.
                     </p>
 
+                    <a
+                        href="https://www.gov.uk/sign-in-childcare-account"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2 w-fit bg-primary hover:bg-transparent hover:text-primary border-2 border-primary text-white font-medium rounded-[6px] px-10 py-4 transition-all duration-300 cursor-pointer"
+                    >
+                        Sign in to your childcare account
+                    </a>
 
                 </div>
             </div>

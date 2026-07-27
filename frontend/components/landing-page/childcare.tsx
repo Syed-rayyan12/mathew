@@ -127,7 +127,7 @@ export default function Childcare() {
                     href={item.link.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-block mt-2 text-secondary font-medium hover:underline"
+                    className="inline-flex items-center mt-3 bg-secondary hover:bg-secondary/90 text-white font-medium rounded-[6px] px-6 py-2.5 transition-colors"
                   >
                     {item.link.label}
                   </a>

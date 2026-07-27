@@ -4,7 +4,7 @@ import Link from 'next/link';
 export default function Footer() {
   return (
     <footer
-      className="bg-cover bg-center bg-white bg-no-repeat w-full pt-16 sm:pt-20 md:pt-24 lg:pt-28"
+      className="bg-cover bg-top bg-white bg-no-repeat w-full pt-16 sm:pt-20 md:pt-24 lg:pt-28"
       style={{
         backgroundImage: 'url(/images/footer.png)',
         width: '100%',
@@ -50,7 +50,7 @@ export default function Footer() {
              <li><Link href="/claim" className="text-white hover:text-gray-300 hover:underline">Claim 6-Month Free Listing </Link></li>
              <li><Link href="/pricing" className="text-white hover:text-gray-300 hover:underline">Pricing/Subscription Page</Link></li>
              <li><Link href="/review" className="text-white hover:text-gray-300 hover:underline">Review</Link></li>
-                          <li className='text-white hover:text-gray-300 hover:underline'>support@my-nursery.co.uk</li>
+             <li><a href="mailto:support@my-nursery.co.uk" className="text-white hover:text-gray-300 hover:underline">support@my-nursery.co.uk</a></li>
            </ul>
          </div>
         {/* Get in Touch */}
@@ -61,13 +61,13 @@ export default function Footer() {
           <ul className="space-y-1 md:space-y-2 leading-6 md:leading-8 text-sm md:text-base">
             <li className='flex items-center gap-2 text-white'>
               <Mail className="w-4 h-4 md:w-5 md:h-5 mt-0.5" />
-              <span className="break-all">hello@my-nursery.co.uk</span></li>
+              <a href="mailto:hello@my-nursery.co.uk" className="break-all hover:text-gray-300 hover:underline">hello@my-nursery.co.uk</a></li>
             <li className='flex items-start gap-2 text-white'>
               <LocationEdit className="w-4 h-4 md:w-5 md:h-5 mt-1 shrink-0" />
               <span className='text-sm md:text-base'>Address – Shawbriggs, Barrow Road, Goxhill, North Lincolnshire, DN19 7LN</span></li>
             <li className='flex items-center gap-2 text-white'>
               <Phone className="w-4 h-4 md:w-5 md:h-5 mt-0.5" />
-              <span>01482 688508</span></li>
+              <a href="tel:+441482688508" className="hover:text-gray-300 hover:underline">01482 688508</a></li>
           </ul>
         </div>
 

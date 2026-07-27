@@ -34,7 +34,7 @@ const ContactSection = () => {
                 <div className='flex justify-center  items-center w-10 h-10 border border-gray-400 rounded-full '>
                   <Mail className="w-5 h-5 text-secondary" />
                 </div>
-                <a href="mailto:info@nursery.com" className="text-gray-700 hover:text-secondary">
+                <a href="mailto:hello@my-nursery.co.uk" className="text-gray-700 hover:text-secondary">
                   hello@my-nursery.co.uk
                 </a>
               </div>
@@ -44,7 +44,7 @@ const ContactSection = () => {
                 <div className='flex justify-center  items-center w-10 h-10 border border-gray-400 rounded-full '>
                   <Phone className="w-5 h-5 text-secondary" />
                 </div>
-                <a href="tel:+441234567890" className="text-gray-700 hover:text-secondary">
+                <a href="tel:+441482688508" className="text-gray-700 hover:text-secondary">
                   01482 688508
                 </a>
               </div>

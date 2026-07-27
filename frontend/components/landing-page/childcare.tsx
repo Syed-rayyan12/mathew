@@ -34,7 +34,12 @@ export default function Childcare() {
     },
   ];
 
-  const items = [
+  const items: {
+    num: string;
+    title: string;
+    desc: string;
+    link?: { label: string; href: string };
+  }[] = [
     {
       num: "1",
       title: "Check Your Eligibility",
@@ -44,6 +49,10 @@ export default function Childcare() {
       num: "2",
       title: "Apply Online",
       desc: "Complete your application through the official government website. You'll need your National Insurance number, employment details, and child's information.",
+      link: {
+        label: "Sign in to your childcare account on GOV.UK",
+        href: "https://www.gov.uk/sign-in-childcare-account",
+      },
     },
     {
       num: "3",
@@ -113,6 +122,16 @@ export default function Childcare() {
               <div className="">
                 <h3 className="text-xl font-medium text-[#044A55]  text-start">{item.title}</h3>
                 <p className="text-gray-600 mt-1 text-start">{item.desc}</p>
+                {item.link && (
+                  <a
+                    href={item.link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block mt-2 text-secondary font-medium hover:underline"
+                  >
+                    {item.link.label}
+                  </a>
+                )}
               </div>
             </div>
           ))}

@@ -46,9 +46,9 @@ export default function NurseryApplicants() {
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
         <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-10 max-w-md">
           <Lock size={40} className="text-yellow-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Platinum Plan Required</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Group Plan Required</h2>
           <p className="text-gray-500 text-sm mb-6">
-            Applicant management is available exclusively on the <strong>Platinum</strong> plan.
+            Applicant management is available exclusively on the <strong>Group</strong> plan.
             Upgrade to review and manage job applications.
           </p>
           <Link

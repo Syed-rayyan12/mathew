@@ -34,8 +34,8 @@ const PAYMENT_STATUS_STYLES: Record<AdminPaymentRecord['paymentStatus'], string>
 };
 
 const PLAN_LABELS: Record<string, string> = {
-  standard: 'Standard',
-  platinum: 'Platinum',
+  standard: 'Single',
+  platinum: 'Group',
 };
 
 function formatDate(value: string) {
@@ -442,17 +442,17 @@ export default function Subscriptions() {
       {tab === 'plans' && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Card>
-            <CardHeader><CardTitle>Standard</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Single</CardTitle></CardHeader>
             <CardContent>
               <p className="text-2xl font-semibold">GBP 23.95/month</p>
-              <p className="mt-1 text-sm text-muted-foreground">GBP 287.40 annually</p>
+              <p className="mt-1 text-sm text-muted-foreground">GBP 287.40 annually · one nursery</p>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader><CardTitle>Platinum</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Group</CardTitle></CardHeader>
             <CardContent>
-              <p className="text-2xl font-semibold">GBP 38.60/month</p>
-              <p className="mt-1 text-sm text-muted-foreground">GBP 463.20 annually</p>
+              <p className="text-2xl font-semibold">From GBP 34.74/nursery/month</p>
+              <p className="mt-1 text-sm text-muted-foreground">Two or more nurseries · 10–40% volume discount</p>
             </CardContent>
           </Card>
         </div>

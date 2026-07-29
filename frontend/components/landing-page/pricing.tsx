@@ -10,15 +10,17 @@ import {
     CarouselNext,
     CarouselPrevious,
 } from "@/components/ui/carousel";
+import NurseryCountPicker from "@/components/sharedComponents/nursery-count-picker";
+import { MIN_GROUP_SIZE, formatGbp, priceFor } from "@/lib/pricing";
 
 const pricingPlans = [
    
 
     {
         id: "standard",
-        title: "Nursery Listing (Paid)",
-        subtitle: "Perfect for growing businesses",
-        price: "23.90",
+        title: "Single",
+        subtitle: "For a one-site nursery",
+        price: "23.95",
         features: [
             "Full Nursery Profile Page",
             "About Us, Philosophy, Fees, Opening Hours",
@@ -31,17 +33,17 @@ const pricingPlans = [
             "Basic Nursery Dashboard",
             "Standard Search Visibility",
         ],
-        buttonText: "Start Standard",
+        buttonText: "Start Single",
         buttonClasses: "bg-transparent border-secondary py-4 px-6 hover:bg-secondary hover:text-white transition-colors duration-200",
         popular: true,
-        priceLabel: " per month per nursery",
+        priceLabel: " per month",
     },
 
     {
         id: "platinum",
-        title: "Platinum",
-        subtitle: "Best for maximum visibility",
-        price: "38.60",
+        title: "Group",
+        subtitle: "Two or more nurseries, with a volume discount",
+        price: "34.74",
         features: [
             "Unlimited Nursery Locations",
             "Nursery Group Page (for multiple branches)",
@@ -54,9 +56,9 @@ const pricingPlans = [
             "Dashboard Analytics (ratings, reviews, performance)",
             "Job Listings",
         ],
-        buttonText: "Start Platinum",
+        buttonText: "Start Group",
         buttonClasses: "bg-transparent border-secondary py-4 px-6 hover:bg-secondary hover:text-white transition-colors duration-200",
-        priceLabel: "per month per nursery",
+        priceLabel: "per nursery per month",
     },
 ];
 
@@ -65,12 +67,11 @@ export default function PricingSection() {
     const [isNurseryOwner, setIsNurseryOwner] = useState(false);
     const [currentPlan, setCurrentPlan] = useState<string>('');
     const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
+    // Group pricing is per-nursery and banded, so the card needs a count to quote against.
+    const [nurseryCount, setNurseryCount] = useState<number>(MIN_GROUP_SIZE);
 
-    // Prices: annual = monthly × 12
-    const PRICING = {
-        standard: { monthly: '23.95', annual: (23.95 * 12).toFixed(2) },
-        platinum: { monthly: '38.60', annual: (38.60 * 12).toFixed(2) },
-    };
+    const singleQuote = priceFor('standard', billingPeriod, 1);
+    const groupQuote = priceFor('platinum', billingPeriod, nurseryCount);
 
     useEffect(() => {
         try {
@@ -86,15 +87,29 @@ export default function PricingSection() {
     // Pricing page buttons always go to nursery-signup (new group).
     // Upgrading an existing account is done from the nursery dashboard only.
     const handlePlanSelect = (planId: string) => {
-        router.push(`/nursery-signup?plan=${planId}&billing=${billingPeriod}`);
+        // Groups past the self-serve ceiling are quoted by hand, so there is no
+        // checkout to send them to.
+        if (planId === 'platinum' && groupQuote.bespoke) {
+            router.push('/contact-us');
+            return;
+        }
+        const count = planId === 'platinum' ? nurseryCount : 1;
+        router.push(
+            `/nursery-signup?plan=${planId}&billing=${billingPeriod}&nurseries=${count}`
+        );
     };
 
     const getPlanButtonLabel = (planId: string) => {
-        if (!isNurseryOwner) return planId === 'standard' ? 'Start Standard' : 'Start Platinum';
+        if (!isNurseryOwner) return planId === 'standard' ? 'Start Single' : 'Start Group';
         // Logged-in owner — they can still sign up for a new group
-        if (planId === 'standard') return 'Create New Standard Group';
-        return 'Create New Platinum Group';
+        if (planId === 'standard') return 'Create New Single Listing';
+        return 'Create New Group';
     };
+
+    const buttonLabelFor = (planId: string) =>
+        planId === 'platinum' && groupQuote.bespoke
+            ? 'Contact us for a quote'
+            : getPlanButtonLabel(planId);
 
     const renderPricingCard = (plan: typeof pricingPlans[0]) => (
         <div
@@ -123,14 +138,40 @@ export default function PricingSection() {
 
             <p className="text-gray-500 mt-1">{plan.subtitle}</p>
 
-            <p className="text-4xl font-bold mt-6">
-               <span className="text-2xl text-secondary">From</span> £{billingPeriod === 'monthly' ? PRICING[plan.id as keyof typeof PRICING]?.monthly ?? plan.price : PRICING[plan.id as keyof typeof PRICING]?.annual ?? plan.price}
-                <span className="text-base font-medium text-gray-500"> {billingPeriod === 'monthly' ? plan.priceLabel : 'per year per nursery'}</span>
-            </p>
-            {billingPeriod === 'annual' && (
-                <p className="text-xs text-green-600 font-medium mt-1">
-                    Equivalent to £{PRICING[plan.id as keyof typeof PRICING]?.monthly ?? plan.price}/month
-                </p>
+            {plan.id === 'platinum' ? (
+                <>
+                    <p className="text-4xl font-bold mt-6">
+                        <span className="text-2xl text-secondary">From</span> {formatGbp(groupQuote.unitPence)}
+                        <span className="text-base font-medium text-gray-500">
+                            {' '}per nursery per {billingPeriod === 'monthly' ? 'month' : 'year'}
+                        </span>
+                    </p>
+                    <div className="mt-5">
+                        <NurseryCountPicker
+                            count={nurseryCount}
+                            onChange={setNurseryCount}
+                            billing={billingPeriod}
+                            footnote="The discount is applied automatically — the more nurseries in your group, the lower the price per nursery."
+                        />
+                    </div>
+                </>
+            ) : (
+                <>
+                    <p className="text-4xl font-bold mt-6">
+                        {formatGbp(singleQuote.totalPence)}
+                        <span className="text-base font-medium text-gray-500">
+                            {' '}per {billingPeriod === 'monthly' ? 'month' : 'year'}
+                        </span>
+                    </p>
+                    {billingPeriod === 'annual' && (
+                        <p className="text-xs text-green-600 font-medium mt-1">
+                            Equivalent to {formatGbp(priceFor('standard', 'monthly', 1).totalPence)}/month
+                        </p>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">
+                        Covers one nursery. Got more than one? See Group.
+                    </p>
+                </>
             )}
 
             <ul className="mt-6 space-y-4">
@@ -146,7 +187,7 @@ export default function PricingSection() {
                 onClick={() => handlePlanSelect(plan.id)}
                 className={`mt-8 w-full border rounded-xl font-semibold flex items-center justify-center gap-2 ${plan.buttonClasses}`}
             >
-                {getPlanButtonLabel(plan.id)}
+                {buttonLabelFor(plan.id)}
             </button>
         </div>
     );

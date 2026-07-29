@@ -5,6 +5,13 @@ import { config } from '../config';
 import { hashPassword } from '../utils';
 import { generateShortId } from '../utils/id-generator';
 import { ensurePlanProducts, getStripe } from '../utils/stripe';
+import {
+  quote,
+  describeQuote,
+  PricingError,
+  type PlanKey,
+  type BillingPeriod,
+} from '../utils/pricing';
 
 
 /**
@@ -19,7 +26,7 @@ export const createCheckoutSession = async (
   next: NextFunction
 ) => {
   try {
-    const { email, password, firstName, lastName, phone, nurseryName, city, town, plan, billingPeriod } = req.body;
+    const { email, password, firstName, lastName, phone, nurseryName, city, town, plan, billingPeriod, nurseryCount } = req.body;
 
     // Validate required fields before creating checkout
     if (!email || !password || !firstName || !lastName || !phone || !nurseryName) {
@@ -29,19 +36,30 @@ export const createCheckoutSession = async (
       });
     }
 
-    const billing = billingPeriod === 'annual' ? 'annual' : 'monthly';
-    const PLAN_CONFIG = {
-      standard: {
-        monthly: { label: 'Standard Nursery Listing – Monthly', description: 'Monthly recurring payment: £23.95/month. Annual option: £287.40/year paid upfront. Recurring subscription — 90 days written notice required before renewal date to cancel.', unitAmount: 2395 },
-        annual:  { label: 'Standard Nursery Listing – Annual',  description: 'Annual payment: £287.40/year (equivalent to £23.95/month) paid upfront. Recurring subscription — 90 days written notice required before renewal date to cancel.', unitAmount: 28740 },
-      },
-      platinum: {
-        monthly: { label: 'Platinum Nursery Listing – Monthly', description: 'Monthly recurring payment: £38.60/month. Annual option: £463.20/year paid upfront. Recurring subscription — 90 days written notice required before renewal date to cancel.', unitAmount: 3860 },
-        annual:  { label: 'Platinum Nursery Listing – Annual',  description: 'Annual payment: £463.20/year (equivalent to £38.60/month) paid upfront. Recurring subscription — 90 days written notice required before renewal date to cancel.', unitAmount: 46320 },
-      },
-    } as const;
-    const planKey = (plan in PLAN_CONFIG) ? plan as keyof typeof PLAN_CONFIG : 'standard';
-    const planConfig = PLAN_CONFIG[planKey][billing];
+    const billing: BillingPeriod = billingPeriod === 'annual' ? 'annual' : 'monthly';
+    const planKey: PlanKey = plan === 'platinum' ? 'platinum' : 'standard';
+
+    // The client sends how many nurseries it wants, never the price. Everything
+    // charged is derived here so a tampered request can't buy a group cheaply.
+    const requestedCount = Number(nurseryCount);
+    const count = Number.isFinite(requestedCount) && requestedCount > 0
+      ? Math.floor(requestedCount)
+      : 1;
+
+    let priceQuote;
+    try {
+      priceQuote = quote(planKey, billing, count);
+    } catch (err) {
+      if (err instanceof PricingError) {
+        return res.status(400).json({ success: false, message: err.message });
+      }
+      throw err;
+    }
+
+    const planConfig = {
+      ...describeQuote(priceQuote),
+      unitAmount: priceQuote.unitAmountPence,
+    };
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -77,7 +95,7 @@ export const createCheckoutSession = async (
             product: products[planKey],
             unit_amount: planConfig.unitAmount,
           },
-          quantity: 1,
+          quantity: priceQuote.quantity,
         },
       ],
       metadata: {
@@ -89,8 +107,9 @@ export const createCheckoutSession = async (
         city: city || '',
         town: town || '',
         hashedPassword,
-        plan: plan || 'standard',
+        plan: planKey,
         billingPeriod: billing,
+        nurseryCount: String(priceQuote.quantity),
         existingUserId: existingUser?.id || '',
       },
       custom_text: {
@@ -260,7 +279,7 @@ export const createUpgradeSession = async (
       return res.status(401).json({ success: false, message: 'Unauthorised.' });
     }
 
-    const { plan, billingPeriod } = req.body;
+    const { plan, billingPeriod, nurseryCount } = req.body;
 
     if (!plan || plan !== 'platinum') {
       return res.status(400).json({ success: false, message: 'Invalid upgrade plan.' });
@@ -275,12 +294,28 @@ export const createUpgradeSession = async (
       return res.status(400).json({ success: false, message: 'You are already on the Platinum plan.' });
     }
 
-    const billing = billingPeriod === 'annual' ? 'annual' : 'monthly';
-    const UPGRADE_CONFIG = {
-      monthly: { label: 'Platinum Nursery Listing – Monthly', description: 'Monthly recurring payment: £38.60/month. Annual option: £463.20/year paid upfront. Recurring subscription — 90 days written notice required before renewal date to cancel.', unitAmount: 3860 },
-      annual:  { label: 'Platinum Nursery Listing – Annual',  description: 'Annual payment: £463.20/year (equivalent to £38.60/month) paid upfront. Recurring subscription — 90 days written notice required before renewal date to cancel.', unitAmount: 46320 },
-    } as const;
-    const planConfig = UPGRADE_CONFIG[billing];
+    const billing: BillingPeriod = billingPeriod === 'annual' ? 'annual' : 'monthly';
+
+    // Group starts at two nurseries, so an upgrade has to say how many it covers.
+    const requestedCount = Number(nurseryCount);
+    const count = Number.isFinite(requestedCount) && requestedCount > 0
+      ? Math.floor(requestedCount)
+      : 0;
+
+    let priceQuote;
+    try {
+      priceQuote = quote('platinum', billing, count);
+    } catch (err) {
+      if (err instanceof PricingError) {
+        return res.status(400).json({ success: false, message: err.message });
+      }
+      throw err;
+    }
+
+    const planConfig = {
+      ...describeQuote(priceQuote),
+      unitAmount: priceQuote.unitAmountPence,
+    };
     const stripe = getStripe();
     const products = await ensurePlanProducts();
 
@@ -297,7 +332,7 @@ export const createUpgradeSession = async (
             product: products.platinum,
             unit_amount: planConfig.unitAmount,
           },
-          quantity: 1,
+          quantity: priceQuote.quantity,
         },
       ],
       metadata: {
@@ -305,6 +340,7 @@ export const createUpgradeSession = async (
         userId,
         plan,
         billingPeriod: billing,
+        nurseryCount: String(priceQuote.quantity),
       },
       custom_text: {
         submit: {

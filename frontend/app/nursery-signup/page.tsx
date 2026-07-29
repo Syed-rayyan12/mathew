@@ -14,6 +14,14 @@ import { cn } from "@/lib/utils";
 import { UK_CITIES } from "@/lib/data/uk-cities";
 import { UK_TOWNS } from "@/lib/data/uk-towns";
 import { API_CONFIG } from "@/lib/api/config";
+import NurseryCountPicker from "@/components/sharedComponents/nursery-count-picker";
+import {
+  MIN_GROUP_SIZE,
+  PLAN_LABEL,
+  formatGbp,
+  priceFor,
+  type PlanKey,
+} from "@/lib/pricing";
 
 function NurserySignupContent() {
   const router = useRouter();
@@ -21,13 +29,24 @@ function NurserySignupContent() {
   const planFromUrl = searchParams.get('plan') === 'platinum' ? 'platinum' : 'standard';
   const billingFromUrl = searchParams.get('billing') === 'annual' ? 'annual' : 'monthly';
 
-  const PLAN_PRICING = {
-    standard: { label: 'Standard Nursery Listing', monthly: '£23.95', annual: '£287.40' },
-    platinum: { label: 'Platinum Nursery Listing', monthly: '£38.60', annual: '£463.20' },
-  } as const;
-  const [planKey, setPlanKey] = useState<keyof typeof PLAN_PRICING>(planFromUrl);
-  const planInfo = PLAN_PRICING[planKey];
+  const countFromUrl = (() => {
+    const raw = parseInt(searchParams.get('nurseries') ?? '', 10);
+    if (Number.isNaN(raw)) return MIN_GROUP_SIZE;
+    return Math.min(Math.max(raw, MIN_GROUP_SIZE), 999);
+  })();
+
+  const [planKey, setPlanKey] = useState<PlanKey>(planFromUrl);
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>(billingFromUrl);
+  // Only meaningful for Group; Single always bills for exactly one nursery.
+  const [nurseryCount, setNurseryCount] = useState<number>(countFromUrl);
+
+  const effectiveCount = planKey === 'platinum' ? nurseryCount : 1;
+  const quote = priceFor(planKey, billingPeriod, effectiveCount);
+  const planInfo = {
+    label: `${PLAN_LABEL[planKey]} Nursery Listing`,
+    monthly: formatGbp(priceFor(planKey, 'monthly', effectiveCount).totalPence),
+    annual: formatGbp(priceFor(planKey, 'annual', effectiveCount).totalPence),
+  };
   const [isLoading, setIsLoading] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -201,7 +220,14 @@ function NurserySignupContent() {
     e.preventDefault();
     
     if (!validateForm()) return;
-    
+
+    // Groups past the self-serve ceiling have no checkout price — send them to
+    // sales rather than letting the server reject them at the payment step.
+    if (quote.bespoke) {
+      router.push('/contact-us');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -215,7 +241,12 @@ function NurserySignupContent() {
         const response = await fetch(`${API_CONFIG.BASE_URL}/stripe/create-checkout-session`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...formData, plan: planKey, billingPeriod }),
+          body: JSON.stringify({
+            ...formData,
+            plan: planKey,
+            billingPeriod,
+            nurseryCount: effectiveCount,
+          }),
         });
 
         const data = await response.json();
@@ -542,9 +573,9 @@ function NurserySignupContent() {
 
                 {/* Plan cards */}
                 <div className="grid grid-cols-2 gap-3">
-                  {(Object.keys(PLAN_PRICING) as Array<keyof typeof PLAN_PRICING>).map((key) => {
-                    const info = PLAN_PRICING[key];
-                    const price = billingPeriod === 'monthly' ? info.monthly : info.annual;
+                  {(['standard', 'platinum'] as PlanKey[]).map((key) => {
+                    const count = key === 'platinum' ? nurseryCount : 1;
+                    const q = priceFor(key, billingPeriod, count);
                     const selected = planKey === key;
                     return (
                       <button
@@ -562,17 +593,32 @@ function NurserySignupContent() {
                             ✓
                           </span>
                         )}
-                        <p className="text-sm font-semibold text-gray-900 capitalize">{key}</p>
+                        <p className="text-sm font-semibold text-gray-900">{PLAN_LABEL[key]}</p>
                         <p className="text-lg font-bold text-secondary mt-1">
-                          {price}
-                          <span className="text-xs font-normal text-gray-500 ml-0.5">
-                            /{billingPeriod === 'monthly' ? 'mo' : 'yr'}
-                          </span>
+                          {q.bespoke ? 'POA' : formatGbp(q.totalPence)}
+                          {!q.bespoke && (
+                            <span className="text-xs font-normal text-gray-500 ml-0.5">
+                              /{billingPeriod === 'monthly' ? 'mo' : 'yr'}
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-[11px] text-gray-500 mt-0.5">
+                          {key === 'standard' ? 'One nursery' : 'Two or more'}
                         </p>
                       </button>
                     );
                   })}
                 </div>
+
+                {planKey === 'platinum' && (
+                  <div className="mt-3">
+                    <NurseryCountPicker
+                      count={nurseryCount}
+                      onChange={setNurseryCount}
+                      billing={billingPeriod}
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Summary line */}

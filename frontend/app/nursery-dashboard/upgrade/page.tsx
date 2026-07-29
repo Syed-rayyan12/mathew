@@ -5,6 +5,8 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { CheckCircle, XCircle, Zap, ArrowLeft, Loader2 } from 'lucide-react';
 import { authService } from '@/lib/api/auth';
 import Link from 'next/link';
+import NurseryCountPicker from '@/components/sharedComponents/nursery-count-picker';
+import { MIN_GROUP_SIZE, formatGbp, priceFor } from '@/lib/pricing';
 
 const PLATINUM_FEATURES = [
   'Unlimited Nursery Locations',
@@ -32,6 +34,8 @@ function UpgradeContent() {
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(3);
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
+  const [nurseryCount, setNurseryCount] = useState<number>(MIN_GROUP_SIZE);
+  const upgradeQuote = priceFor('platinum', billingPeriod, nurseryCount);
 
   // Auto-verify when returning from Stripe with session_id
   useEffect(() => {
@@ -98,7 +102,7 @@ function UpgradeContent() {
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ plan: 'platinum', billingPeriod }),
+        body: JSON.stringify({ plan: 'platinum', billingPeriod, nurseryCount }),
       });
 
       const rawBody = await rawRes.text();
@@ -135,9 +139,9 @@ function UpgradeContent() {
         <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
           <CheckCircle className="text-green-500 w-10 h-10" />
         </div>
-        <h1 className="text-2xl font-bold text-gray-900">You're now on Platinum!</h1>
+        <h1 className="text-2xl font-bold text-gray-900">You're now on Group!</h1>
         <p className="text-gray-500 max-w-sm text-sm">
-          Your plan has been upgraded. All Platinum features are now unlocked.
+          Your plan has been upgraded. All Group features are now unlocked.
         </p>
         <div className="flex items-center gap-3">
           <Loader2 className="w-4 h-4 text-primary animate-spin" />
@@ -222,7 +226,7 @@ function UpgradeContent() {
           </div>
           <span className="text-xs font-semibold uppercase tracking-widest text-yellow-700">Plan Upgrade</span>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 mt-2">Upgrade to Platinum</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mt-2">Upgrade to Group</h1>
         <p className="text-gray-500 text-sm mt-1 mb-5">
           Upgrade your existing nursery — no new account needed.
         </p>
@@ -249,19 +253,33 @@ function UpgradeContent() {
           </button>
         </div>
 
-        {/* Price */}
+        {/* Price — Group is per nursery and banded, so it depends on the count */}
         <div className="flex items-end gap-2 mb-1">
           <span className="text-4xl font-bold text-gray-900">
-            {billingPeriod === 'monthly' ? '£38.60' : '£463.20'}
+            {upgradeQuote.bespoke ? 'POA' : formatGbp(upgradeQuote.totalPence)}
           </span>
           <span className="text-gray-400 text-sm pb-1">
-            {billingPeriod === 'monthly' ? '/ month per nursery group' : '/ year paid upfront'}
+            {upgradeQuote.bespoke
+              ? 'priced individually'
+              : billingPeriod === 'monthly'
+                ? `/ month for ${nurseryCount} nurseries`
+                : '/ year paid upfront'}
           </span>
         </div>
-        {billingPeriod === 'annual' && (
-          <p className="text-xs text-green-600 font-medium mb-5">Equivalent to £38.60/month</p>
+        {!upgradeQuote.bespoke && billingPeriod === 'annual' && (
+          <p className="text-xs text-green-600 font-medium mb-2">
+            Equivalent to {formatGbp(priceFor('platinum', 'monthly', nurseryCount).totalPence)}/month
+          </p>
         )}
-        {billingPeriod === 'monthly' && <div className="mb-5" />}
+
+        <div className="mb-5 mt-4">
+          <NurseryCountPicker
+            count={nurseryCount}
+            onChange={setNurseryCount}
+            billing={billingPeriod}
+            footnote="Group covers two or more nurseries. The per-nursery price drops as the group grows."
+          />
+        </div>
 
         {/* Features */}
         <ul className="space-y-3 mb-8">
@@ -282,7 +300,9 @@ function UpgradeContent() {
           {loading ? (
             <><Loader2 size={16} className="animate-spin" /> Redirecting to payment…</>
           ) : (
-            <><Zap size={16} className="fill-yellow-900" /> Upgrade Now — {billingPeriod === 'monthly' ? '£38.60/mo' : '£463.20/yr'}</>
+            <><Zap size={16} className="fill-yellow-900" /> {upgradeQuote.bespoke
+              ? 'Contact us for a quote'
+              : `Upgrade Now — ${formatGbp(upgradeQuote.totalPence)}/${billingPeriod === 'monthly' ? 'mo' : 'yr'}`}</>
           )}
         </button>
         <p className="text-center text-xs text-gray-400 mt-3">

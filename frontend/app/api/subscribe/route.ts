@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 
-// Newsletter signups go straight to Resend — the contact lands in an Audience
+// Newsletter signups go straight to Resend — the contact lands in a Segment
 // (the list Matt actually mails later) and a heads-up email goes to the inbox
 // so signups are visible as they arrive. Nothing is stored in our own database.
+//
+// Resend replaced Audiences with Segments: contacts are now global, and a
+// segment is just a grouping applied to them. `audienceId` still exists on the
+// SDK but is deprecated, and it type-checks silently via an overload — so use
+// `segments` and don't be fooled by a clean tsc run.
+// https://resend.com/docs/dashboard/segments/migrating-from-audiences-to-segments
 
 export const runtime = 'nodejs';
 
@@ -20,9 +26,9 @@ interface SubscribePayload {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const AUDIENCE_IDS: Record<SubscriberType, string | undefined> = {
-  FAMILY: process.env.RESEND_AUDIENCE_FAMILY_ID,
-  NURSERY: process.env.RESEND_AUDIENCE_NURSERY_ID,
+const SEGMENT_IDS: Record<SubscriberType, string | undefined> = {
+  FAMILY: process.env.RESEND_SEGMENT_FAMILY_ID,
+  NURSERY: process.env.RESEND_SEGMENT_NURSERY_ID,
 };
 
 const fail = (message: string, status = 400) =>
@@ -73,14 +79,14 @@ export async function POST(req: NextRequest) {
   }
 
   const apiKey = process.env.RESEND_API_KEY;
-  const audienceId = AUDIENCE_IDS[type];
+  const segmentId = SEGMENT_IDS[type];
   const from = process.env.RESEND_FROM;
   const notifyTo = process.env.RESEND_NOTIFY_TO;
 
-  if (!apiKey || !audienceId) {
+  if (!apiKey || !segmentId) {
     // Misconfiguration is ours, not the visitor's — don't blame them for it.
     console.error(
-      `[subscribe] missing config: ${!apiKey ? 'RESEND_API_KEY ' : ''}${!audienceId ? `RESEND_AUDIENCE_${type}_ID` : ''}`
+      `[subscribe] missing config: ${!apiKey ? 'RESEND_API_KEY ' : ''}${!segmentId ? `RESEND_SEGMENT_${type}_ID` : ''}`
     );
     return fail('Subscriptions are temporarily unavailable. Please try again later.', 503);
   }
@@ -88,15 +94,31 @@ export async function POST(req: NextRequest) {
   const resend = new Resend(apiKey);
   const { firstName, lastName } = splitName(name);
 
-  // The Audience entry is the thing that matters — if this fails, the signup failed.
+  const base = {
+    email,
+    firstName,
+    lastName,
+    unsubscribed: false,
+    segments: [{ id: segmentId }],
+  };
+
+  // Phone and nursery name have nowhere else to live now there's no database,
+  // so hang them off the contact as properties. Resend may reject keys that
+  // haven't been declared on the account, and losing the signup over a missing
+  // property would be a poor trade — so fall back to a bare contact.
+  const properties = {
+    phone,
+    subscriber_type: type === 'NURSERY' ? 'Nursery' : 'Family',
+    ...(type === 'NURSERY' ? { nursery_name: organisation } : {}),
+  };
+
   try {
-    const { error } = await resend.contacts.create({
-      audienceId,
-      email,
-      firstName,
-      lastName,
-      unsubscribed: false,
-    });
+    let { error } = await resend.contacts.create({ ...base, properties });
+
+    if (error) {
+      console.warn('[subscribe] create with properties failed, retrying bare:', error);
+      ({ error } = await resend.contacts.create(base));
+    }
 
     if (error) {
       console.error('[subscribe] resend.contacts.create failed:', error);
@@ -131,7 +153,7 @@ export async function POST(req: NextRequest) {
           </table>
           <p style="color:#666;font-size:13px">Added to the ${
             type === 'NURSERY' ? 'Nurseries' : 'Families'
-          } audience in Resend.</p>
+          } segment in Resend.</p>
         `,
       });
     } catch (err) {

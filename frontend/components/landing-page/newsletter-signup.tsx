@@ -1,13 +1,16 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { motion, useInView } from 'framer-motion';
+import SubscribeModal from './subscribe-modal';
 
 const NewsletterSignup = () => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.3 });
+  const [email, setEmail] = useState('');
+  const [modalOpen, setModalOpen] = useState(false);
 
   return (
     <section className="py-16 bg-white" ref={ref}>
@@ -29,16 +32,34 @@ const NewsletterSignup = () => {
           animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
           transition={{ duration: 0.8, delay: 0.2 }}
         >
-          <Input
-            type="email"
-            placeholder="Enter your email"
-            className="rounded-[6px] p-6"
-          />
-          <Button className="absolute right-2 top-2 bottom-2 flex justify-end items-center bg-secondary hover:bg-secondary/90  rounded-[4px] px-6">
-            Subscribe
-          </Button>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              setModalOpen(true);
+            }}
+          >
+            <Input
+              type="email"
+              placeholder="Enter your email"
+              className="rounded-[6px] p-6"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <Button
+              type="submit"
+              className="absolute right-2 top-2 bottom-2 flex justify-end items-center bg-secondary hover:bg-secondary/90  rounded-[4px] px-6"
+            >
+              Subscribe
+            </Button>
+          </form>
         </motion.div>
       </motion.div>
+
+      <SubscribeModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        initialEmail={email}
+      />
     </section>
   );
 };

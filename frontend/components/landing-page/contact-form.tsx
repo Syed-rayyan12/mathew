@@ -1,12 +1,56 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { MapPin, Mail, Phone, Facebook, Twitter, Youtube, Instagram } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { contactService } from '@/lib/api/contact'
+
+const EMPTY_FORM = {
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
+  message: '',
+}
 
 const ContactSection = () => {
+  const [form, setForm] = useState(EMPTY_FORM)
+  const [submitting, setSubmitting] = useState(false)
+  const [status, setStatus] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  const setField = (field: keyof typeof EMPTY_FORM) => (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => setForm((prev) => ({ ...prev, [field]: e.target.value }))
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setStatus(null)
+    setSubmitting(true)
+
+    try {
+      const res = await contactService.submit({
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim() || undefined,
+        message: form.message.trim(),
+      })
+
+      if (res.success) {
+        setForm(EMPTY_FORM)
+        setStatus({ type: 'success', text: "Thanks — your message has been sent. We'll be in touch shortly." })
+      } else {
+        setStatus({ type: 'error', text: res.message || res.error || 'Something went wrong. Please try again.' })
+      }
+    } catch {
+      setStatus({ type: 'error', text: 'Could not send your message. Please try again, or email us directly.' })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
     <div className="w-full  mx-auto py-16 max-sm:px-8 px-24 bg-white">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -89,7 +133,7 @@ const ContactSection = () => {
           </h2>
           <p className="text-gray-600 mb-6">Connect with our team today</p>
 
-          <form className="space-y-4">
+          <form className="space-y-4" onSubmit={handleSubmit}>
             {/* First Name & Last Name */}
             <div className="flex gap-4">
               <Input
@@ -97,12 +141,18 @@ const ContactSection = () => {
                 placeholder="First Name"
                 className="flex-1"
                 required
+                value={form.firstName}
+                onChange={setField('firstName')}
+                disabled={submitting}
               />
               <Input
                 type="text"
                 placeholder="Last Name"
                 className="flex-1"
                 required
+                value={form.lastName}
+                onChange={setField('lastName')}
+                disabled={submitting}
               />
             </div>
 
@@ -113,12 +163,18 @@ const ContactSection = () => {
                 placeholder="Email"
                 className="flex-1"
                 required
+                value={form.email}
+                onChange={setField('email')}
+                disabled={submitting}
               />
               <Input
                 type="tel"
                 placeholder="Phone Number"
                 className="flex-1"
                 required
+                value={form.phone}
+                onChange={setField('phone')}
+                disabled={submitting}
               />
             </div>
 
@@ -127,14 +183,27 @@ const ContactSection = () => {
               placeholder="Your Message"
               className="min-h-[150px]"
               required
+              value={form.message}
+              onChange={setField('message')}
+              disabled={submitting}
             />
+
+            {status && (
+              <p
+                role="status"
+                className={`text-sm ${status.type === 'success' ? 'text-secondary' : 'text-red-600'}`}
+              >
+                {status.text}
+              </p>
+            )}
 
             {/* Submit Button */}
             <Button
               type="submit"
-              className="w-full bg-secondary hover:bg-secondary/90 text-white py-6 text-lg font-medium"
+              disabled={submitting}
+              className="w-full bg-secondary hover:bg-secondary/90 text-white py-6 text-lg font-medium disabled:opacity-60"
             >
-              Send Message
+              {submitting ? 'Sending...' : 'Send Message'}
             </Button>
           </form>
         </div>

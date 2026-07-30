@@ -162,7 +162,8 @@ export const createNursery = async (
           planTier: string;
           paidNurseryCount: number;
           subscriptionStatus: string;
-        }> = await tx.$queryRaw`SELECT "planTier", "paidNurseryCount", "subscriptionStatus" FROM "users" WHERE "id" = ${userId} FOR UPDATE`;
+          role: string;
+        }> = await tx.$queryRaw`SELECT "planTier", "paidNurseryCount", "subscriptionStatus", "role" FROM "users" WHERE "id" = ${userId} FOR UPDATE`;
 
         const account = locked[0];
         if (!account) {
@@ -171,7 +172,10 @@ export const createNursery = async (
 
         const used = await tx.nursery.count({ where: { ownerId: userId } });
 
-        if (!canAddNursery(account, used)) {
+        // ADMIN passes every entitlement gate, here as at requireFeature and
+        // public visibility. An admin account has no subscription, so without
+        // this the billing half of canAddNursery would refuse it outright.
+        if (account.role !== 'ADMIN' && !canAddNursery(account, used)) {
           throw new NurseryLimitReached(allowance(account, used));
         }
 

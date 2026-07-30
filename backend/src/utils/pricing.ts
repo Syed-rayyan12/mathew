@@ -54,6 +54,92 @@ export function findGroupBand(nurseryCount: number): GroupBand | null {
   return GROUP_BANDS.find((b) => nurseryCount >= b.min && nurseryCount <= b.max) ?? null;
 }
 
+/**
+ * Bumped by hand whenever any amount above changes.
+ *
+ * Stripe Prices are immutable — a unit_amount or tier ladder cannot be edited
+ * after creation — so a price change is a new Price, and a new Price needs a
+ * new lookup key. Keeping the version explicit rather than hashing the table
+ * keeps the keys readable and stops cosmetic edits from churning the
+ * catalogue. `price-catalogue.test.ts` fails if the table moves and this
+ * does not.
+ *
+ * Existing subscribers stay on the Price they bought until deliberately
+ * migrated, so grandfathering is the default rather than something to
+ * remember.
+ */
+export const PRICE_VERSION = 1;
+
+/** A Stripe volume tier. `up_to` is inclusive; the last tier must be 'inf'. */
+export interface StripeTier {
+  up_to: number | 'inf';
+  unit_amount: number;
+}
+
+const perPeriod = (monthlyPence: number, billing: BillingPeriod): number =>
+  billing === 'annual' ? monthlyPence * 12 : monthlyPence;
+
+/**
+ * The band table as a Stripe volume ladder.
+ *
+ * Tier one is the single Platinum rate, because a group of one is a Single —
+ * quantity 1 on this ladder and the standalone Single Platinum price are the
+ * same product at the same money. The trailing 'inf' tier exists only because
+ * Stripe requires the last tier to be unbounded; it repeats the top rate so a
+ * group of 61 can never come out cheaper than a group of 60. Anything at or
+ * above BESPOKE_THRESHOLD is refused by `quote()` long before it reaches
+ * Stripe, and that refusal is the only thing preventing a self-serve group
+ * of 200.
+ */
+export function toStripeTiers(
+  bands: readonly GroupBand[],
+  billing: BillingPeriod
+): StripeTier[] {
+  const ladder: StripeTier[] = [
+    { up_to: 1, unit_amount: perPeriod(SINGLE_PLATINUM_MONTHLY_PENCE, billing) },
+    ...bands.map((band) => ({
+      up_to: band.max,
+      unit_amount: perPeriod(band.unitPence, billing),
+    })),
+  ];
+  const top = ladder[ladder.length - 1];
+  return [...ladder, { up_to: 'inf', unit_amount: top.unit_amount }];
+}
+
+/**
+ * The flat amount for a non-tiered Price. Standard is flat because a Standard
+ * account covers one nursery by definition — there is no ladder to express.
+ * Platinum's flat amount is only used for verification against tier one.
+ */
+export function flatAmountPence(tier: PlanTier, billing: BillingPeriod): number {
+  const monthly =
+    tier === 'platinum' ? SINGLE_PLATINUM_MONTHLY_PENCE : SINGLE_STANDARD_MONTHLY_PENCE;
+  return perPeriod(monthly, billing);
+}
+
+export function priceLookupKey(tier: PlanTier, billing: BillingPeriod): string {
+  return `mathew_${tier}_${billing}_v${PRICE_VERSION}`;
+}
+
+const LOOKUP_KEY_RE = /^mathew_(standard|platinum)_(monthly|annual)_v(\d+)$/;
+
+/**
+ * Reads a lookup key back into a tier and a billing period, at any version.
+ *
+ * This is how a subscription says which plan it is: the Price on the item
+ * carries the key, so nothing has to trust metadata. Returns null rather than
+ * defaulting, because a key we do not recognise means a Price nobody here
+ * created, and silently calling that "standard" would downgrade a paying
+ * customer.
+ */
+export function parseLookupKey(
+  key: string | null | undefined
+): { tier: PlanTier; billing: BillingPeriod } | null {
+  const match = LOOKUP_KEY_RE.exec(key ?? '');
+  if (!match) return null;
+  return { tier: match[1] as PlanTier, billing: match[2] as BillingPeriod };
+}
+
 export interface PriceQuote {
   tier: PlanTier;
   billing: BillingPeriod;

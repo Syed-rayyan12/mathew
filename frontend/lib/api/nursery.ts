@@ -306,6 +306,12 @@ export interface Entitlements {
   isGroup: boolean;
   features: PlanFeatureFlags;
   allowance: { paid: number; used: number; remaining: number };
+  /** Stripe's status string, or "none" for an account that never subscribed. */
+  subscriptionStatus: string;
+  /** True for active, trialing and past_due. */
+  isLive: boolean;
+  currentPeriodEnd: string | null;
+  cancelAt: string | null;
 }
 
 // Nursery Dashboard service (for nursery owners)

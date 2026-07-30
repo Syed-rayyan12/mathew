@@ -10,6 +10,7 @@ import {
   canAddNursery,
   planLabel,
   isGroup,
+  isLive,
   normaliseTier,
 } from '../utils/entitlements';
 
@@ -593,7 +594,13 @@ export const getMyEntitlements = async (
 
     const account = await prisma.user.findUnique({
       where: { id: userId },
-      select: { planTier: true, paidNurseryCount: true },
+      select: {
+        planTier: true,
+        paidNurseryCount: true,
+        subscriptionStatus: true,
+        currentPeriodEnd: true,
+        cancelAt: true,
+      },
     });
 
     if (!account) {
@@ -611,6 +618,13 @@ export const getMyEntitlements = async (
         isGroup: isGroup(account),
         features: features(account),
         allowance: allowance(account, used),
+        // What was bought is reported separately from whether it is currently
+        // paid for, so the dashboard can say "your Group of 8 has lapsed"
+        // rather than pretending the account is a Single Standard.
+        subscriptionStatus: account.subscriptionStatus,
+        isLive: isLive(account),
+        currentPeriodEnd: account.currentPeriodEnd,
+        cancelAt: account.cancelAt,
       },
     });
   } catch (error) {

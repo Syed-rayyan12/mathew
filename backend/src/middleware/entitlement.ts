@@ -1,7 +1,7 @@
 import { Response, NextFunction } from 'express';
 import prisma from '../config/database';
 import { AuthRequest } from './auth';
-import { features, planLabel, type PlanFeatures } from '../utils/entitlements';
+import { features, isLive, planLabel, type PlanFeatures } from '../utils/entitlements';
 
 /**
  * Blocks a route unless the account's tier unlocks the named feature.
@@ -22,11 +22,23 @@ export function requireFeature(feature: keyof PlanFeatures) {
 
     const account = await prisma.user.findUnique({
       where: { id: userId },
-      select: { planTier: true, paidNurseryCount: true },
+      select: { planTier: true, paidNurseryCount: true, subscriptionStatus: true },
     });
 
     if (!account) {
       return res.status(401).json({ success: false, message: 'Account not found.' });
+    }
+
+    // Asked before the feature check on purpose: "your subscription has ended"
+    // is the true and useful answer for a lapsed Platinum account, where
+    // "available on the Platinum plan" would be a lie.
+    if (!isLive(account)) {
+      return res.status(403).json({
+        success: false,
+        code: 'SUBSCRIPTION_INACTIVE',
+        status: account.subscriptionStatus,
+        message: 'Your subscription is not active. Reactivate your plan to use this feature.',
+      });
     }
 
     if (!features(account)[feature]) {

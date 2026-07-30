@@ -34,6 +34,23 @@ model User {
   nurseryName String?
   planTier         String  @default("standard") // "standard" | "platinum"
   paidNurseryCount Int     @default(1)          // nurseries this account paid for
+
+  /// Mirror of the Stripe subscription. Stripe is the source of truth; these
+  /// are a cache the webhook refreshes so that public queries and the admin
+  /// list do not need a Stripe round trip per row.
+  ///
+  /// Three columns, three questions, matching the split already in
+  /// entitlements.ts: planTier says what the plan includes, paidNurseryCount
+  /// says how many nurseries it covers, subscriptionStatus says whether it is
+  /// currently paid for.
+  stripeCustomerId     String?
+  stripeSubscriptionId String?   @unique
+  /// Stripe's own status string, or "none" for an account that has never
+  /// subscribed. Live means active, trialing or past_due — see isLive().
+  subscriptionStatus   String    @default("none")
+  currentPeriodEnd     DateTime?
+  /// Set when an admin schedules a cancellation. Billing continues until then.
+  cancelAt             DateTime?
   jobs        Job[]       @relation("UserJobs")
   @@map("users")
 }

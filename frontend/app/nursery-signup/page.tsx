@@ -17,33 +17,54 @@ import { API_CONFIG } from "@/lib/api/config";
 import NurseryCountPicker from "@/components/sharedComponents/nursery-count-picker";
 import {
   MIN_GROUP_SIZE,
-  PLAN_LABEL,
   formatGbp,
+  planLabel,
   priceFor,
-  type PlanKey,
+  type PlanTier,
 } from "@/lib/pricing";
+
+/** The three sellable products. Tier + count is what actually goes on the wire. */
+type PlanChoice = 'single-standard' | 'single-platinum' | 'group';
+
+const PLAN_CHOICES: { id: PlanChoice; tier: PlanTier; title: string; blurb: string }[] = [
+  { id: 'single-standard', tier: 'standard', title: 'Single Standard', blurb: 'One nursery' },
+  { id: 'single-platinum', tier: 'platinum', title: 'Single Platinum', blurb: 'One nursery' },
+  { id: 'group', tier: 'platinum', title: 'Group', blurb: 'Two or more' },
+];
 
 function NurserySignupContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const planFromUrl = searchParams.get('plan') === 'platinum' ? 'platinum' : 'standard';
+  const tierFromUrl: PlanTier = searchParams.get('plan') === 'platinum' ? 'platinum' : 'standard';
   const billingFromUrl = searchParams.get('billing') === 'annual' ? 'annual' : 'monthly';
 
-  const countFromUrl = (() => {
+  // A count of 1 means a Single; anything higher is a Group. Missing or junk
+  // falls back to a Single so nobody is silently upsold.
+  const rawCountFromUrl = (() => {
     const raw = parseInt(searchParams.get('nurseries') ?? '', 10);
-    if (Number.isNaN(raw)) return MIN_GROUP_SIZE;
-    return Math.min(Math.max(raw, MIN_GROUP_SIZE), 999);
+    if (Number.isNaN(raw)) return 1;
+    return Math.min(Math.max(raw, 1), 999);
   })();
 
-  const [planKey, setPlanKey] = useState<PlanKey>(planFromUrl);
+  const choiceFromUrl: PlanChoice =
+    rawCountFromUrl >= MIN_GROUP_SIZE && tierFromUrl === 'platinum'
+      ? 'group'
+      : tierFromUrl === 'platinum'
+        ? 'single-platinum'
+        : 'single-standard';
+
+  const [planChoice, setPlanChoice] = useState<PlanChoice>(choiceFromUrl);
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>(billingFromUrl);
   // Only meaningful for Group; Single always bills for exactly one nursery.
-  const [nurseryCount, setNurseryCount] = useState<number>(countFromUrl);
+  const [nurseryCount, setNurseryCount] = useState<number>(
+    Math.max(rawCountFromUrl, MIN_GROUP_SIZE)
+  );
 
-  const effectiveCount = planKey === 'platinum' ? nurseryCount : 1;
+  const planKey: PlanTier = planChoice === 'single-standard' ? 'standard' : 'platinum';
+  const effectiveCount = planChoice === 'group' ? nurseryCount : 1;
   const quote = priceFor(planKey, billingPeriod, effectiveCount);
   const planInfo = {
-    label: `${PLAN_LABEL[planKey]} Nursery Listing`,
+    label: `${planLabel(planKey, effectiveCount)} Nursery Listing`,
     monthly: formatGbp(priceFor(planKey, 'monthly', effectiveCount).totalPence),
     annual: formatGbp(priceFor(planKey, 'annual', effectiveCount).totalPence),
   };
@@ -572,16 +593,16 @@ function NurserySignupContent() {
                 </div>
 
                 {/* Plan cards */}
-                <div className="grid grid-cols-2 gap-3">
-                  {(['standard', 'platinum'] as PlanKey[]).map((key) => {
-                    const count = key === 'platinum' ? nurseryCount : 1;
-                    const q = priceFor(key, billingPeriod, count);
-                    const selected = planKey === key;
+                <div className="grid grid-cols-3 gap-3">
+                  {PLAN_CHOICES.map((choice) => {
+                    const count = choice.id === 'group' ? nurseryCount : 1;
+                    const q = priceFor(choice.tier, billingPeriod, count);
+                    const selected = planChoice === choice.id;
                     return (
                       <button
-                        key={key}
+                        key={choice.id}
                         type="button"
-                        onClick={() => setPlanKey(key)}
+                        onClick={() => setPlanChoice(choice.id)}
                         className={`relative text-left rounded-lg border p-3 bg-white transition ${
                           selected
                             ? 'border-secondary ring-2 ring-secondary/30'
@@ -593,7 +614,7 @@ function NurserySignupContent() {
                             ✓
                           </span>
                         )}
-                        <p className="text-sm font-semibold text-gray-900">{PLAN_LABEL[key]}</p>
+                        <p className="text-sm font-semibold text-gray-900">{choice.title}</p>
                         <p className="text-lg font-bold text-secondary mt-1">
                           {q.bespoke ? 'POA' : formatGbp(q.totalPence)}
                           {!q.bespoke && (
@@ -602,15 +623,13 @@ function NurserySignupContent() {
                             </span>
                           )}
                         </p>
-                        <p className="text-[11px] text-gray-500 mt-0.5">
-                          {key === 'standard' ? 'One nursery' : 'Two or more'}
-                        </p>
+                        <p className="text-[11px] text-gray-500 mt-0.5">{choice.blurb}</p>
                       </button>
                     );
                   })}
                 </div>
 
-                {planKey === 'platinum' && (
+                {planChoice === 'group' && (
                   <div className="mt-3">
                     <NurseryCountPicker
                       count={nurseryCount}

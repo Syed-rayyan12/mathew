@@ -6,19 +6,14 @@
  * gets charged — the server re-derives the price from the nursery count on
  * every checkout, and ignores anything the client says about money.
  *
- * If you change a band here, change it there too.
+ * backend/src/utils/pricing-parity.test.ts fails if this file drifts.
  */
 
-export type PlanKey = 'standard' | 'platinum';
+export type PlanTier = 'standard' | 'platinum';
 export type BillingPeriod = 'monthly' | 'annual';
 
-/** What users see. Internal keys stay standard/platinum for Stripe and the DB. */
-export const PLAN_LABEL: Record<PlanKey, string> = {
-  standard: 'Single',
-  platinum: 'Group',
-};
-
-export const SINGLE_MONTHLY_PENCE = 2395;
+export const SINGLE_STANDARD_MONTHLY_PENCE = 2395;
+export const SINGLE_PLATINUM_MONTHLY_PENCE = 3860;
 export const BESPOKE_THRESHOLD = 61;
 export const MIN_GROUP_SIZE = 2;
 /** Largest group that can check out without talking to a human. */
@@ -49,6 +44,12 @@ export const formatGbp = (pence: number) =>
     maximumFractionDigits: 2,
   })}`;
 
+/** Mirrors entitlements.planLabel() on the server. */
+export const planLabel = (tier: PlanTier, nurseryCount: number): string => {
+  if (nurseryCount >= MIN_GROUP_SIZE) return `Group of ${nurseryCount}`;
+  return tier === 'platinum' ? 'Single Platinum' : 'Single Standard';
+};
+
 export interface DisplayQuote {
   /** Per nursery, per billing period. */
   unitPence: number;
@@ -56,27 +57,31 @@ export interface DisplayQuote {
   discountPercent: number;
   /** True when the group is too large to self-serve. */
   bespoke: boolean;
+  isGroup: boolean;
 }
 
 export function priceFor(
-  plan: PlanKey,
+  tier: PlanTier,
   billing: BillingPeriod,
   nurseryCount: number
 ): DisplayQuote {
   const months = billing === 'annual' ? 12 : 1;
+  const isGroup = nurseryCount >= MIN_GROUP_SIZE;
 
-  if (plan === 'standard') {
-    const unitPence = SINGLE_MONTHLY_PENCE * months;
-    return { unitPence, totalPence: unitPence, discountPercent: 0, bespoke: false };
+  if (!isGroup) {
+    const unitPence =
+      (tier === 'platinum' ? SINGLE_PLATINUM_MONTHLY_PENCE : SINGLE_STANDARD_MONTHLY_PENCE) *
+      months;
+    return { unitPence, totalPence: unitPence, discountPercent: 0, bespoke: false, isGroup: false };
   }
 
   if (isBespoke(nurseryCount)) {
-    return { unitPence: 0, totalPence: 0, discountPercent: 50, bespoke: true };
+    return { unitPence: 0, totalPence: 0, discountPercent: 0, bespoke: true, isGroup: true };
   }
 
   const band = findGroupBand(nurseryCount);
   if (!band) {
-    return { unitPence: 0, totalPence: 0, discountPercent: 0, bespoke: false };
+    return { unitPence: 0, totalPence: 0, discountPercent: 0, bespoke: false, isGroup: true };
   }
 
   const unitPence = band.unitPence * months;
@@ -85,5 +90,6 @@ export function priceFor(
     totalPence: unitPence * nurseryCount,
     discountPercent: band.discountPercent,
     bespoke: false,
+    isGroup: true,
   };
 }

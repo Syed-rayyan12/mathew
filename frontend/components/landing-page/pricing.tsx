@@ -11,53 +11,87 @@ import {
     CarouselPrevious,
 } from "@/components/ui/carousel";
 import NurseryCountPicker from "@/components/sharedComponents/nursery-count-picker";
-import { MIN_GROUP_SIZE, formatGbp, priceFor } from "@/lib/pricing";
+import { MIN_GROUP_SIZE, formatGbp, priceFor, type PlanTier } from "@/lib/pricing";
 
-const pricingPlans = [
-   
+const STANDARD_FEATURES = [
+    "Full Nursery Profile Page",
+    "About Us, Philosophy, Fees, Opening Hours",
+    "Age Range, Facilities & Services",
+    "Card Image + Gallery Images",
+    "Appear in City & Search Results",
+    "Parent Reviews & Ratings",
+    "Review Notifications",
+    "Contact Enquiries from Parents",
+    "Basic Nursery Dashboard",
+    "Standard Search Visibility",
+];
 
+const PLATINUM_FEATURES = [
+    "Nursery Group Page (for multiple branches)",
+    "Unlimited Image Gallery",
+    "Video on Nursery Profile",
+    "Team Member Profiles (including qualifications & badges)",
+    "Review Management (approve, reject, respond)",
+    "Full Notification System",
+    "Priority Placement in Search Results",
+    "Dashboard Analytics (ratings, reviews, performance)",
+    "Job Listings",
+];
+
+const buttonClasses =
+    "bg-transparent border-secondary py-4 px-6 hover:bg-secondary hover:text-white transition-colors duration-200";
+
+/**
+ * Three sellable products. `tier` is the wire value the backend reads from the
+ * `plan` field — it stays standard/platinum. Group is Platinum bought for two
+ * or more nurseries, which is why it carries the same tier as Single Platinum.
+ */
+const pricingPlans: {
+    id: string;
+    tier: PlanTier;
+    isGroupCard: boolean;
+    title: string;
+    subtitle: string;
+    features: string[];
+    buttonText: string;
+    buttonClasses: string;
+    popular?: boolean;
+    priceLabel: string;
+}[] = [
     {
-        id: "standard",
-        title: "Single",
+        id: "single-standard",
+        tier: "standard",
+        isGroupCard: false,
+        title: "Single Standard",
         subtitle: "For a one-site nursery",
-        price: "23.95",
-        features: [
-            "Full Nursery Profile Page",
-            "About Us, Philosophy, Fees, Opening Hours",
-            "Age Range, Facilities & Services",
-            "Card Image + Gallery Images",
-            "Appear in City & Search Results",
-            "Parent Reviews & Ratings",
-            "Review Notifications",
-            "Contact Enquiries from Parents",
-            "Basic Nursery Dashboard",
-            "Standard Search Visibility",
-        ],
-        buttonText: "Start Single",
-        buttonClasses: "bg-transparent border-secondary py-4 px-6 hover:bg-secondary hover:text-white transition-colors duration-200",
+        features: STANDARD_FEATURES,
+        buttonText: "Start Single Standard",
+        buttonClasses,
         popular: true,
         priceLabel: " per month",
     },
 
     {
-        id: "platinum",
+        id: "single-platinum",
+        tier: "platinum",
+        isGroupCard: false,
+        title: "Single Platinum",
+        subtitle: "One nursery, with every Platinum feature",
+        features: PLATINUM_FEATURES,
+        buttonText: "Start Single Platinum",
+        buttonClasses,
+        priceLabel: " per month",
+    },
+
+    {
+        id: "group",
+        tier: "platinum",
+        isGroupCard: true,
         title: "Group",
         subtitle: "Two or more nurseries, with a volume discount",
-        price: "34.74",
-        features: [
-            "Unlimited Nursery Locations",
-            "Nursery Group Page (for multiple branches)",
-            "Unlimited Image Gallery",
-            "Video on Nursery Profile",
-            "Team Member Profiles (including qualifications & badges)",
-            "Review Management (approve, reject, respond)",
-            "Full Notification System",
-            "Priority Placement in Search Results",
-            "Dashboard Analytics (ratings, reviews, performance)",
-            "Job Listings",
-        ],
+        features: ["Volume discount — up to 40% off per nursery", ...PLATINUM_FEATURES],
         buttonText: "Start Group",
-        buttonClasses: "bg-transparent border-secondary py-4 px-6 hover:bg-secondary hover:text-white transition-colors duration-200",
+        buttonClasses,
         priceLabel: "per nursery per month",
     },
 ];
@@ -70,7 +104,6 @@ export default function PricingSection() {
     // Group pricing is per-nursery and banded, so the card needs a count to quote against.
     const [nurseryCount, setNurseryCount] = useState<number>(MIN_GROUP_SIZE);
 
-    const singleQuote = priceFor('standard', billingPeriod, 1);
     const groupQuote = priceFor('platinum', billingPeriod, nurseryCount);
 
     useEffect(() => {
@@ -86,38 +119,42 @@ export default function PricingSection() {
 
     // Pricing page buttons always go to nursery-signup (new group).
     // Upgrading an existing account is done from the nursery dashboard only.
-    const handlePlanSelect = (planId: string) => {
+    const handlePlanSelect = (plan: typeof pricingPlans[0]) => {
         // Groups past the self-serve ceiling are quoted by hand, so there is no
         // checkout to send them to.
-        if (planId === 'platinum' && groupQuote.bespoke) {
+        if (plan.isGroupCard && groupQuote.bespoke) {
             router.push('/contact-us');
             return;
         }
-        const count = planId === 'platinum' ? nurseryCount : 1;
+        // Singles always cover exactly one nursery; only Group carries a count.
+        const count = plan.isGroupCard ? nurseryCount : 1;
         router.push(
-            `/nursery-signup?plan=${planId}&billing=${billingPeriod}&nurseries=${count}`
+            `/nursery-signup?plan=${plan.tier}&billing=${billingPeriod}&nurseries=${count}`
         );
     };
 
-    const getPlanButtonLabel = (planId: string) => {
-        if (!isNurseryOwner) return planId === 'standard' ? 'Start Single' : 'Start Group';
-        // Logged-in owner — they can still sign up for a new group
-        if (planId === 'standard') return 'Create New Single Listing';
-        return 'Create New Group';
+    const getPlanButtonLabel = (plan: typeof pricingPlans[0]) => {
+        if (!isNurseryOwner) return plan.buttonText;
+        // Logged-in owner — they can still sign up for a new listing
+        return plan.isGroupCard ? 'Create New Group' : `Create New ${plan.title} Listing`;
     };
 
-    const buttonLabelFor = (planId: string) =>
-        planId === 'platinum' && groupQuote.bespoke
+    const buttonLabelFor = (plan: typeof pricingPlans[0]) =>
+        plan.isGroupCard && groupQuote.bespoke
             ? 'Contact us for a quote'
-            : getPlanButtonLabel(planId);
+            : getPlanButtonLabel(plan);
 
-    const renderPricingCard = (plan: typeof pricingPlans[0]) => (
+    const renderPricingCard = (plan: typeof pricingPlans[0]) => {
+        // Singles are quoted at exactly one nursery; Group uses the picker.
+        const singleQuote = priceFor(plan.tier, billingPeriod, 1);
+
+        return (
         <div
             key={plan.id}
             className={`
                 relative rounded-2xl p-8 border transition-all
-                
-                ${plan.id === "standard"
+
+                ${plan.popular
                     ? "border-secondary shadow-xl md:scale-[1.05]"
                     : "border-gray-300 order-1 md:order-none"
                 }
@@ -138,7 +175,7 @@ export default function PricingSection() {
 
             <p className="text-gray-500 mt-1">{plan.subtitle}</p>
 
-            {plan.id === 'platinum' ? (
+            {plan.isGroupCard ? (
                 <>
                     <p className="text-4xl font-bold mt-6">
                         <span className="text-2xl text-secondary">From</span> {formatGbp(groupQuote.unitPence)}
@@ -165,7 +202,7 @@ export default function PricingSection() {
                     </p>
                     {billingPeriod === 'annual' && (
                         <p className="text-xs text-green-600 font-medium mt-1">
-                            Equivalent to {formatGbp(priceFor('standard', 'monthly', 1).totalPence)}/month
+                            Equivalent to {formatGbp(priceFor(plan.tier, 'monthly', 1).totalPence)}/month
                         </p>
                     )}
                     <p className="text-xs text-gray-500 mt-1">
@@ -184,13 +221,14 @@ export default function PricingSection() {
             </ul>
 
             <button
-                onClick={() => handlePlanSelect(plan.id)}
+                onClick={() => handlePlanSelect(plan)}
                 className={`mt-8 w-full border rounded-xl font-semibold flex items-center justify-center gap-2 ${plan.buttonClasses}`}
             >
-                {buttonLabelFor(plan.id)}
+                {buttonLabelFor(plan)}
             </button>
         </div>
-    );
+        );
+    };
 
     return (
         <section className="py-20 bg-white">
@@ -241,7 +279,7 @@ export default function PricingSection() {
                 </div>
 
                 {/* Desktop Grid - Hidden below md */}
-                <div className="hidden lg:grid md:grid-cols-2 gap-10">
+                <div className="hidden lg:grid lg:grid-cols-3 gap-10">
                     {pricingPlans.map((plan) => renderPricingCard(plan))}
                 </div>
 
@@ -255,9 +293,12 @@ export default function PricingSection() {
                                 <tr className="text-left bg-gray-100 rounded-xl">
                                     <th className="p-4  font-medium font-heading text-[28px] text-secondary rounded-l-xl">Features</th>
                                     <th className="p-4  font-medium font-heading text-[28px] text-secondary ">
-                                        Nursery Listing (Paid)
+                                        Single Standard
                                     </th>
-                                    <th className="p-4  font-medium font-heading text-[28px] text-secondary rounded-r-xl">Platinum</th>
+                                    <th className="p-4  font-medium font-heading text-[28px] text-secondary ">
+                                        Single Platinum
+                                    </th>
+                                    <th className="p-4  font-medium font-heading text-[28px] text-secondary rounded-r-xl">Group</th>
                                 </tr>
                             </thead>
 
@@ -272,10 +313,12 @@ export default function PricingSection() {
                                     <td className="p-4">Nursery Name</td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
                                 <tr>
                                     <td className="p-4">Address</td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
@@ -284,10 +327,12 @@ export default function PricingSection() {
                                     <td className="p-4">Telephone</td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
                                 <tr>
                                     <td className="p-4">Full Nursery Profile Page</td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
@@ -296,10 +341,12 @@ export default function PricingSection() {
                                     <td className="p-4">About Us, Philosophy, Fees, Opening Hours</td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
                                 <tr>
                                     <td className="p-4">Age Range, Facilities &amp; Services</td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
@@ -308,10 +355,12 @@ export default function PricingSection() {
                                     <td className="p-4">Card Image + Gallery Images</td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
                                 <tr>
                                     <td className="p-4">Appear in City &amp; Search Results</td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
@@ -320,10 +369,12 @@ export default function PricingSection() {
                                     <td className="p-4">Parent Reviews &amp; Ratings</td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
                                 <tr>
                                     <td className="p-4">Review Notifications</td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
@@ -332,10 +383,12 @@ export default function PricingSection() {
                                     <td className="p-4">Contact Enquiries from Parents</td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
                                 <tr>
                                     <td className="p-4">Basic Nursery Dashboard</td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
@@ -344,56 +397,67 @@ export default function PricingSection() {
                                     <td className="p-4">Standard Search Visibility</td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 
                                 <tr>
-                                    <td className="p-4">Unlimited Nursery Locations</td>
-                                    <td className="text-center"><X className="text-red-500" /></td>
-                                    <td className="text-center"><Check className="text-secondary" /></td>
+                                    <td className="p-4">Nursery Locations</td>
+                                    <td className="text-center font-medium">1</td>
+                                    <td className="text-center font-medium">1</td>
+                                    <td className="text-center font-medium">2&ndash;60</td>
                                 </tr>
                                 <tr>
                                     <td className="p-4">Nursery Group Page (for multiple branches)</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
                                 <tr>
                                     <td className="p-4">Unlimited Image Gallery</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
                                 <tr>
                                     <td className="p-4">Video on Nursery Profile</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
                                 <tr>
                                     <td className="p-4">Team Member Profiles (including qualifications &amp; badges)</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
                                 <tr>
                                     <td className="p-4">Review Management (approve, reject, respond)</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
                                 <tr>
                                     <td className="p-4">Full Notification System</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
                                 <tr>
                                     <td className="p-4">Priority Placement in Search Results</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
                                 <tr>
                                     <td className="p-4">Dashboard Analytics (ratings, reviews, performance)</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
                                 <tr>
                                     <td className="p-4">Job Listings</td>
                                     <td className="text-center"><X className="text-red-500" /></td>
+                                    <td className="text-center"><Check className="text-secondary" /></td>
                                     <td className="text-center"><Check className="text-secondary" /></td>
                                 </tr>
 

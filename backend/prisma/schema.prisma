@@ -51,8 +51,17 @@ model User {
   currentPeriodEnd     DateTime?
   /// Set when an admin schedules a cancellation. Billing continues until then.
   cancelAt             DateTime?
+  /// ── Jobs add-on ──────────────────────────────────────────────────────────
+  /// Separate Stripe subscription for the £5.99/mo job-posting add-on.
+  /// Same mirror pattern as the plan columns above.
+  jobsAddonSubscriptionId   String?   @unique
+  jobsAddonStatus           String    @default("none")
+  jobsAddonCurrentPeriodEnd DateTime?
+  jobsAddonCancelAt         DateTime?
+  jobsAddonMinimumTermEnd   DateTime?
   jobs        Job[]       @relation("UserJobs")
   @@index([subscriptionStatus])
+  @@index([jobsAddonStatus])
   @@map("users")
 }
 

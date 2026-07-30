@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { CheckCircle, XCircle, Zap, ArrowLeft, Loader2 } from 'lucide-react';
-import { authService, type ChangePreview } from '@/lib/api/auth';
+import { authService, type PricedChangePreview } from '@/lib/api/auth';
 import Link from 'next/link';
 import NurseryCountPicker from '@/components/sharedComponents/nursery-count-picker';
 import { useEntitlements } from '@/hooks/use-nursery-plan';
@@ -44,7 +44,9 @@ function UpgradeContent() {
   const [status, setStatus] = useState<
     'idle' | 'confirming' | 'verifying' | 'success' | 'error' | 'cancelled'
   >(cancelled ? 'cancelled' : upgraded && sessionId ? 'verifying' : 'idle');
-  const [preview, setPreview] = useState<ChangePreview | null>(null);
+  // Only ever the priced arm: the requiresCheckout case redirects to Stripe
+  // and never reaches this state, so anything stored here has a prorationDate.
+  const [preview, setPreview] = useState<PricedChangePreview | null>(null);
   /**
    * The selection the preview was priced for, frozen at preview time.
    *
@@ -88,7 +90,15 @@ function UpgradeContent() {
 
   // Both axes land on Platinum: a group of two or more is Platinum by
   // definition, and the tier axis exists to leave Standard behind.
-  const targetCount = axis === 'tier' ? Math.max(paidCount, 1) : nurseryCount;
+  //
+  // usedCount belongs here as well as on the count axis. Grandfathered owners
+  // came through the backfill with paidNurseryCount = 1 and however many
+  // nurseries they had already listed, so quoting the tier axis at what they
+  // pay for would ask the server to sell an allowance below what is live —
+  // which validateChange refuses with BELOW_CURRENT_USAGE, a downgrade error,
+  // on the upgrade button. They have to be quoted for what they actually hold.
+  const tierAxisCount = Math.max(paidCount, usedCount, 1);
+  const targetCount = axis === 'tier' ? tierAxisCount : nurseryCount;
   const upgradeQuote = priceFor('platinum', billingPeriod, targetCount);
   const targetLabel = planLabel('platinum', targetCount);
 
@@ -433,7 +443,7 @@ function UpgradeContent() {
             <p className="text-xs text-gray-500 mt-1">
               {isPlatinum
                 ? 'Already included in your plan.'
-                : `Keep your ${paidCount === 1 ? 'nursery' : `${paidCount} nurseries`}, add every Platinum feature.`}
+                : `Keep your ${tierAxisCount === 1 ? 'nursery' : `${tierAxisCount} nurseries`}, add every Platinum feature.`}
             </p>
           </button>
 

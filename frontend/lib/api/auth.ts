@@ -77,10 +77,8 @@ export interface UpgradeResult {
   paidNurseryCount: number;
 }
 
-/** What preview-change hands back. Amounts are pence, as everywhere else. */
-export interface ChangePreview {
-  /** True when there is no live subscription to update — go via Stripe. */
-  requiresCheckout: boolean;
+/** The figures both arms of {@link ChangePreview} carry. Pence, as everywhere. */
+interface ChangePreviewFigures {
   amountDueNowPence: number;
   nextRenewalPence: number;
   /** Null when the interval changes, because the cycle is about to reset. */
@@ -88,9 +86,44 @@ export interface ChangePreview {
   intervalChanges: boolean;
   currency: string;
   targetLabel: string;
-  /** A2: the second the quote was priced at. Must be handed back to apply-change. */
-  prorationDate: number;
 }
+
+/**
+ * What preview-change hands back.
+ *
+ * A union rather than one shape, because prorationDate only exists on one of
+ * them. With no live subscription to update, the server has nothing to ask
+ * Stripe to price, so it answers from our own catalogue and returns no
+ * timestamp.
+ *
+ * That matters because the type is now the only thing standing between a
+ * caller and apply-change, which rejects a missing timestamp with 409
+ * PREVIEW_EXPIRED — the exact bug that broke every plan change once already.
+ * Declaring prorationDate on a single shape asserted a timestamp that half the
+ * responses do not carry; narrowing on requiresCheckout makes the compiler
+ * enforce what was previously only convention.
+ */
+export type ChangePreview =
+  /**
+   * No live subscription — reactivation goes through Stripe Checkout. The
+   * figures are our sticker price, not a proration, because nothing was
+   * prorated: there is no part-period to credit.
+   */
+  | (ChangePreviewFigures & { requiresCheckout: true })
+  /** A live subscription Stripe priced. amountDueNowPence is its proration. */
+  | (ChangePreviewFigures & {
+      requiresCheckout: false;
+      /** A2: the second the quote was priced at. Handed back to apply-change. */
+      prorationDate: number;
+    });
+
+/**
+ * The priced arm of {@link ChangePreview} — the only one carrying a
+ * prorationDate, and so the only one apply-change will accept. Hold state in
+ * this rather than in ChangePreview: it puts the narrowing at the point the
+ * quote is stored, instead of asking every field access to re-prove it.
+ */
+export type PricedChangePreview = Extract<ChangePreview, { requiresCheckout: false }>;
 
 export interface ChangeResult {
   planTier: 'standard' | 'platinum';

@@ -99,7 +99,6 @@ const pricingPlans: {
 export default function PricingSection() {
     const router = useRouter();
     const [isNurseryOwner, setIsNurseryOwner] = useState(false);
-    const [currentPlan, setCurrentPlan] = useState<string>('');
     const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
     // Group pricing is per-nursery and banded, so the card needs a count to quote against.
     const [nurseryCount, setNurseryCount] = useState<number>(MIN_GROUP_SIZE);
@@ -112,7 +111,6 @@ export default function PricingSection() {
             const user = raw ? JSON.parse(raw) : null;
             if (user && user.role === 'NURSERY_OWNER') {
                 setIsNurseryOwner(true);
-                setCurrentPlan((user.plan || 'standard').toLowerCase());
             }
         } catch { /* not logged in */ }
     }, []);

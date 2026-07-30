@@ -168,9 +168,16 @@ Display-only, all driven by `planLabel()`:
   volume-discount line. Comparison table header.
 - `utils/stripe.ts` — Stripe product names. `mathew_plan` metadata remains the
   identifier, so the rename is display-only and does not orphan anything.
-- `describeQuote()` output is wired into `price_data.product_data`. It is
+- `describeQuote()` output is wired into `invoice_creation.invoice_data`. It is
   currently computed and discarded, because `price_data` only reads
   `unitAmount`.
+
+  Corrected during planning: this originally said `price_data.product_data`.
+  That would be wrong. `product_data` makes Stripe mint a fresh ad-hoc product
+  per checkout, and `coupon.controller.ts:98` pins every coupon to the
+  `ensurePlanProducts()` product IDs via `applies_to.products` — so all
+  promotion codes would silently stop matching. `price_data.product` stays;
+  the description reaches the customer on the invoice instead.
 
 ## Admin
 

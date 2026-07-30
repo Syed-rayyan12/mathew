@@ -16,6 +16,8 @@ export const SINGLE_STANDARD_MONTHLY_PENCE = 2395;
 export const SINGLE_PLATINUM_MONTHLY_PENCE = 3860;
 export const BESPOKE_THRESHOLD = 61;
 export const MIN_GROUP_SIZE = 2;
+export const JOBS_ADDON_MONTHLY_PENCE = 599;
+export const JOBS_ADDON_MINIMUM_MONTHS = 3;
 /** Largest group that can check out without talking to a human. */
 export const MAX_SELF_SERVE_GROUP = BESPOKE_THRESHOLD - 1;
 

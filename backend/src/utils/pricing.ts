@@ -214,3 +214,30 @@ export function quote(
   };
 }
 
+// ── Jobs add-on ──────────────────────────────────────────────────────────────
+
+/** £5.99/mo, monthly only. */
+export const JOBS_ADDON_MONTHLY_PENCE = 599;
+
+/** First three payments are locked in. */
+export const JOBS_ADDON_MINIMUM_MONTHS = 3;
+
+/** One live advert at a time on the add-on. Platinum is unlimited. */
+export const JOBS_ADDON_ACTIVE_LIMIT = 1;
+
+/** Versioned independently of plan prices. */
+export const JOBS_ADDON_PRICE_VERSION = 1;
+
+const ADDON_KEY_RE = /^mathew_jobs_addon_monthly_v(\d+)$/;
+
+export function jobsAddonLookupKey(): string {
+  return `mathew_jobs_addon_monthly_v${JOBS_ADDON_PRICE_VERSION}`;
+}
+
+export function parseJobsAddonLookupKey(
+  key: string | null | undefined
+): { version: number } | null {
+  const match = ADDON_KEY_RE.exec(key ?? '');
+  if (!match) return null;
+  return { version: Number(match[1]) };
+}

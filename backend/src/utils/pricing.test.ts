@@ -6,6 +6,12 @@ import {
   GROUP_BANDS,
   SINGLE_STANDARD_MONTHLY_PENCE,
   SINGLE_PLATINUM_MONTHLY_PENCE,
+  JOBS_ADDON_MONTHLY_PENCE,
+  JOBS_ADDON_MINIMUM_MONTHS,
+  JOBS_ADDON_ACTIVE_LIMIT,
+  jobsAddonLookupKey,
+  parseJobsAddonLookupKey,
+  parseLookupKey,
   type PlanTier,
 } from './pricing';
 
@@ -103,6 +109,43 @@ describe('rejections', () => {
     for (const bad of [0, -1, 1.5, NaN, Infinity]) {
       expect(() => quote('platinum', 'monthly', bad), `count ${bad}`).toThrow(PricingError);
     }
+  });
+});
+
+describe('jobs add-on pricing', () => {
+  it('exports the add-on rate', () => {
+    expect(JOBS_ADDON_MONTHLY_PENCE).toBe(599);
+  });
+
+  it('exports the minimum term', () => {
+    expect(JOBS_ADDON_MINIMUM_MONTHS).toBe(3);
+  });
+
+  it('exports the active job limit', () => {
+    expect(JOBS_ADDON_ACTIVE_LIMIT).toBe(1);
+  });
+
+  it('round-trips the add-on lookup key', () => {
+    const key = jobsAddonLookupKey();
+    expect(key).toBe('mathew_jobs_addon_monthly_v1');
+    const parsed = parseJobsAddonLookupKey(key);
+    expect(parsed).toEqual({ version: 1 });
+  });
+
+  it('rejects plan keys from parseJobsAddonLookupKey', () => {
+    expect(parseJobsAddonLookupKey('mathew_standard_monthly_v1')).toBeNull();
+    expect(parseJobsAddonLookupKey('mathew_platinum_annual_v1')).toBeNull();
+  });
+
+  it('rejects the add-on key from parseLookupKey (plan reader)', () => {
+    expect(parseLookupKey('mathew_jobs_addon_monthly_v1')).toBeNull();
+  });
+
+  it('rejects null and garbage from parseJobsAddonLookupKey', () => {
+    expect(parseJobsAddonLookupKey(null)).toBeNull();
+    expect(parseJobsAddonLookupKey(undefined)).toBeNull();
+    expect(parseJobsAddonLookupKey('')).toBeNull();
+    expect(parseJobsAddonLookupKey('some_random_key')).toBeNull();
   });
 });
 

@@ -5,6 +5,8 @@ import {
   GROUP_BANDS,
   SINGLE_STANDARD_MONTHLY_PENCE,
   SINGLE_PLATINUM_MONTHLY_PENCE,
+  JOBS_ADDON_MONTHLY_PENCE,
+  JOBS_ADDON_MINIMUM_MONTHS,
 } from './pricing';
 
 // process.cwd(), not __dirname — vitest transforms to ESM, where __dirname
@@ -37,5 +39,15 @@ describe('frontend pricing mirror', () => {
     }));
 
     expect(found).toEqual(GROUP_BANDS.map((b) => ({ ...b })));
+  });
+});
+
+describe('frontend jobs add-on mirror', () => {
+  it('has the same add-on rate', () => {
+    expect(constant('JOBS_ADDON_MONTHLY_PENCE')).toBe(JOBS_ADDON_MONTHLY_PENCE);
+  });
+
+  it('has the same minimum term', () => {
+    expect(constant('JOBS_ADDON_MINIMUM_MONTHS')).toBe(JOBS_ADDON_MINIMUM_MONTHS);
   });
 });

@@ -188,7 +188,7 @@ export const authService = {
     const response = await nurseryApiClient.post<UpgradeResult>(
       '/stripe/verify-upgrade-session',
       { sessionId },
-      false
+      true
     );
     if (response.success && response.data?.planTier) {
       const { planTier, paidNurseryCount } = response.data;

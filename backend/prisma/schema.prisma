@@ -38,6 +38,21 @@ model User {
   @@map("users")
 }
 
+/// One row per Stripe Checkout Session that has already been applied to an
+/// account. The primary key is the Stripe session id, so the insert is what
+/// makes reconciliation idempotent: the webhook and the success redirect race
+/// on it, and re-posting an old session id after a downgrade cannot re-apply
+/// the larger allowance.
+model ProcessedCheckoutSession {
+  id          String   @id @db.VarChar(255)
+  userId      String   @db.VarChar(15)
+  planTier    String
+  nurseryCount Int
+  createdAt   DateTime @default(now())
+  @@index([userId])
+  @@map("processed_checkout_sessions")
+}
+
 model Group {
   id          String      @id @default(cuid()) @db.VarChar(15)
   name        String

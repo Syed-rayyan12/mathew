@@ -13,6 +13,16 @@ import {
   normaliseTier,
 } from '../utils/entitlements';
 
+/**
+ * Thrown inside the createNursery transaction so the allowance check can abort
+ * the insert. Caught immediately outside and turned into the 403.
+ */
+class NurseryLimitReached extends Error {
+  constructor(public readonly limits: { paid: number; used: number; remaining: number }) {
+    super('Nursery allowance reached');
+  }
+}
+
 // Get nursery owner's GROUP (created via nursery signup/dashboard)
 export const getMyNursery = async (
   req: AuthRequest,
@@ -105,34 +115,6 @@ export const createNursery = async (
       });
     }
 
-    // The allowance is what was paid for. A Single account has
-    // paidNurseryCount 1, so this same check covers "Standard cannot add a
-    // second nursery" — there is no separate Single/Group branch.
-    const account = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { planTier: true, paidNurseryCount: true },
-    });
-
-    if (!account) {
-      throw new UnauthorizedError('User not authenticated');
-    }
-
-    const used = await prisma.nursery.count({ where: { ownerId: userId } });
-
-    if (!canAddNursery(account, used)) {
-      const limits = allowance(account, used);
-      return res.status(403).json({
-        success: false,
-        code: 'NURSERY_LIMIT_REACHED',
-        paid: limits.paid,
-        used: limits.used,
-        message:
-          limits.paid === 0
-            ? 'Complete your payment to add a nursery.'
-            : `Your plan covers ${limits.paid} ${limits.paid === 1 ? 'nursery' : 'nurseries'}. Add more to your plan to continue.`,
-      });
-    }
-
     // Find parent group for this user
     const parentGroup = await prisma.group.findFirst({
       where: {
@@ -165,34 +147,56 @@ export const createNursery = async (
     // Generate custom short ID
     const nurseryId = await generateShortId('NUR');
 
-    const canUseVideo = features(account).video;
-
-    // Create nursery
+    // Create nursery.
+    //
+    // The allowance is what was paid for. A Single account has
+    // paidNurseryCount 1, so this same check covers "Standard cannot add a
+    // second nursery" — there is no separate Single/Group branch.
+    //
+    // Counting and creating happen under a row lock on the owner, because two
+    // requests that both counted before either inserted would both pass and
+    // put the account over its allowance.
     try {
-      const newNursery = await prisma.nursery.create({
-        data: {
-          id: nurseryId,
-          name,
-          slug: uniqueSlug,
-          description: description || null,
-          phone: phone || null,
-          email: email || null,
-          city: city || '',
-          town: town || null,
-          ageRange: ageRange || null,
-          facilities: Array.isArray(facilities) ? facilities : [],
-          fees: fees && Object.keys(fees).length > 0 ? fees : null,
-          openingHours: openingHours || null,
-          aboutUs: aboutUs || null,
-          philosophy: philosophy || null,
-          cardImage: cardImage || null,
-          images: Array.isArray(images) ? images : [],
-          videoUrl: canUseVideo ? videoUrl || null : null,
-          pricingFeatures: Array.isArray(pricingFeatures) ? pricingFeatures : [],
-          ownerId: userId,
-          groupId: parentGroup.id,
-          isApproved: true,
-        },
+      const newNursery = await prisma.$transaction(async (tx: any) => {
+        const locked: Array<{ planTier: string; paidNurseryCount: number }> =
+          await tx.$queryRaw`SELECT "planTier", "paidNurseryCount" FROM "users" WHERE "id" = ${userId} FOR UPDATE`;
+
+        const account = locked[0];
+        if (!account) {
+          throw new UnauthorizedError('User not authenticated');
+        }
+
+        const used = await tx.nursery.count({ where: { ownerId: userId } });
+
+        if (!canAddNursery(account, used)) {
+          throw new NurseryLimitReached(allowance(account, used));
+        }
+
+        return tx.nursery.create({
+          data: {
+            id: nurseryId,
+            name,
+            slug: uniqueSlug,
+            description: description || null,
+            phone: phone || null,
+            email: email || null,
+            city: city || '',
+            town: town || null,
+            ageRange: ageRange || null,
+            facilities: Array.isArray(facilities) ? facilities : [],
+            fees: fees && Object.keys(fees).length > 0 ? fees : null,
+            openingHours: openingHours || null,
+            aboutUs: aboutUs || null,
+            philosophy: philosophy || null,
+            cardImage: cardImage || null,
+            images: Array.isArray(images) ? images : [],
+            videoUrl: features(account).video ? videoUrl || null : null,
+            pricingFeatures: Array.isArray(pricingFeatures) ? pricingFeatures : [],
+            ownerId: userId,
+            groupId: parentGroup.id,
+            isApproved: true,
+          },
+        });
       });
 
       // Create notification for new nursery creation
@@ -213,6 +217,20 @@ export const createNursery = async (
         data: newNursery,
       });
     } catch (createError: any) {
+      if (createError instanceof NurseryLimitReached) {
+        const { paid, used } = createError.limits;
+        return res.status(403).json({
+          success: false,
+          code: 'NURSERY_LIMIT_REACHED',
+          paid,
+          used,
+          message:
+            paid === 0
+              ? 'Complete your payment to add a nursery.'
+              : `Your plan covers ${paid} ${paid === 1 ? 'nursery' : 'nurseries'}. Add more to your plan to continue.`,
+        });
+      }
+      if (createError instanceof UnauthorizedError) throw createError;
       throw new Error(`Failed to create nursery: ${createError.message}`);
     }
   } catch (error) {

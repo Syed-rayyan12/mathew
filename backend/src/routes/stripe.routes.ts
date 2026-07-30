@@ -12,7 +12,7 @@ router.post('/verify-session', verifySession);
 
 // Upgrade existing nursery owner plan (authenticated)
 router.post('/create-upgrade-session', authenticate, createUpgradeSession);
-router.post('/verify-upgrade-session', verifyUpgradeSession);
+router.post('/verify-upgrade-session', authenticate, verifyUpgradeSession);
 
 // NOTE: The webhook route is mounted directly in server.ts
 // with express.raw() body parser, not here with express.json()

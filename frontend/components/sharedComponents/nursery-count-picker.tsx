@@ -17,6 +17,12 @@ interface NurseryCountPickerProps {
   billing: BillingPeriod;
   /** Shown under the total, e.g. a note about what happens next. */
   footnote?: React.ReactNode;
+  /**
+   * Floor for the picker. Defaults to the smallest group. The upgrade page
+   * raises it to the number of nurseries already live, because the server
+   * refuses to sell an allowance smaller than that.
+   */
+  min?: number;
 }
 
 /**
@@ -29,16 +35,18 @@ const NurseryCountPicker = ({
   onChange,
   billing,
   footnote,
+  min = MIN_GROUP_SIZE,
 }: NurseryCountPickerProps) => {
+  const floor = Math.max(min, MIN_GROUP_SIZE);
   const quote = priceFor('platinum', billing, count);
   const per = billing === 'annual' ? 'year' : 'month';
   const bespoke = isBespoke(count);
 
   // Typing a bigger number is allowed so large groups can see the bespoke
   // message; only the slider stops at the self-serve ceiling.
-  const clamp = (n: number) => Math.min(Math.max(n, MIN_GROUP_SIZE), 999);
+  const clamp = (n: number) => Math.min(Math.max(n, floor), 999);
   const clampSlider = (n: number) =>
-    Math.min(Math.max(n, MIN_GROUP_SIZE), MAX_SELF_SERVE_GROUP);
+    Math.min(Math.max(n, floor), MAX_SELF_SERVE_GROUP);
 
   return (
     <div className="rounded-[8px] border border-gray-200 bg-white p-5">
@@ -54,7 +62,7 @@ const NurseryCountPicker = ({
           type="button"
           aria-label="Fewer nurseries"
           onClick={() => onChange(clamp(count - 1))}
-          disabled={count <= MIN_GROUP_SIZE}
+          disabled={count <= floor}
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-300 text-gray-600 transition-colors hover:border-secondary hover:text-secondary disabled:opacity-40 disabled:hover:border-gray-300 disabled:hover:text-gray-600"
         >
           <Minus className="h-4 w-4" />
@@ -64,7 +72,7 @@ const NurseryCountPicker = ({
           id="nursery-count"
           type="number"
           inputMode="numeric"
-          min={MIN_GROUP_SIZE}
+          min={floor}
           max={999}
           value={count}
           onChange={(e) => {
@@ -87,9 +95,9 @@ const NurseryCountPicker = ({
         <input
           type="range"
           aria-label="Number of nurseries"
-          min={MIN_GROUP_SIZE}
+          min={floor}
           max={MAX_SELF_SERVE_GROUP}
-          value={Math.min(count, MAX_SELF_SERVE_GROUP)}
+          value={Math.min(Math.max(count, floor), MAX_SELF_SERVE_GROUP)}
           onChange={(e) => onChange(clampSlider(parseInt(e.target.value, 10)))}
           className="ml-1 hidden h-2 flex-1 cursor-pointer accent-[#04B0D6] sm:block"
         />

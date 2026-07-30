@@ -12,37 +12,63 @@ import {
   type PlanTier,
   type BillingPeriod,
 } from '../utils/pricing';
+import { planFromMetadata } from '../utils/entitlements';
 
 /**
- * Writes what was just bought onto the account.
+ * Writes what was just bought onto the account, claiming the session first.
  *
- * Called from the webhook, verify-session and verify-upgrade-session, so a
- * purchase always lands even if only one of them fires. Idempotent: running it
- * twice with the same metadata is a no-op, which is exactly what happens when
- * the webhook and the success redirect race.
+ * The insert into processed_checkout_sessions is the whole mechanism: the
+ * primary key is the Stripe session id, so the first caller wins and every
+ * later one hits a unique violation. That covers three things at once —
+ * the webhook racing the success redirect, Stripe retrying a webhook, and
+ * someone re-posting an old session id to a `verify-*` endpoint to restore an
+ * allowance they have since downgraded away from.
+ *
+ * Must be called inside a transaction so the claim and the account write
+ * commit together.
  */
-async function reconcileAccount(
-  tx: { user: { update: (args: any) => Promise<any> } },
+async function applyPurchase(
+  tx: any,
+  sessionId: string,
   userId: string,
   tier: PlanTier,
   paidNurseryCount: number
 ): Promise<void> {
+  await tx.processedCheckoutSession.create({
+    data: { id: sessionId, userId, planTier: tier, nurseryCount: paidNurseryCount },
+  });
   await tx.user.update({
     where: { id: userId },
     data: { planTier: tier, paidNurseryCount },
   });
 }
 
-/** Reads the tier and count back out of Stripe session metadata. */
-function planFromMetadata(meta: Record<string, string | undefined>): {
-  tier: PlanTier;
-  count: number;
-} {
-  const tier: PlanTier = meta.plan === 'platinum' ? 'platinum' : 'standard';
-  const parsed = Number(meta.nurseryCount);
-  const count = Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
-  return { tier, count };
+/** True if this call applied the purchase, false if it had already landed. */
+function isAlreadyProcessed(err: any): boolean {
+  return err?.code === 'P2002';
 }
+
+/**
+ * Standalone form of applyPurchase for callers that have nothing else to write.
+ * Returns false when the session had already been applied.
+ */
+async function reconcileAccount(
+  sessionId: string,
+  userId: string,
+  tier: PlanTier,
+  paidNurseryCount: number
+): Promise<boolean> {
+  try {
+    await prisma.$transaction(async (tx: any) => {
+      await applyPurchase(tx, sessionId, userId, tier, paidNurseryCount);
+    });
+    return true;
+  } catch (err) {
+    if (isAlreadyProcessed(err)) return false;
+    throw err;
+  }
+}
+
 
 /**
  * POST /api/stripe/create-checkout-session
@@ -216,6 +242,20 @@ export const stripeWebhook = async (
     }
 
     const meta = session.metadata;
+
+    // Upgrade sessions carry a userId and no email — they change an existing
+    // account's plan and create nothing. Without this branch the upgrade only
+    // lands if the customer's browser makes it back to the success page.
+    if (meta?.upgrade === 'true' && meta.userId) {
+      const { tier, count } = planFromMetadata(meta);
+      try {
+        await reconcileAccount(session.id, meta.userId, tier, count);
+      } catch (err) {
+        console.error('❌ Error applying upgrade from webhook:', err);
+      }
+      return res.json({ received: true });
+    }
+
     if (!meta || !meta.email) {
       console.error('No metadata found on checkout session');
       return res.json({ received: true });
@@ -249,7 +289,7 @@ export const stripeWebhook = async (
             },
           });
 
-          await reconcileAccount(tx, meta.existingUserId, tier, count);
+          await applyPurchase(tx, session.id, meta.existingUserId, tier, count);
         });
 
       } else {
@@ -303,10 +343,20 @@ export const stripeWebhook = async (
             ownerId: userId,
           },
         });
+
+        // Claim the session here too, so the success redirect finds it already
+        // applied instead of writing the plan a second time.
+        await tx.processedCheckoutSession.create({
+          data: { id: session.id, userId, planTier: tier, nurseryCount: count },
+        });
       });
 
       }
     } catch (err) {
+      if (isAlreadyProcessed(err)) {
+        // The success redirect got here first. Nothing left to do.
+        return res.json({ received: true });
+      }
       console.error('❌ Error creating nursery account from webhook:', err);
       // Return 200 anyway so Stripe doesn't retry endlessly
     }
@@ -354,6 +404,20 @@ export const createUpgradeSession = async (
       return res.status(400).json({
         success: false,
         message: 'You are already on this plan.',
+      });
+    }
+
+    // An allowance cannot be bought down below what is already in use, or the
+    // owner would keep listings they have stopped paying for. Removing
+    // nurseries first is the supported way down.
+    const inUse = await prisma.nursery.count({ where: { ownerId: userId } });
+    if (count < inUse) {
+      return res.status(400).json({
+        success: false,
+        code: 'BELOW_CURRENT_USAGE',
+        used: inUse,
+        requested: count,
+        message: `You currently have ${inUse} ${inUse === 1 ? 'nursery' : 'nurseries'}. Remove the ones you no longer need before reducing your plan.`,
       });
     }
 
@@ -447,6 +511,12 @@ export const verifyUpgradeSession = async (
       return res.status(400).json({ success: false, message: 'Invalid session metadata.' });
     }
 
+    // A session can only be applied by the account that bought it.
+    const callerId: string | undefined = (req as any).user?.userId;
+    if (!callerId || callerId !== meta.userId) {
+      return res.status(403).json({ success: false, message: 'This payment belongs to another account.' });
+    }
+
     const user = await prisma.user.findUnique({ where: { id: meta.userId } });
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found.' });
@@ -454,7 +524,16 @@ export const verifyUpgradeSession = async (
 
     const { tier, count } = planFromMetadata(meta);
 
-    await reconcileAccount(prisma, meta.userId, tier, count);
+    const applied = await reconcileAccount(session.id, meta.userId, tier, count);
+
+    // Already applied — report what the account actually has, not what this
+    // (possibly replayed) session said it should have.
+    if (!applied) {
+      return res.json({
+        success: true,
+        data: { planTier: user.planTier, paidNurseryCount: user.paidNurseryCount },
+      });
+    }
 
     return res.json({
       success: true,
@@ -505,7 +584,7 @@ export const verifySession = async (
     // purchase always lands on the account even when creation was skipped.
     const existingUser = await prisma.user.findUnique({ where: { email: meta.email } });
     if (existingUser) {
-      await reconcileAccount(prisma, existingUser.id, tier, count);
+      await reconcileAccount(session.id, existingUser.id, tier, count);
       return res.json({ success: true, alreadyExists: true });
     }
 
@@ -549,10 +628,20 @@ export const verifySession = async (
           ownerId: userId,
         },
       });
+
+      await tx.processedCheckoutSession.create({
+        data: { id: session.id, userId, planTier: tier, nurseryCount: count },
+      });
     });
 
     return res.json({ success: true, alreadyExists: false });
   } catch (error: any) {
+    // The webhook won the race and created this account (or claimed this
+    // session) between the lookup above and the write. The customer's account
+    // exists either way, so this is a success from their side.
+    if (isAlreadyProcessed(error)) {
+      return res.json({ success: true, alreadyExists: true });
+    }
     console.error('❌ verifySession error:', error?.message || error);
     return res.status(500).json({
       success: false,

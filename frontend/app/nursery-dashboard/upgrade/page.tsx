@@ -52,14 +52,24 @@ function UpgradeContent() {
   const usedCount = entitlements?.allowance.used ?? 0;
   const isPlatinum = entitlements?.planTier === 'platinum';
 
+  // The server refuses to sell an allowance below what is already live, so the
+  // picker cannot offer one either.
+  const countFloor = Math.max(usedCount, MIN_GROUP_SIZE);
+
   // Someone already on Platinum has nothing to gain from the tier axis, so
   // start them on the count axis instead. The picker starts one above what
   // they already pay for, which is what "add more" means.
   useEffect(() => {
     if (!entitlements) return;
     setAxis(entitlements.planTier === 'platinum' ? 'count' : 'tier');
-    setNurseryCount(Math.max(entitlements.paidNurseryCount + 1, MIN_GROUP_SIZE));
-  }, [entitlements?.planTier, entitlements?.paidNurseryCount]);
+    setNurseryCount(
+      Math.max(
+        entitlements.paidNurseryCount + 1,
+        entitlements.allowance.used,
+        MIN_GROUP_SIZE
+      )
+    );
+  }, [entitlements?.planTier, entitlements?.paidNurseryCount, entitlements?.allowance.used]);
 
   // Both axes land on Platinum: a group of two or more is Platinum by
   // definition, and the tier axis exists to leave Standard behind.
@@ -324,7 +334,12 @@ function UpgradeContent() {
               count={nurseryCount}
               onChange={setNurseryCount}
               billing={billingPeriod}
-              footnote="A Group covers two or more nurseries. The per-nursery price drops as the group grows."
+              min={countFloor}
+              footnote={
+                usedCount > MIN_GROUP_SIZE
+                  ? `A Group covers two or more nurseries, and the per-nursery price drops as the group grows. You have ${usedCount} live, so your plan cannot go below that — remove nurseries first if you want a smaller plan.`
+                  : 'A Group covers two or more nurseries. The per-nursery price drops as the group grows.'
+              }
             />
           </div>
         )}

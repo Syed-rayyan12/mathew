@@ -12,3 +12,17 @@ UPDATE "users" SET "planTier" = 'platinum' WHERE "plan" = 'platinum';
 UPDATE "users" SET "paidNurseryCount" = 0 WHERE "plan" = 'free';
 
 ALTER TABLE "users" DROP COLUMN "plan";
+
+-- Ledger of Checkout Sessions already applied to an account. The primary key
+-- is the Stripe session id, so inserting it is what makes reconciliation
+-- idempotent under a webhook/redirect race and refuses a replayed session.
+CREATE TABLE "processed_checkout_sessions" (
+    "id" VARCHAR(255) NOT NULL,
+    "userId" VARCHAR(15) NOT NULL,
+    "planTier" TEXT NOT NULL,
+    "nurseryCount" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "processed_checkout_sessions_pkey" PRIMARY KEY ("id")
+);
+
+CREATE INDEX "processed_checkout_sessions_userId_idx" ON "processed_checkout_sessions"("userId");

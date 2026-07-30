@@ -6,7 +6,9 @@ import {
   features,
   allowance,
   canAddNursery,
+  planFromMetadata,
 } from './entitlements';
+import { quote } from './pricing';
 
 const single = (tier: string, paid = 1) => ({ planTier: tier, paidNurseryCount: paid });
 
@@ -104,5 +106,50 @@ describe('canAddNursery', () => {
 
   it('blocks an unpaid account entirely', () => {
     expect(canAddNursery({ planTier: 'standard', paidNurseryCount: 0 }, 0)).toBe(false);
+  });
+});
+
+describe('planFromMetadata', () => {
+  it('reads a Single purchase back', () => {
+    expect(planFromMetadata({ plan: 'standard', nurseryCount: '1' })).toEqual({
+      tier: 'standard',
+      count: 1,
+    });
+    expect(planFromMetadata({ plan: 'platinum', nurseryCount: '1' })).toEqual({
+      tier: 'platinum',
+      count: 1,
+    });
+  });
+
+  it('reads a Group purchase back', () => {
+    expect(planFromMetadata({ plan: 'platinum', nurseryCount: '8' })).toEqual({
+      tier: 'platinum',
+      count: 8,
+    });
+  });
+
+  // Metadata comes back through Stripe, so it is untrusted. There is no
+  // Standard group product; storing one would be a state pricing.ts could
+  // never have quoted.
+  it('forces platinum when the count makes it a group', () => {
+    expect(planFromMetadata({ plan: 'standard', nurseryCount: '5' })).toEqual({
+      tier: 'platinum',
+      count: 5,
+    });
+  });
+
+  it('never produces a combination pricing.ts would refuse', () => {
+    for (const count of [1, 2, 5, 6, 15, 16, 30, 31, 60]) {
+      for (const plan of ['standard', 'platinum', 'nonsense', undefined]) {
+        const { tier, count: n } = planFromMetadata({ plan, nurseryCount: String(count) });
+        expect(() => quote(tier, 'monthly', n)).not.toThrow();
+      }
+    }
+  });
+
+  it('falls back to one nursery on junk counts', () => {
+    for (const raw of ['', 'abc', '0', '-3', '2.5', undefined]) {
+      expect(planFromMetadata({ plan: 'platinum', nurseryCount: raw }).count).toBe(1);
+    }
   });
 });

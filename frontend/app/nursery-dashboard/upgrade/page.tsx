@@ -41,6 +41,16 @@ function UpgradeContent() {
     'idle' | 'confirming' | 'verifying' | 'success' | 'error' | 'cancelled'
   >(cancelled ? 'cancelled' : upgraded && sessionId ? 'verifying' : 'idle');
   const [preview, setPreview] = useState<ChangePreview | null>(null);
+  /**
+   * The selection the preview was priced for, frozen at preview time.
+   *
+   * Confirm must charge for what the screen quoted. Reading the live pickers
+   * again would let a later selection be charged at an earlier price.
+   */
+  const [previewFor, setPreviewFor] = useState<{
+    billing: 'monthly' | 'annual';
+    count: number;
+  } | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [newPlanLabel, setNewPlanLabel] = useState('');
   const [loading, setLoading] = useState(false);
@@ -141,6 +151,7 @@ function UpgradeContent() {
       }
 
       setPreview(res.data);
+      setPreviewFor({ billing: billingPeriod, count: targetCount });
       setStatus('confirming');
     } catch (err: any) {
       setErrorMsg(err?.message || 'Could not reach the server. Please try again.');
@@ -153,9 +164,12 @@ function UpgradeContent() {
   // Step two. Charges the card on file. There is no redirect, so on success
   // the page goes straight to the state it would otherwise have returned to.
   const handleConfirm = async () => {
+    if (!previewFor) return;
+    const { billing, count } = previewFor;
+
     setLoading(true);
     try {
-      const res = await authService.applyChange('platinum', billingPeriod, targetCount);
+      const res = await authService.applyChange('platinum', billing, count);
       if (res.success && res.data) {
         setNewPlanLabel(planLabel(res.data.planTier, res.data.paidNurseryCount));
         setStatus('success');
@@ -164,6 +178,15 @@ function UpgradeContent() {
         setStatus('error');
       }
     } catch (err: any) {
+      // The subscription lapsed between pricing and confirming, so there is no
+      // card on file to charge. Stripe Checkout is the way back, not an error.
+      if (err?.code === 'REQUIRES_CHECKOUT') {
+        const session = await authService.createUpgradeSession('platinum', billing, count);
+        if (session.url) {
+          window.location.href = session.url;
+          return;
+        }
+      }
       setErrorMsg(err?.message || 'Could not reach the server. Please try again.');
       setStatus('error');
     } finally {
@@ -174,7 +197,7 @@ function UpgradeContent() {
   // ── Confirm state ──────────────────────────────────────────────
   // The one screen where the numbers are Stripe's rather than ours. Amount
   // due now is a proration and will not match the sticker price.
-  if (status === 'confirming' && preview) {
+  if (status === 'confirming' && preview && previewFor) {
     return (
       <div className="max-w-lg mx-auto px-4 py-10">
         <div className="rounded-2xl border border-yellow-200 bg-white p-8 shadow-sm">
@@ -192,7 +215,7 @@ function UpgradeContent() {
             </div>
             <div className="flex items-baseline justify-between px-4 py-4">
               <span className="text-sm text-gray-600">
-                {billingPeriod === 'monthly' ? 'Then per month' : 'Then per year'}
+                {previewFor.billing === 'monthly' ? 'Then per month' : 'Then per year'}
               </span>
               <span className="text-base font-semibold text-gray-800">
                 {formatGbp(preview.nextRenewalPence)}
@@ -228,7 +251,7 @@ function UpgradeContent() {
             )}
           </button>
           <button
-            onClick={() => { setPreview(null); setStatus('idle'); }}
+            onClick={() => { setPreview(null); setPreviewFor(null); setStatus('idle'); }}
             disabled={loading}
             className="w-full mt-3 py-2.5 text-sm text-gray-500 hover:text-gray-800 transition disabled:opacity-60"
           >

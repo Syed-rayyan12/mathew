@@ -1,0 +1,15 @@
+// Production build only. tsconfig.json stays the whole project — editor and
+// `tsc --noEmit` still typecheck the tests, which is the point: the Fix C
+// review turned on fixtures that typecheck honestly, and dropping tests from
+// the default config would quietly retire that guarantee.
+//
+// This config exists because the deploy box installs with NODE_ENV=production,
+// so devDependencies are absent and `import from 'vitest'` cannot resolve —
+// the build failed on exactly that. Tests have no business in dist anyway.
+//
+// `exclude` REPLACES the parent's rather than merging, so the three inherited
+// entries are repeated here on purpose. Dropping one silently widens the build.
+{
+  "extends": "./tsconfig.json",
+  "exclude": ["node_modules", "dist", "prisma", "src/**/*.test.ts"]
+}

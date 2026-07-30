@@ -9,13 +9,19 @@ import { useRouter } from 'next/navigation'
 import { nurseryDashboardService } from '@/lib/api/nursery'
 import { toast } from 'sonner'
 import { usePlanFeatures } from '@/hooks/use-nursery-plan'
+import Link from 'next/link'
 
 export default function ManageNursery() {
   const [openModal, setOpenModal] = React.useState(false)
   const [nurseries, setNurseries] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const router = useRouter()
-  const { plan, maxNurseries } = usePlanFeatures()
+  const {
+    allowance,
+    canAddNursery,
+    loading: planLoading,
+    refresh: refreshPlan,
+  } = usePlanFeatures()
 
   useEffect(() => {
     fetchNurseries()
@@ -49,6 +55,8 @@ export default function ManageNursery() {
     // Refetch nurseries after adding a new one
     console.log('handleNurseryAdded called - refetching nurseries')
     fetchNurseries()
+    // The allowance's `used` just moved, so re-read it.
+    refreshPlan()
   }
 
   const handleDeleteNursery = async (nurseryId: string) => {
@@ -77,22 +85,29 @@ export default function ManageNursery() {
               <Input placeholder='Search your shortlisted nurseries...' className='w-full rounded-md h-9 bg-white' />
             </div>
           </div>
-          <Button
-            onClick={() => {
-              if (nurseries.length >= maxNurseries) {
-                toast.error(
-                  plan === 'standard'
-                    ? 'Your Standard plan allows only 1 nursery. Upgrade to Platinum to add more.'
-                    : 'Nursery limit reached.'
-                );
-                return;
-              }
-              setOpenModal(true);
-            }}
-            className='bg-secondary hover:bg-none'
-          >
-            Add New Nursery
-          </Button>
+          {/* The server 403s past the allowance either way; this only avoids
+              a pointless round trip and explains why. */}
+          <div className='flex flex-col items-end gap-1'>
+            <Button
+              onClick={() => setOpenModal(true)}
+              disabled={planLoading || !canAddNursery}
+              className='bg-secondary hover:bg-none disabled:opacity-60 disabled:cursor-not-allowed'
+            >
+              Add New Nursery
+            </Button>
+            {!planLoading && !canAddNursery && (
+              <p className='text-xs text-muted-foreground'>
+                {allowance.used} of {allowance.paid}{' '}
+                {allowance.paid === 1 ? 'nursery' : 'nurseries'} used —{' '}
+                <Link
+                  href='/nursery-dashboard/upgrade'
+                  className='text-secondary font-medium underline'
+                >
+                  add more to your plan
+                </Link>
+              </p>
+            )}
+          </div>
         </div>
 
         <div className='mt-6  flex w-full gap-5 items-center'>

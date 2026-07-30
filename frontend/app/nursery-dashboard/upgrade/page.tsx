@@ -6,10 +6,11 @@ import { CheckCircle, XCircle, Zap, ArrowLeft, Loader2 } from 'lucide-react';
 import { authService } from '@/lib/api/auth';
 import Link from 'next/link';
 import NurseryCountPicker from '@/components/sharedComponents/nursery-count-picker';
-import { MIN_GROUP_SIZE, formatGbp, priceFor } from '@/lib/pricing';
+import { useEntitlements } from '@/hooks/use-nursery-plan';
+import { MIN_GROUP_SIZE, formatGbp, planLabel, priceFor } from '@/lib/pricing';
 
 const PLATINUM_FEATURES = [
-  'Unlimited Nursery Locations',
+  'Volume discount — up to 40% off per nursery',
   'Nursery Group Page (for multiple branches)',
   'Unlimited Image Gallery',
   'Video on Nursery Profile',
@@ -20,6 +21,13 @@ const PLATINUM_FEATURES = [
   'Dashboard Analytics (ratings, reviews, performance)',
 ];
 
+/**
+ * The two ways an account can be upgraded. They are separate because the two
+ * columns behind them are separate: `tier` moves planTier at the count you
+ * already pay for, `count` buys more nurseries at Platinum group rates.
+ */
+type UpgradeAxis = 'tier' | 'count';
+
 function UpgradeContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -27,48 +35,53 @@ function UpgradeContent() {
   const upgraded = searchParams.get('upgraded');
   const cancelled = searchParams.get('cancelled');
 
+  const { data: entitlements, loading: entitlementsLoading } = useEntitlements();
+
   const [status, setStatus] = useState<'idle' | 'verifying' | 'success' | 'error' | 'cancelled'>(
     cancelled ? 'cancelled' : upgraded && sessionId ? 'verifying' : 'idle'
   );
   const [errorMsg, setErrorMsg] = useState('');
+  const [newPlanLabel, setNewPlanLabel] = useState('');
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(3);
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
+  const [axis, setAxis] = useState<UpgradeAxis>('tier');
   const [nurseryCount, setNurseryCount] = useState<number>(MIN_GROUP_SIZE);
-  const upgradeQuote = priceFor('platinum', billingPeriod, nurseryCount);
+
+  const paidCount = entitlements?.paidNurseryCount ?? 1;
+  const usedCount = entitlements?.allowance.used ?? 0;
+  const isPlatinum = entitlements?.planTier === 'platinum';
+
+  // Someone already on Platinum has nothing to gain from the tier axis, so
+  // start them on the count axis instead. The picker starts one above what
+  // they already pay for, which is what "add more" means.
+  useEffect(() => {
+    if (!entitlements) return;
+    setAxis(entitlements.planTier === 'platinum' ? 'count' : 'tier');
+    setNurseryCount(Math.max(entitlements.paidNurseryCount + 1, MIN_GROUP_SIZE));
+  }, [entitlements?.planTier, entitlements?.paidNurseryCount]);
+
+  // Both axes land on Platinum: a group of two or more is Platinum by
+  // definition, and the tier axis exists to leave Standard behind.
+  const targetCount = axis === 'tier' ? Math.max(paidCount, 1) : nurseryCount;
+  const upgradeQuote = priceFor('platinum', billingPeriod, targetCount);
+  const targetLabel = planLabel('platinum', targetCount);
 
   // Auto-verify when returning from Stripe with session_id
   useEffect(() => {
     if (upgraded && sessionId && status === 'verifying') {
       authService.verifyUpgradeSession(sessionId)
         .then(res => {
-          if (res.success) {
-            // Belt-and-suspenders: directly set plan in localStorage so
-            // the hard-redirect picks up the change immediately
-            try {
-              const plan = res.data?.plan || 'platinum';
-              const raw = localStorage.getItem('nurseryUser');
-              if (raw) {
-                const u = JSON.parse(raw);
-                u.plan = plan;
-                localStorage.setItem('nurseryUser', JSON.stringify(u));
-              }
-              const raw2 = localStorage.getItem('user');
-              if (raw2) {
-                const u2 = JSON.parse(raw2);
-                u2.plan = plan;
-                localStorage.setItem('user', JSON.stringify(u2));
-              }
-              window.dispatchEvent(new Event('storage'));
-            } catch { /* ignore */ }
+          if (res.success && res.data) {
+            setNewPlanLabel(planLabel(res.data.planTier, res.data.paidNurseryCount));
             setStatus('success');
           } else {
             setErrorMsg(res.message || 'Verification failed. Please contact support.');
             setStatus('error');
           }
         })
-        .catch(() => {
-          setErrorMsg('Something went wrong. Please contact support.');
+        .catch((err: any) => {
+          setErrorMsg(err?.message || 'Something went wrong. Please contact support.');
           setStatus('error');
         });
     }
@@ -86,46 +99,27 @@ function UpgradeContent() {
   }, [status, countdown]);
 
   const handleUpgrade = async () => {
+    // The button already says "Contact us for a quote" up here; without this
+    // guard it POSTs anyway and the server rejects the unpriced group.
+    if (upgradeQuote.bespoke) {
+      router.push('/contact-us');
+      return;
+    }
+
     setLoading(true);
     try {
-      const token = localStorage.getItem('nurseryAccessToken');
-      const user = localStorage.getItem('nurseryUser');
-      console.log('🔑 nurseryAccessToken:', token ? token.slice(0, 30) + '...' : 'MISSING');
-      console.log('👤 nurseryUser:', user ? JSON.parse(user) : 'MISSING');
+      // The count is never omitted — a tier-only change still has to say how
+      // many nurseries it covers, or there is nothing to price.
+      const res = await authService.createUpgradeSession('platinum', billingPeriod, targetCount);
 
-      const url = 'https://mathew-production.up.railway.app/api/stripe/create-upgrade-session';
-      console.log('📤 Sending POST to:', url);
-
-      const rawRes = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ plan: 'platinum', billingPeriod, nurseryCount }),
-      });
-
-      const rawBody = await rawRes.text();
-      console.log('📡 HTTP Status:', rawRes.status, rawRes.statusText);
-      console.log('📡 Raw body:', rawBody);
-
-      // Parse JSON safely
-      let json: any = {};
-      try { json = JSON.parse(rawBody); } catch {
-        setErrorMsg(`Server returned non-JSON response (status ${rawRes.status}). The backend may not be deployed yet.`);
-        setStatus('error');
-        return;
-      }
-
-      if (rawRes.ok && json.success && json.url) {
-        window.location.href = json.url;
+      if (res.url) {
+        window.location.href = res.url;
       } else {
-        setErrorMsg(`Error ${rawRes.status}: ${json.message || 'Unknown error from server'}`);
+        setErrorMsg(res.message || 'The server did not return a payment link. Please try again.');
         setStatus('error');
       }
     } catch (err: any) {
-      console.error('❌ Network-level error (fetch never sent or CORS blocked):', err);
-      setErrorMsg(`Network error: ${err?.message || 'Could not reach the server. Check console for details.'}`);
+      setErrorMsg(err?.message || 'Could not reach the server. Please try again.');
       setStatus('error');
     } finally {
       setLoading(false);
@@ -139,9 +133,11 @@ function UpgradeContent() {
         <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
           <CheckCircle className="text-green-500 w-10 h-10" />
         </div>
-        <h1 className="text-2xl font-bold text-gray-900">You're now on Group!</h1>
+        <h1 className="text-2xl font-bold text-gray-900">
+          You&apos;re now on {newPlanLabel || 'your new plan'}!
+        </h1>
         <p className="text-gray-500 max-w-sm text-sm">
-          Your plan has been upgraded. All Group features are now unlocked.
+          Your plan has been updated. Everything it covers is now unlocked.
         </p>
         <div className="flex items-center gap-3">
           <Loader2 className="w-4 h-4 text-primary animate-spin" />
@@ -226,10 +222,60 @@ function UpgradeContent() {
           </div>
           <span className="text-xs font-semibold uppercase tracking-widest text-yellow-700">Plan Upgrade</span>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 mt-2">Upgrade to Group</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mt-2">Upgrade to {targetLabel}</h1>
         <p className="text-gray-500 text-sm mt-1 mb-5">
-          Upgrade your existing nursery — no new account needed.
+          Upgrade your existing account — no new account needed.
         </p>
+
+        {/* Where the account stands today */}
+        <div className="rounded-xl border border-yellow-200 bg-white/70 px-4 py-3 mb-6 text-sm">
+          {entitlementsLoading ? (
+            <span className="text-gray-400">Loading your plan…</span>
+          ) : entitlements ? (
+            <>
+              <p className="font-semibold text-gray-800">
+                Your plan: {entitlements.planLabel}
+              </p>
+              <p className="text-gray-500 mt-0.5">
+                {usedCount} of {paidCount} {paidCount === 1 ? 'nursery' : 'nurseries'} used
+              </p>
+            </>
+          ) : (
+            <span className="text-gray-400">We couldn&apos;t load your current plan.</span>
+          )}
+        </div>
+
+        {/* The two upgrade axes */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+          <button
+            type="button"
+            onClick={() => setAxis('tier')}
+            disabled={isPlatinum}
+            className={`text-left rounded-xl border p-4 transition disabled:opacity-50 disabled:cursor-not-allowed ${
+              axis === 'tier' ? 'border-yellow-400 bg-white shadow-sm' : 'border-gray-200 bg-white/60 hover:border-yellow-300'
+            }`}
+          >
+            <p className="text-sm font-semibold text-gray-900">Unlock Platinum features</p>
+            <p className="text-xs text-gray-500 mt-1">
+              {isPlatinum
+                ? 'Already included in your plan.'
+                : `Keep your ${paidCount === 1 ? 'nursery' : `${paidCount} nurseries`}, add every Platinum feature.`}
+            </p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setAxis('count')}
+            className={`text-left rounded-xl border p-4 transition ${
+              axis === 'count' ? 'border-yellow-400 bg-white shadow-sm' : 'border-gray-200 bg-white/60 hover:border-yellow-300'
+            }`}
+          >
+            <p className="text-sm font-semibold text-gray-900">Add more nurseries</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Two or more nurseries become a Group, at a volume discount.
+            </p>
+          </button>
+        </div>
 
         {/* Billing Toggle */}
         <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-lg w-fit mb-6">
@@ -262,27 +308,29 @@ function UpgradeContent() {
             {upgradeQuote.bespoke
               ? 'priced individually'
               : billingPeriod === 'monthly'
-                ? `/ month for ${nurseryCount} nurseries`
+                ? `/ month for ${targetCount} ${targetCount === 1 ? 'nursery' : 'nurseries'}`
                 : '/ year paid upfront'}
           </span>
         </div>
         {!upgradeQuote.bespoke && billingPeriod === 'annual' && (
           <p className="text-xs text-green-600 font-medium mb-2">
-            Equivalent to {formatGbp(priceFor('platinum', 'monthly', nurseryCount).totalPence)}/month
+            Equivalent to {formatGbp(priceFor('platinum', 'monthly', targetCount).totalPence)}/month
           </p>
         )}
 
-        <div className="mb-5 mt-4">
-          <NurseryCountPicker
-            count={nurseryCount}
-            onChange={setNurseryCount}
-            billing={billingPeriod}
-            footnote="Group covers two or more nurseries. The per-nursery price drops as the group grows."
-          />
-        </div>
+        {axis === 'count' && (
+          <div className="mb-5 mt-4">
+            <NurseryCountPicker
+              count={nurseryCount}
+              onChange={setNurseryCount}
+              billing={billingPeriod}
+              footnote="A Group covers two or more nurseries. The per-nursery price drops as the group grows."
+            />
+          </div>
+        )}
 
         {/* Features */}
-        <ul className="space-y-3 mb-8">
+        <ul className="space-y-3 mb-8 mt-6">
           {PLATINUM_FEATURES.map((f, i) => (
             <li key={i} className="flex items-start gap-3 text-sm text-gray-700">
               <CheckCircle className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
@@ -294,7 +342,7 @@ function UpgradeContent() {
         {/* CTA */}
         <button
           onClick={handleUpgrade}
-          disabled={loading}
+          disabled={loading || entitlementsLoading}
           className="w-full py-3.5 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-bold rounded-xl transition flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {loading ? (

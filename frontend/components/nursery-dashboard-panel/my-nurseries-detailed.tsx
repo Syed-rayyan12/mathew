@@ -11,7 +11,9 @@ import EditNurseryModal from "../nursery-admin-panel/manage-nurseries/edit-nurse
 import AddNurseryModal from "@/components/sharedComponents/add-nursery-modal";
 import DeleteNurseriesModal from "../nursery-admin-panel/manage-nurseries/delete-nurseries-modal/delete-nurseries-modal";
 import { nurseryDashboardService } from "@/lib/api/nursery";
+import { usePlanFeatures } from "@/hooks/use-nursery-plan";
 import { toast } from "sonner";
+import Link from "next/link";
 
 export default function MyNurseriesDetailed() {
   const [nurseries, setNurseries] = useState<any[]>([]);
@@ -26,6 +28,12 @@ export default function MyNurseriesDetailed() {
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [selectedNursery, setSelectedNursery] = useState<any>(null);
+  const {
+    allowance,
+    canAddNursery,
+    loading: planLoading,
+    refresh: refreshPlan,
+  } = usePlanFeatures();
 
   // Debounce search input for better performance
   useEffect(() => {
@@ -95,6 +103,7 @@ export default function MyNurseriesDetailed() {
   // Add Nursery
   const handleAddNursery = () => {
     fetchNurseries(); // Refresh the list
+    refreshPlan();    // `allowance.used` just moved
   };
 
   // View Nursery
@@ -176,9 +185,30 @@ export default function MyNurseriesDetailed() {
           <p className="text-gray-600">View and manage all your nurseries in detail</p>
         </div>
 
-        <Button variant="ghost" className="bg-secondary cursor-pointer w-full md:w-auto" onClick={() => setOpenAddModal(true)}>
-          Add New Nursery
-        </Button>
+        {/* The server 403s past the allowance either way; this only avoids
+            a pointless round trip and explains why. */}
+        <div className="flex flex-col items-start md:items-end gap-1 w-full md:w-auto">
+          <Button
+            variant="ghost"
+            className="bg-secondary cursor-pointer w-full md:w-auto disabled:opacity-60 disabled:cursor-not-allowed"
+            onClick={() => setOpenAddModal(true)}
+            disabled={planLoading || !canAddNursery}
+          >
+            Add New Nursery
+          </Button>
+          {!planLoading && !canAddNursery && (
+            <p className="text-xs text-muted-foreground">
+              {allowance.used} of {allowance.paid}{' '}
+              {allowance.paid === 1 ? 'nursery' : 'nurseries'} used —{' '}
+              <Link
+                href="/nursery-dashboard/upgrade"
+                className="text-secondary font-medium underline"
+              >
+                add more to your plan
+              </Link>
+            </p>
+          )}
+        </div>
       </div>
 
       {/* SEARCH & FILTERS */}

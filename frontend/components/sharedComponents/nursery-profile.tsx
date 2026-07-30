@@ -17,7 +17,7 @@ import { usePlanFeatures } from '@/hooks/use-nursery-plan'
 
 const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
     const router = useRouter();
-    const { canUploadVideo, canManageTeamMembers } = usePlanFeatures();
+    const { canUploadVideo, canManageTeamMembers, loading: planLoading } = usePlanFeatures();
     const [isLoading, setIsLoading] = useState(false);
     const [loadingData, setLoadingData] = useState(true);
     const [isViewMode, setIsViewMode] = useState(false);
@@ -790,8 +790,8 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
                         </div>
                     </div>
 
-                    {/* Video Upload */}
-                    {canUploadVideo ? (
+                    {/* Video Upload — neutral until the server answers */}
+                    {planLoading ? null : canUploadVideo ? (
                     <div>
                         <h3 className="text-2xl font-medium mb-4 text-foreground">Video</h3>
                         <p className="text-sm text-muted-foreground mb-4">Upload an MP4 video to showcase your nursery (max 10 MB)</p>
@@ -1096,8 +1096,8 @@ const NurseryProfile = ({ nurserySlug }: { nurserySlug?: string }) => {
                     {/* Weekly Timings */}
                     <WeeklyTimings timings={weeklyTimings} onChange={setWeeklyTimings} />
 
-                    {/* Team Members */}
-                    {canManageTeamMembers ? (
+                    {/* Team Members — neutral until the server answers */}
+                    {planLoading ? null : canManageTeamMembers ? (
                     <div>
                         <h3 className="text-2xl font-medium mb-4 text-foreground">Meet the Team</h3>
                         {teamMembers.length > 0 && (

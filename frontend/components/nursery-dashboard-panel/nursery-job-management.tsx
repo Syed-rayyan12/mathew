@@ -7,7 +7,7 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@
 import { jobService, Job, JOB_TYPE_LABEL } from '@/lib/api/jobs'
 import { nurseryGroupService } from '@/lib/api/nursery-group'
 import { uploadService } from '@/lib/api/upload'
-import { useNurseryPlan } from '@/hooks/use-nursery-plan'
+import { usePlanFeatures } from '@/hooks/use-nursery-plan'
 import { toast } from 'sonner'
 import Link from 'next/link'
 
@@ -278,7 +278,7 @@ const TYPE_BADGE: Record<string, string> = {
 }
 
 export default function NurseryJobManagement() {
-  const plan = useNurseryPlan()
+  const { canPostJobs, loading: planLoading } = usePlanFeatures()
   const [jobs, setJobs] = useState<Job[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -308,21 +308,31 @@ export default function NurseryJobManagement() {
     }).catch(() => {})
   }, [])
 
-  if (plan !== 'platinum') {
+  // Don't judge the plan until the server has answered.
+  if (planLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      </div>
+    )
+  }
+
+  if (!canPostJobs) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
         <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-10 max-w-md">
           <Lock size={40} className="text-yellow-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Group Plan Required</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Platinum Plan Required</h2>
           <p className="text-gray-500 text-sm mb-6">
-            Job posting is available exclusively on the <strong>Group</strong> plan.
-            Upgrade to post jobs and receive applications directly from the website.
+            Job posting is available on the <strong>Platinum</strong> plan —
+            Single Platinum or Group. Upgrade to post jobs and receive
+            applications directly from the website.
           </p>
           <Link
-            href="/pricing"
+            href="/nursery-dashboard/upgrade"
             className="inline-block bg-primary text-white px-6 py-2.5 rounded-xl font-medium hover:opacity-90 transition text-sm"
           >
-            View Pricing
+            Upgrade my plan
           </Link>
         </div>
       </div>

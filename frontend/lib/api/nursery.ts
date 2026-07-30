@@ -283,8 +283,38 @@ export const reviewService = {
   },
 };
 
+/**
+ * What the signed-in account is allowed to do, as derived by the server.
+ *
+ * This replaces reading a plan out of localStorage. The same functions that
+ * produce this payload back the 403s, so the UI and the gate cannot disagree.
+ */
+export interface PlanFeatureFlags {
+  jobs: boolean;
+  video: boolean;
+  teamMembers: boolean;
+  reviewModeration: boolean;
+  priorityPlacement: boolean;
+  analytics: boolean;
+}
+
+export interface Entitlements {
+  planTier: 'standard' | 'platinum';
+  paidNurseryCount: number;
+  /** "Single Standard" | "Single Platinum" | "Group of N" */
+  planLabel: string;
+  isGroup: boolean;
+  features: PlanFeatureFlags;
+  allowance: { paid: number; used: number; remaining: number };
+}
+
 // Nursery Dashboard service (for nursery owners)
 export const nurseryDashboardService = {
+  // What this account may do — the dashboard's source of truth
+  getEntitlements: async () => {
+    return nurseryApiClient.get<Entitlements>('/nursery-dashboard/entitlements', true);
+  },
+
   // Get my nursery profile
   getMyNursery: async () => {
     return nurseryApiClient.get<{ success: boolean; data: Nursery[] }>('/nursery-dashboard/my-nursery', true);

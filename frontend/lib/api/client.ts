@@ -139,11 +139,17 @@ export const AdminTokenManager: ITokenManager = {
 // Custom Error Class
 export class ApiException extends Error {
   statusCode: number;
+  /**
+   * Machine-readable reason from the server, e.g. NURSERY_LIMIT_REACHED or
+   * FEATURE_NOT_IN_PLAN. Present only where the endpoint sets one.
+   */
+  code?: string;
 
-  constructor(message: string, statusCode: number) {
+  constructor(message: string, statusCode: number, code?: string) {
     super(message);
     this.name = 'ApiException';
     this.statusCode = statusCode;
+    this.code = code;
   }
 }
 
@@ -268,7 +274,8 @@ class ApiClient {
       if (!response.ok) {
         throw new ApiException(
           data.message || 'An error occurred',
-          response.status
+          response.status,
+          data.code
         );
       }
 

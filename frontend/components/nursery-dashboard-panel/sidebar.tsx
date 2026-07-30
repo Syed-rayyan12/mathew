@@ -5,7 +5,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { X, Lock, Zap } from 'lucide-react';
-import { useNurseryPlan } from '@/hooks/use-nursery-plan';
+import { useEntitlements } from '@/hooks/use-nursery-plan';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -13,8 +13,12 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
-  const plan = useNurseryPlan();
-  const isPlatinum = plan === 'platinum';
+  const { data: entitlements, loading } = useEntitlements();
+  // Jobs is a Platinum feature — the server decides, not localStorage. While
+  // the answer is in flight, show neither the links nor the upsell rather
+  // than flashing "locked" at an owner who is not.
+  const canPostJobs = entitlements?.features.jobs ?? false;
+  const planLabel = entitlements?.planLabel ?? 'Single Standard';
 
   const baseLinks = [
     { name: 'Management Nurseries', href: '/nursery-dashboard' },
@@ -77,10 +81,12 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
           {/* Platinum-only section */}
           <div className="mt-2 pt-2 border-t border-gray-100">
             <p className="px-4 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1">
-              {!isPlatinum && <Lock size={10} />} Jobs
-              {!isPlatinum && <span className="ml-auto text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full">Platinum</span>}
+              {!loading && !canPostJobs && <Lock size={10} />} Jobs
+              {!loading && !canPostJobs && <span className="ml-auto text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full">Platinum</span>}
             </p>
-            {isPlatinum ? (
+            {loading ? (
+              <div className="px-4 py-2 text-xs text-gray-300 select-none">Loading…</div>
+            ) : canPostJobs ? (
               platinumLinks.map((link) => (
                 <Link
                   key={link.href}
@@ -119,13 +125,13 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
           </div>
         </nav>
 
-        {/* Upgrade banner — only for non-platinum */}
-        {!isPlatinum && (
+        {/* Upgrade banner — only once we know the plan, and only if it lacks Jobs */}
+        {!loading && !canPostJobs && (
           <div className="mt-auto pt-4">
             <div className="rounded-xl bg-gradient-to-br from-yellow-50 to-amber-50 border border-yellow-200 p-4 flex flex-col gap-2">
               <div className="flex items-center gap-2">
                 <Zap size={16} className="fill-yellow-500 text-yellow-500 shrink-0" />
-                <p className="text-xs font-semibold text-yellow-800">You're on Standard</p>
+                <p className="text-xs font-semibold text-yellow-800">You&apos;re on {planLabel}</p>
               </div>
               <p className="text-xs text-yellow-700 leading-snug">
                 Unlock job postings, applicant management & more.

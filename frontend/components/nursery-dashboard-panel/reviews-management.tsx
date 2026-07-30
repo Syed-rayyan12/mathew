@@ -56,7 +56,7 @@ export default function ReviewsOverview() {
   const [reviewsByNursery, setReviewsByNursery] = useState<Record<string, { reviews: Review[], stats: ReviewStats }>>({})
   const [loading, setLoading] = useState(true)
   const [processingReview, setProcessingReview] = useState<string | null>(null)
-  const { canApproveRejectReviews } = usePlanFeatures()
+  const { canApproveRejectReviews, loading: planLoading } = usePlanFeatures()
 
   useEffect(() => {
     fetchNurseriesAndReviews()
@@ -371,8 +371,8 @@ export default function ReviewsOverview() {
                       <RatingStars rating={review.overallRating} />
                       <p className="text-sm text-gray-500 min-w-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{review.content}</p>
 
-                      {/* Action Buttons */}
-                      {canApproveRejectReviews ? (
+                      {/* Action Buttons — nothing until the server says which */}
+                      {planLoading ? null : canApproveRejectReviews ? (
                       <div className="flex gap-2 mt-2">
                         <button
                           onClick={() => handleApproveReview(review.id)}

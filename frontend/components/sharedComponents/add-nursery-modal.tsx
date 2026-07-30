@@ -37,7 +37,7 @@ export default function AddNurseryModal({
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
 }) {
-  const { canUploadVideo, canManageTeamMembers } = usePlanFeatures();
+  const { canUploadVideo, canManageTeamMembers, loading: planLoading } = usePlanFeatures();
   const [loading, setLoading] = useState(false);
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [cityPopoverOpen, setCityPopoverOpen] = useState(false);
@@ -290,8 +290,19 @@ export default function AddNurseryModal({
       }
     } catch (error: any) {
       console.error('Error creating nursery:', error);
-      const errorMessage = error?.response?.data?.message || error?.message || 'An error occurred while creating nursery';
-      toast.error(errorMessage);
+      // Running out of paid nurseries is not a failure to report — it is a
+      // thing the owner can fix, so point them at the upgrade page.
+      if (error?.code === 'NURSERY_LIMIT_REACHED') {
+        toast.error(error.message || 'You have used every nursery your plan covers.', {
+          action: {
+            label: 'Add more',
+            onClick: () => { window.location.href = '/nursery-dashboard/upgrade'; },
+          },
+        });
+      } else {
+        const errorMessage = error?.response?.data?.message || error?.message || 'An error occurred while creating nursery';
+        toast.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -649,7 +660,7 @@ export default function AddNurseryModal({
           {/* Video Upload */}
           <div>
             <h3 className="font-medium text-lg mb-4">Video</h3>
-            {!canUploadVideo ? (
+            {planLoading ? null : !canUploadVideo ? (
               <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center bg-gray-50">
                 <p className="text-sm text-muted-foreground">Video upload is available on the <strong>Platinum plan</strong>.</p>
               </div>
@@ -841,7 +852,7 @@ export default function AddNurseryModal({
           {/* Meet the Team */}
           <div>
             <h3 className="font-medium text-lg mb-2">Meet the Team</h3>
-            {!canManageTeamMembers ? (
+            {planLoading ? null : !canManageTeamMembers ? (
               <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center bg-gray-50">
                 <p className="text-sm text-muted-foreground">Team Member Profiles are available on the <strong>Platinum plan</strong>.</p>
               </div>

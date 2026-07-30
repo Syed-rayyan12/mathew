@@ -35,7 +35,12 @@ export interface User {
   postcode?: string;
   nurseryName?: string;
   role: string;
-  plan?: string;
+  /**
+   * Display hint only — nothing gates on these. The real answer comes from
+   * GET /api/nursery-dashboard/entitlements.
+   */
+  planTier?: 'standard' | 'platinum';
+  paidNurseryCount?: number;
   avatar?: string;
   isVerified?: boolean;
   createdAt?: string;
@@ -65,6 +70,18 @@ export interface ChangePasswordData {
   currentPassword: string;
   newPassword: string;
 }
+
+/** What verify-upgrade-session hands back once reconcileAccount has run. */
+export interface UpgradeResult {
+  planTier: 'standard' | 'platinum';
+  paidNurseryCount: number;
+}
+
+/**
+ * create-upgrade-session puts the Stripe URL at the top level rather than
+ * under `data`, so it does not fit the usual ApiResponse<T> shape.
+ */
+export type UpgradeSessionResponse = ApiResponse<never> & { url?: string };
 
 // Auth Service
 export const authService = {
@@ -148,32 +165,41 @@ export const authService = {
     return user?.role || null;
   },
 
-  // Create Stripe upgrade checkout session for existing nursery owner
-  createUpgradeSession: async (plan: string): Promise<ApiResponse<{ url: string }>> => {
-    return nurseryApiClient.post<{ url: string }>('/stripe/create-upgrade-session', { plan }, true);
+  // Create Stripe upgrade checkout session for existing nursery owner.
+  // The count is never optional — the server rejects a quote of zero nurseries,
+  // so a pure tier change must still send the account's current count.
+  createUpgradeSession: async (
+    planTier: 'standard' | 'platinum',
+    billingPeriod: 'monthly' | 'annual',
+    nurseryCount: number
+  ): Promise<UpgradeSessionResponse> => {
+    return nurseryApiClient.post<never>(
+      '/stripe/create-upgrade-session',
+      { plan: planTier, billingPeriod, nurseryCount },
+      true
+    ) as Promise<UpgradeSessionResponse>;
   },
 
-  // Verify upgrade payment and update plan in DB + localStorage
-  verifyUpgradeSession: async (sessionId: string): Promise<ApiResponse<{ plan: string }>> => {
-    const response = await nurseryApiClient.post<{ plan: string }>('/stripe/verify-upgrade-session', { sessionId }, false);
-    if (response.success && response.data?.plan) {
+  // Verify upgrade payment, then mirror the new tier + count into localStorage.
+  // Display hint only — the dashboard re-reads entitlements from the server.
+  verifyUpgradeSession: async (
+    sessionId: string
+  ): Promise<ApiResponse<UpgradeResult>> => {
+    const response = await nurseryApiClient.post<UpgradeResult>(
+      '/stripe/verify-upgrade-session',
+      { sessionId },
+      false
+    );
+    if (response.success && response.data?.planTier) {
+      const { planTier, paidNurseryCount } = response.data;
       try {
-        const raw = typeof window !== 'undefined' ? localStorage.getItem('nurseryUser') : null;
-        if (raw) {
-          const nurseryUser = JSON.parse(raw);
-          nurseryUser.plan = response.data.plan;
-          localStorage.setItem('nurseryUser', JSON.stringify(nurseryUser));
-        }
-        // Also update shared user key if present
-        const raw2 = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
-        if (raw2) {
-          const user = JSON.parse(raw2);
-          user.plan = response.data.plan;
-          localStorage.setItem('user', JSON.stringify(user));
-        }
-        // Dispatch storage event so useNurseryPlan hook re-reads in the same tab
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new Event('storage'));
+        for (const key of ['nurseryUser', 'user']) {
+          const raw = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+          if (!raw) continue;
+          const stored = JSON.parse(raw);
+          stored.planTier = planTier;
+          stored.paidNurseryCount = paidNurseryCount;
+          localStorage.setItem(key, JSON.stringify(stored));
         }
       } catch { /* ignore parse errors */ }
     }

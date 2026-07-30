@@ -12,45 +12,130 @@ import {
   type PlanTier,
   type BillingPeriod,
 } from '../utils/pricing';
+import {
+  SubscriptionShapeError,
+  clearSubscription,
+  reconcileFromSubscription,
+} from '../utils/subscription-sync';
 import { planFromMetadata } from '../utils/entitlements';
 
-/**
- * Writes what was just bought onto the account, claiming the session first.
- *
- * The insert into processed_checkout_sessions is the whole mechanism: the
- * primary key is the Stripe session id, so the first caller wins and every
- * later one hits a unique violation. That covers three things at once —
- * the webhook racing the success redirect, Stripe retrying a webhook, and
- * someone re-posting an old session id to a `verify-*` endpoint to restore an
- * allowance they have since downgraded away from.
- *
- * Must be called inside a transaction so the claim and the account write
- * commit together.
- */
-async function applyPurchase(
-  tx: any,
-  sessionId: string,
-  userId: string,
-  tier: PlanTier,
-  paidNurseryCount: number
-): Promise<void> {
-  await tx.processedCheckoutSession.create({
-    data: { id: sessionId, userId, planTier: tier, nurseryCount: paidNurseryCount },
-  });
-  await tx.user.update({
-    where: { id: userId },
-    data: { planTier: tier, paidNurseryCount },
-  });
-}
-
-/** True if this call applied the purchase, false if it had already landed. */
+/** True if a unique-key insert lost the race, i.e. this work already landed. */
 function isAlreadyProcessed(err: any): boolean {
   return err?.code === 'P2002';
 }
 
 /**
- * Standalone form of applyPurchase for callers that have nothing else to write.
+ * The user id this Checkout Session belongs to, creating the account on the
+ * first sighting.
+ *
+ * The insert into processed_checkout_sessions is the claim: the primary key is
+ * the Stripe session id, so the webhook and the success redirect cannot both
+ * create the account. That is now all this table does — plan state comes from
+ * the subscription, which is idempotent on its own.
+ *
+ * Returns null when the session carries nothing that identifies an account.
+ */
+async function ensureAccount(session: any): Promise<string | null> {
+  const meta = session.metadata;
+
+  // Upgrade and reactivation sessions change an existing account and create
+  // nothing.
+  if (meta?.upgrade === 'true' && meta.userId) return meta.userId;
+
+  if (!meta?.email) return null;
+
+  const slug = String(meta.nurseryName)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  const groupId = await generateShortId('GRP');
+
+  // Existing nursery owner buying a second group.
+  if (meta.existingUserId) {
+    try {
+      await prisma.$transaction(async (tx: any) => {
+        await tx.processedCheckoutSession.create({
+          data: {
+            id: session.id,
+            userId: meta.existingUserId,
+            planTier: 'pending',
+            nurseryCount: 0,
+          },
+        });
+        await tx.group.create({
+          data: {
+            id: groupId,
+            name: meta.nurseryName,
+            slug,
+            email: meta.email,
+            phone: meta.phone,
+            firstName: meta.firstName,
+            lastName: meta.lastName,
+            city: meta.city || '',
+            town: meta.town || null,
+            ownerId: meta.existingUserId,
+          },
+        });
+      });
+    } catch (err) {
+      if (!isAlreadyProcessed(err)) throw err;
+    }
+    return meta.existingUserId;
+  }
+
+  const existing = await prisma.user.findUnique({ where: { email: meta.email } });
+  if (existing) return existing.id;
+
+  const userId = await generateShortId('USR');
+
+  try {
+    await prisma.$transaction(async (tx: any) => {
+      await tx.processedCheckoutSession.create({
+        data: { id: session.id, userId, planTier: 'pending', nurseryCount: 0 },
+      });
+      await tx.user.create({
+        data: {
+          id: userId,
+          email: meta.email,
+          password: meta.hashedPassword,
+          firstName: meta.firstName,
+          lastName: meta.lastName,
+          phone: meta.phone,
+          nurseryName: meta.nurseryName,
+          role: 'NURSERY_OWNER',
+          isActive: false,
+          isOnline: true,
+        },
+      });
+      await tx.group.create({
+        data: {
+          id: groupId,
+          name: meta.nurseryName,
+          slug,
+          email: meta.email,
+          phone: meta.phone,
+          firstName: meta.firstName,
+          lastName: meta.lastName,
+          city: meta.city || '',
+          town: meta.town || null,
+          ownerId: userId,
+        },
+      });
+    });
+    return userId;
+  } catch (err) {
+    if (!isAlreadyProcessed(err)) throw err;
+    // The other racer created it. Read back whichever id won.
+    const winner = await prisma.user.findUnique({ where: { email: meta.email } });
+    return winner?.id ?? null;
+  }
+}
+
+/**
+ * Standalone reconciler for callers that have nothing else to write.
  * Returns false when the session had already been applied.
+ * @deprecated Task 8 will replace verifySession and verifyUpgradeSession.
  */
 async function reconcileAccount(
   sessionId: string,
@@ -60,7 +145,13 @@ async function reconcileAccount(
 ): Promise<boolean> {
   try {
     await prisma.$transaction(async (tx: any) => {
-      await applyPurchase(tx, sessionId, userId, tier, paidNurseryCount);
+      await tx.processedCheckoutSession.create({
+        data: { id: sessionId, userId, planTier: tier, nurseryCount: paidNurseryCount },
+      });
+      await tx.user.update({
+        where: { id: userId },
+        data: { planTier: tier, paidNurseryCount },
+      });
     });
     return true;
   } catch (err) {
@@ -207,8 +298,16 @@ export const createCheckoutSession = async (
 
 /**
  * POST /api/stripe/webhook
- * Handles Stripe webhook events. On checkout.session.completed,
- * creates the nursery owner + group from the session metadata.
+ *
+ * Three events cover signup, upgrade, lapse and cancellation:
+ *
+ *   checkout.session.completed     an account bought or reactivated a plan
+ *   customer.subscription.updated  quantity, price, status or renewal changed
+ *   customer.subscription.deleted  it ended
+ *
+ * Every one of them re-fetches the subscription instead of trusting the
+ * payload, because Stripe does not guarantee event ordering and a stale
+ * `subscription.updated` could otherwise overwrite a newer one.
  */
 export const stripeWebhook = async (
   req: Request,
@@ -230,133 +329,70 @@ export const stripeWebhook = async (
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object as any;
+  try {
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object as any;
 
-    // Only process if payment was successful
-    if (!['paid', 'no_payment_required'].includes(session.payment_status)) {
-      return res.json({ received: true });
-    }
-
-    const meta = session.metadata;
-
-    // Upgrade sessions carry a userId and no email — they change an existing
-    // account's plan and create nothing. Without this branch the upgrade only
-    // lands if the customer's browser makes it back to the success page.
-    if (meta?.upgrade === 'true' && meta.userId) {
-      const { tier, count } = planFromMetadata(meta);
-      try {
-        await reconcileAccount(session.id, meta.userId, tier, count);
-      } catch (err) {
-        console.error('❌ Error applying upgrade from webhook:', err);
-      }
-      return res.json({ received: true });
-    }
-
-    if (!meta || !meta.email) {
-      console.error('No metadata found on checkout session');
-      return res.json({ received: true });
-    }
-
-    try {
-      const groupId = await generateShortId('GRP');
-
-      if (meta.existingUserId) {
-        // Existing nursery owner adding a new nursery group
-        const slug = meta.nurseryName
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '');
-
-        const { tier, count } = planFromMetadata(meta);
-
-        await prisma.$transaction(async (tx: any) => {
-          await tx.group.create({
-            data: {
-              id: groupId,
-              name: meta.nurseryName,
-              slug,
-              email: meta.email,
-              phone: meta.phone,
-              firstName: meta.firstName,
-              lastName: meta.lastName,
-              city: meta.city || '',
-              town: meta.town || null,
-              ownerId: meta.existingUserId,
-            },
-          });
-
-          await applyPurchase(tx, session.id, meta.existingUserId, tier, count);
-        });
-
-      } else {
-        // New user — check idempotency first
-        const alreadyExists = await prisma.user.findUnique({
-          where: { email: meta.email },
-        });
-
-        if (alreadyExists) {
-          return res.json({ received: true });
-        }
-
-      const userId = await generateShortId('USR');
-
-      const { tier, count } = planFromMetadata(meta);
-
-      await prisma.$transaction(async (tx: any) => {
-        await tx.user.create({
-          data: {
-            id: userId,
-            email: meta.email,
-            password: meta.hashedPassword,
-            firstName: meta.firstName,
-            lastName: meta.lastName,
-            phone: meta.phone,
-            nurseryName: meta.nurseryName,
-            role: 'NURSERY_OWNER',
-            planTier: tier,
-            paidNurseryCount: count,
-            isActive: false,
-            isOnline: true,
-          },
-        });
-
-        const slug = meta.nurseryName
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '');
-
-        await tx.group.create({
-          data: {
-            id: groupId,
-            name: meta.nurseryName,
-            slug,
-            email: meta.email,
-            phone: meta.phone,
-            firstName: meta.firstName,
-            lastName: meta.lastName,
-            city: meta.city || '',
-            town: meta.town || null,
-            ownerId: userId,
-          },
-        });
-
-        // Claim the session here too, so the success redirect finds it already
-        // applied instead of writing the plan a second time.
-        await tx.processedCheckoutSession.create({
-          data: { id: session.id, userId, planTier: tier, nurseryCount: count },
-        });
-      });
-
-      }
-    } catch (err) {
-      if (isAlreadyProcessed(err)) {
-        // The success redirect got here first. Nothing left to do.
+      if (session.mode !== 'subscription') return res.json({ received: true });
+      if (!['paid', 'no_payment_required'].includes(session.payment_status)) {
         return res.json({ received: true });
       }
-      console.error('❌ Error creating nursery account from webhook:', err);
-      // Return 200 anyway so Stripe doesn't retry endlessly
+
+      const subscriptionId =
+        typeof session.subscription === 'string'
+          ? session.subscription
+          : session.subscription?.id;
+
+      if (!subscriptionId) {
+        console.error('checkout.session.completed carried no subscription', session.id);
+        return res.json({ received: true });
+      }
+
+      const userId = await ensureAccount(session);
+      if (!userId) {
+        console.error('No account could be resolved for session', session.id);
+        return res.json({ received: true });
+      }
+
+      await reconcileFromSubscription(subscriptionId, userId);
+      return res.json({ received: true });
     }
+
+    if (event.type === 'customer.subscription.updated') {
+      const sub = event.data.object as Stripe.Subscription;
+      const owner = await prisma.user.findUnique({
+        where: { stripeSubscriptionId: sub.id },
+        select: { id: true },
+      });
+      // Not ours, or the signup webhook has not landed yet. If it is the
+      // latter, that webhook reconciles from scratch anyway.
+      if (owner) await reconcileFromSubscription(sub.id, owner.id);
+      return res.json({ received: true });
+    }
+
+    if (event.type === 'customer.subscription.deleted') {
+      const sub = event.data.object as Stripe.Subscription;
+      const owner = await prisma.user.findUnique({
+        where: { stripeSubscriptionId: sub.id },
+        select: { id: true },
+      });
+      // planTier and paidNurseryCount are left alone on purpose — admin still
+      // needs to see that a lapsed account bought a Group of eight.
+      if (owner) await clearSubscription(owner.id, sub.status);
+      return res.json({ received: true });
+    }
+  } catch (err) {
+    if (err instanceof SubscriptionShapeError) {
+      // A subscription this application could not have sold. Retrying will
+      // not fix it, so acknowledge and let it be investigated by hand.
+      console.error('❌ Unrecognised subscription shape:', err.message);
+      return res.json({ received: true });
+    }
+    // Anything else — a database blip, a Stripe timeout — is worth retrying.
+    // Stripe backs off for up to three days, which is long enough for someone
+    // to notice, and every retry re-reads current truth.
+    console.error(`❌ Webhook ${event.type} failed:`, err);
+    return res.status(500).json({ received: false });
   }
 
   res.json({ received: true });

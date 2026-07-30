@@ -4,20 +4,20 @@ import prisma from '../config/database';
 import { config } from '../config';
 import { hashPassword } from '../utils';
 import { generateShortId } from '../utils/id-generator';
-import { ensurePlanPrices, ensurePlanProducts, getStripe } from '../utils/stripe';
+import { ensurePlanPrices, getStripe } from '../utils/stripe';
 import {
   quote,
-  describeQuote,
+  parseLookupKey,
   PricingError,
   type PlanTier,
   type BillingPeriod,
 } from '../utils/pricing';
+import { isLive, planLabel } from '../utils/entitlements';
 import {
   SubscriptionShapeError,
   clearSubscription,
   reconcileFromSubscription,
 } from '../utils/subscription-sync';
-import { planFromMetadata } from '../utils/entitlements';
 
 /** True if a unique-key insert lost the race, i.e. this work already landed. */
 function isAlreadyProcessed(err: any): boolean {
@@ -129,34 +129,6 @@ async function ensureAccount(session: any): Promise<string | null> {
     // The other racer created it. Read back whichever id won.
     const winner = await prisma.user.findUnique({ where: { email: meta.email } });
     return winner?.id ?? null;
-  }
-}
-
-/**
- * Standalone reconciler for callers that have nothing else to write.
- * Returns false when the session had already been applied.
- * @deprecated Task 8 will replace verifySession and verifyUpgradeSession.
- */
-async function reconcileAccount(
-  sessionId: string,
-  userId: string,
-  tier: PlanTier,
-  paidNurseryCount: number
-): Promise<boolean> {
-  try {
-    await prisma.$transaction(async (tx: any) => {
-      await tx.processedCheckoutSession.create({
-        data: { id: sessionId, userId, planTier: tier, nurseryCount: paidNurseryCount },
-      });
-      await tx.user.update({
-        where: { id: userId },
-        data: { planTier: tier, paidNurseryCount },
-      });
-    });
-    return true;
-  } catch (err) {
-    if (isAlreadyProcessed(err)) return false;
-    throw err;
   }
 }
 
@@ -398,10 +370,240 @@ export const stripeWebhook = async (
   res.json({ received: true });
 };
 
+interface ChangeRequest {
+  tier: PlanTier;
+  billing: BillingPeriod;
+  count: number;
+}
+
+type ChangeRejection = { status: number; body: Record<string, unknown> };
+
+/**
+ * Everything that must be true before a plan change can be priced.
+ *
+ * Shared by preview and apply so the confirmation screen cannot show a number
+ * for something the apply call then refuses.
+ */
+async function validateChange(
+  userId: string,
+  body: any
+): Promise<{ ok: true; change: ChangeRequest } | { ok: false; rejection: ChangeRejection }> {
+  const tier: PlanTier = body.plan === 'platinum' ? 'platinum' : 'standard';
+  const billing: BillingPeriod = body.billingPeriod === 'annual' ? 'annual' : 'monthly';
+
+  const requested = Number(body.nurseryCount);
+  const count = Number.isFinite(requested) && requested > 0 ? Math.floor(requested) : 0;
+
+  // An allowance cannot be bought down below what is already in use, or the
+  // owner would keep listings they have stopped paying for. Removing
+  // nurseries first is the supported way down.
+  const inUse = await prisma.nursery.count({ where: { ownerId: userId } });
+  if (count < inUse) {
+    return {
+      ok: false,
+      rejection: {
+        status: 400,
+        body: {
+          success: false,
+          code: 'BELOW_CURRENT_USAGE',
+          used: inUse,
+          requested: count,
+          message: `You currently have ${inUse} ${inUse === 1 ? 'nursery' : 'nurseries'}. Remove the ones you no longer need before reducing your plan.`,
+        },
+      },
+    };
+  }
+
+  try {
+    // Refuses a Standard group and refuses 61+. The tier ladder's `inf` tier
+    // means Stripe itself would sell a group of 200 without this.
+    quote(tier, billing, count);
+  } catch (err) {
+    if (err instanceof PricingError) {
+      return { ok: false, rejection: { status: 400, body: { success: false, message: err.message } } };
+    }
+    throw err;
+  }
+
+  return { ok: true, change: { tier, billing, count } };
+}
+
+/**
+ * POST /api/stripe/preview-change
+ *
+ * What this change costs right now and what it renews at. No charge, no
+ * redirect — the upgrade page becomes a confirmation screen with real numbers.
+ */
+export const previewChange = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId: string = (req as any).user?.userId;
+    if (!userId) return res.status(401).json({ success: false, message: 'Unauthorised.' });
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
+
+    const validated = await validateChange(userId, req.body);
+    if (!validated.ok) {
+      return res.status(validated.rejection.status).json(validated.rejection.body);
+    }
+    const { tier, billing, count } = validated.change;
+    const target = quote(tier, billing, count);
+
+    // Nothing to update — never subscribed, or lapsed. Reactivation is a fresh
+    // Checkout against the existing customer record.
+    if (!user.stripeSubscriptionId || !isLive(user)) {
+      return res.json({
+        success: true,
+        data: {
+          requiresCheckout: true,
+          amountDueNowPence: target.totalPence,
+          nextRenewalPence: target.totalPence,
+          nextRenewalDate: null,
+          intervalChanges: false,
+          currency: 'gbp',
+          targetLabel: planLabel({ planTier: tier, paidNurseryCount: count }),
+        },
+      });
+    }
+
+    const stripe = getStripe();
+    const prices = await ensurePlanPrices();
+    const sub = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+    const item = sub.items.data[0];
+
+    if (!item) {
+      return res.status(409).json({
+        success: false,
+        message: 'Your subscription is in an unexpected state. Please contact support.',
+      });
+    }
+
+    const current = parseLookupKey(item.price?.lookup_key);
+    if (tier === current?.tier && billing === current?.billing && count === item.quantity) {
+      return res.status(400).json({ success: false, message: 'You are already on this plan.' });
+    }
+
+    const preview = await stripe.invoices.createPreview({
+      customer: typeof sub.customer === 'string' ? sub.customer : sub.customer.id,
+      subscription: sub.id,
+      subscription_details: {
+        // The item id must be passed or Stripe adds a second line rather than
+        // changing the one that is there. Quantity must be passed explicitly
+        // too: Stripe resets it to 1 whenever an item's price changes, which
+        // is exactly what a Standard → Platinum move does.
+        items: [{ id: item.id, price: prices[tier][billing], quantity: count }],
+        proration_behavior: 'always_invoice',
+      },
+    });
+
+    // Changing the interval resets the billing cycle and charges immediately,
+    // so the current period end stops being the answer to "when next".
+    const intervalChanges = current !== null && current.billing !== billing;
+
+    res.json({
+      success: true,
+      data: {
+        requiresCheckout: false,
+        amountDueNowPence: preview.amount_due,
+        nextRenewalPence: target.totalPence,
+        nextRenewalDate: intervalChanges
+          ? null
+          : item.current_period_end
+            ? new Date(item.current_period_end * 1000).toISOString()
+            : null,
+        intervalChanges,
+        currency: preview.currency ?? 'gbp',
+        targetLabel: planLabel({ planTier: tier, paidNurseryCount: count }),
+      },
+    });
+  } catch (error: any) {
+    console.error('❌ previewChange error:', error?.message || error);
+    return res.status(500).json({
+      success: false,
+      message: 'Could not work out what that change would cost. Please try again.',
+    });
+  }
+};
+
+/**
+ * POST /api/stripe/apply-change
+ *
+ * Updates the subscription in place and charges the prorated difference to the
+ * card on file.
+ *
+ * A declined charge is accepted as-is: `always_invoice` can fail after the
+ * quantity has already changed, leaving the subscription past_due — which is
+ * still live, so the owner briefly holds the larger allowance unpaid. Stripe
+ * retries, and a final failure hides everything. Unwinding a quantity change
+ * mid-flight is worse.
+ */
+export const applyChange = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId: string = (req as any).user?.userId;
+    if (!userId) return res.status(401).json({ success: false, message: 'Unauthorised.' });
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
+
+    if (!user.stripeSubscriptionId || !isLive(user)) {
+      return res.status(409).json({
+        success: false,
+        code: 'REQUIRES_CHECKOUT',
+        message: 'There is no active subscription to change. Start a new one instead.',
+      });
+    }
+
+    const validated = await validateChange(userId, req.body);
+    if (!validated.ok) {
+      return res.status(validated.rejection.status).json(validated.rejection.body);
+    }
+    const { tier, billing, count } = validated.change;
+
+    const stripe = getStripe();
+    const prices = await ensurePlanPrices();
+    const sub = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+    const item = sub.items.data[0];
+
+    if (!item) {
+      return res.status(409).json({
+        success: false,
+        message: 'Your subscription is in an unexpected state. Please contact support.',
+      });
+    }
+
+    const updated = await stripe.subscriptions.update(sub.id, {
+      items: [{ id: item.id, price: prices[tier][billing], quantity: count }],
+      proration_behavior: 'always_invoice',
+    });
+
+    const snapshot = await reconcileFromSubscription(updated.id, userId);
+
+    res.json({
+      success: true,
+      data: {
+        planTier: snapshot.planTier,
+        paidNurseryCount: snapshot.paidNurseryCount,
+        subscriptionStatus: snapshot.subscriptionStatus,
+      },
+    });
+  } catch (error: any) {
+    console.error('❌ applyChange error:', error?.message || error);
+    return res.status(500).json({
+      success: false,
+      message: 'Could not apply that change. Your plan has not been altered. Please try again.',
+    });
+  }
+};
+
 /**
  * POST /api/stripe/create-upgrade-session
- * Creates a Stripe Checkout Session for an existing nursery owner upgrading their plan.
- * Requires authentication. Only stores userId + new plan in metadata — no password.
+ *
+ * Checkout for an account with no live subscription — never subscribed, or
+ * lapsed. An account that *has* one uses apply-change instead, which needs no
+ * redirect.
+ *
+ * Reused rather than replaced so a reactivating owner keeps their Stripe
+ * customer record, and with it their payment methods and invoice history.
  */
 export const createUpgradeSession = async (
   req: Request,
@@ -409,91 +611,30 @@ export const createUpgradeSession = async (
   next: NextFunction
 ) => {
   try {
-    const authReq = req as any;
-    const userId: string = authReq.user?.userId;
-
-    if (!userId) {
-      return res.status(401).json({ success: false, message: 'Unauthorised.' });
-    }
-
-    const { plan, billingPeriod, nurseryCount } = req.body;
-
-    const tier: PlanTier = plan === 'platinum' ? 'platinum' : 'standard';
+    const userId: string = (req as any).user?.userId;
+    if (!userId) return res.status(401).json({ success: false, message: 'Unauthorised.' });
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found.' });
+    if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
+
+    const validated = await validateChange(userId, req.body);
+    if (!validated.ok) {
+      return res.status(validated.rejection.status).json(validated.rejection.body);
     }
+    const { tier, billing, count } = validated.change;
 
-    const billing: BillingPeriod = billingPeriod === 'annual' ? 'annual' : 'monthly';
-
-    const requestedCount = Number(nurseryCount);
-    const count = Number.isFinite(requestedCount) && requestedCount > 0
-      ? Math.floor(requestedCount)
-      : 0;
-
-    // Buying exactly what you already have is not an upgrade.
-    if (tier === user.planTier && count === user.paidNurseryCount) {
-      return res.status(400).json({
-        success: false,
-        message: 'You are already on this plan.',
-      });
-    }
-
-    // An allowance cannot be bought down below what is already in use, or the
-    // owner would keep listings they have stopped paying for. Removing
-    // nurseries first is the supported way down.
-    const inUse = await prisma.nursery.count({ where: { ownerId: userId } });
-    if (count < inUse) {
-      return res.status(400).json({
-        success: false,
-        code: 'BELOW_CURRENT_USAGE',
-        used: inUse,
-        requested: count,
-        message: `You currently have ${inUse} ${inUse === 1 ? 'nursery' : 'nurseries'}. Remove the ones you no longer need before reducing your plan.`,
-      });
-    }
-
-    let priceQuote;
-    try {
-      priceQuote = quote(tier, billing, count);
-    } catch (err) {
-      if (err instanceof PricingError) {
-        return res.status(400).json({ success: false, message: err.message });
-      }
-      throw err;
-    }
-
-    const lineItem = describeQuote(priceQuote);
     const stripe = getStripe();
-    const products = await ensurePlanProducts();
+    const prices = await ensurePlanPrices();
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      mode: 'payment',
+      mode: 'subscription',
       allow_promotion_codes: true,
-      invoice_creation: {
-        enabled: true,
-        invoice_data: { description: lineItem.description },
-      },
-      customer_email: user.email,
-      line_items: [
-        {
-          price_data: {
-            currency: 'gbp',
-            product: products[tier],
-            unit_amount: priceQuote.unitAmountPence,
-          },
-          quantity: priceQuote.quantity,
-        },
-      ],
-      metadata: {
-        upgrade: 'true',
-        userId,
-        plan: tier,
-        billingPeriod: billing,
-        nurseryCount: String(priceQuote.quantity),
-      },
+      ...(user.stripeCustomerId
+        ? { customer: user.stripeCustomerId }
+        : { customer_email: user.email }),
+      line_items: [{ price: prices[tier][billing], quantity: count }],
+      metadata: { upgrade: 'true', userId },
       custom_text: {
         submit: {
           message: billing === 'annual'
@@ -510,15 +651,20 @@ export const createUpgradeSession = async (
     console.error('❌ createUpgradeSession error:', error?.message || error);
     return res.status(500).json({
       success: false,
-      message: error?.message || 'Failed to create upgrade session. Please try again.',
+      message: error?.message || 'Failed to create checkout session. Please try again.',
     });
   }
 };
 
 /**
  * POST /api/stripe/verify-upgrade-session
- * Called after payment success on the upgrade page.
- * Updates the user's plan in the database.
+ *
+ * The success redirect after a reactivation Checkout. Exists because the
+ * webhook is not instant and the owner is looking at the page now.
+ *
+ * Replay is no longer a concern: this reconciles from the subscription, so
+ * re-posting an old session id re-reads current truth and writes the same
+ * values. The caller check stays because a session id is not a secret.
  */
 export const verifyUpgradeSession = async (
   req: Request,
@@ -527,50 +673,37 @@ export const verifyUpgradeSession = async (
 ) => {
   try {
     const { sessionId } = req.body;
-
     if (!sessionId) {
       return res.status(400).json({ success: false, message: 'Session ID is required.' });
     }
 
-    const stripe = getStripe();
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
-
-    if (!session || !['paid', 'no_payment_required'].includes(session.payment_status)) {
-      return res.status(400).json({ success: false, message: 'Payment not completed.' });
-    }
-
+    const session = await getStripe().checkout.sessions.retrieve(sessionId);
     const meta = session.metadata;
+
     if (!meta || meta.upgrade !== 'true' || !meta.userId) {
       return res.status(400).json({ success: false, message: 'Invalid session metadata.' });
     }
 
-    // A session can only be applied by the account that bought it.
     const callerId: string | undefined = (req as any).user?.userId;
     if (!callerId || callerId !== meta.userId) {
       return res.status(403).json({ success: false, message: 'This payment belongs to another account.' });
     }
 
-    const user = await prisma.user.findUnique({ where: { id: meta.userId } });
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found.' });
+    const subscriptionId =
+      typeof session.subscription === 'string' ? session.subscription : session.subscription?.id;
+
+    if (!subscriptionId) {
+      return res.status(400).json({ success: false, message: 'Payment not completed.' });
     }
 
-    const { tier, count } = planFromMetadata(meta);
-
-    const applied = await reconcileAccount(session.id, meta.userId, tier, count);
-
-    // Already applied — report what the account actually has, not what this
-    // (possibly replayed) session said it should have.
-    if (!applied) {
-      return res.json({
-        success: true,
-        data: { planTier: user.planTier, paidNurseryCount: user.paidNurseryCount },
-      });
-    }
+    const snapshot = await reconcileFromSubscription(subscriptionId, meta.userId);
 
     return res.json({
       success: true,
-      data: { planTier: tier, paidNurseryCount: count },
+      data: {
+        planTier: snapshot.planTier,
+        paidNurseryCount: snapshot.paidNurseryCount,
+      },
     });
   } catch (error: any) {
     console.error('❌ verifyUpgradeSession error:', error?.message || error);
@@ -583,9 +716,10 @@ export const verifyUpgradeSession = async (
 
 /**
  * POST /api/stripe/verify-session
- * Called by the payment-success page with the Stripe session_id.
- * Retrieves the session from Stripe, then creates the user + group.
- * This is the PRIMARY account-creation path (webhooks are unreliable in some envs).
+ *
+ * Called by the payment-success page. This and the webhook race to create the
+ * account; processed_checkout_sessions decides which one wins, and both then
+ * reconcile the same subscription to the same values.
  */
 export const verifySession = async (
   req: Request,
@@ -594,87 +728,36 @@ export const verifySession = async (
 ) => {
   try {
     const { sessionId } = req.body;
-
     if (!sessionId) {
       return res.status(400).json({ success: false, message: 'Session ID is required.' });
     }
 
-    const stripe = getStripe();
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const session = await getStripe().checkout.sessions.retrieve(sessionId);
 
     if (!session || !['paid', 'no_payment_required'].includes(session.payment_status)) {
       return res.status(400).json({ success: false, message: 'Payment not completed.' });
     }
 
-    const meta = session.metadata;
-    if (!meta || !meta.email) {
+    const subscriptionId =
+      typeof session.subscription === 'string' ? session.subscription : session.subscription?.id;
+
+    if (!subscriptionId) {
+      return res.status(400).json({ success: false, message: 'Session carried no subscription.' });
+    }
+
+    const existedBefore = session.metadata?.email
+      ? Boolean(await prisma.user.findUnique({ where: { email: session.metadata.email } }))
+      : true;
+
+    const userId = await ensureAccount(session);
+    if (!userId) {
       return res.status(400).json({ success: false, message: 'Session metadata missing.' });
     }
 
-    const { tier, count } = planFromMetadata(meta);
+    await reconcileFromSubscription(subscriptionId, userId);
 
-    // Idempotent — the webhook may have got here first. Still reconcile, so a
-    // purchase always lands on the account even when creation was skipped.
-    const existingUser = await prisma.user.findUnique({ where: { email: meta.email } });
-    if (existingUser) {
-      await reconcileAccount(session.id, existingUser.id, tier, count);
-      return res.json({ success: true, alreadyExists: true });
-    }
-
-    const userId = await generateShortId('USR');
-    const groupId = await generateShortId('GRP');
-
-    await prisma.$transaction(async (tx: any) => {
-      await tx.user.create({
-        data: {
-          id: userId,
-          email: meta.email,
-          password: meta.hashedPassword,
-          firstName: meta.firstName,
-          lastName: meta.lastName,
-          phone: meta.phone,
-          nurseryName: meta.nurseryName,
-          role: 'NURSERY_OWNER',
-          planTier: tier,
-          paidNurseryCount: count,
-          isActive: false,
-          isOnline: true,
-        },
-      });
-
-      const slug = meta.nurseryName
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+-$/g, '');
-
-      await tx.group.create({
-        data: {
-          id: groupId,
-          name: meta.nurseryName,
-          slug,
-          email: meta.email,
-          phone: meta.phone,
-          firstName: meta.firstName,
-          lastName: meta.lastName,
-          city: meta.city || '',
-          town: meta.town || null,
-          ownerId: userId,
-        },
-      });
-
-      await tx.processedCheckoutSession.create({
-        data: { id: session.id, userId, planTier: tier, nurseryCount: count },
-      });
-    });
-
-    return res.json({ success: true, alreadyExists: false });
+    return res.json({ success: true, alreadyExists: existedBefore });
   } catch (error: any) {
-    // The webhook won the race and created this account (or claimed this
-    // session) between the lookup above and the write. The customer's account
-    // exists either way, so this is a success from their side.
-    if (isAlreadyProcessed(error)) {
-      return res.json({ success: true, alreadyExists: true });
-    }
     console.error('❌ verifySession error:', error?.message || error);
     return res.status(500).json({
       success: false,

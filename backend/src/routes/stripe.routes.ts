@@ -1,16 +1,26 @@
 import { Router } from 'express';
-import { createCheckoutSession, verifySession, createUpgradeSession, verifyUpgradeSession } from '../controllers/stripe.controller';
+import {
+  applyChange,
+  createCheckoutSession,
+  createUpgradeSession,
+  previewChange,
+  verifySession,
+  verifyUpgradeSession,
+} from '../controllers/stripe.controller';
 import { authenticate } from '../middleware';
 
 const router = Router();
 
-// Create checkout session (public – called from signup form)
+// Signup (public – called from the signup form)
 router.post('/create-checkout-session', createCheckoutSession);
-
-// Verify Stripe session and create user account after payment
 router.post('/verify-session', verifySession);
 
-// Upgrade existing nursery owner plan (authenticated)
+// Changing an existing plan, in place, with no Stripe redirect
+router.post('/preview-change', authenticate, previewChange);
+router.post('/apply-change', authenticate, applyChange);
+
+// Reactivation for an account with no live subscription — still a redirect,
+// because there is no subscription to update and no card guaranteed on file
 router.post('/create-upgrade-session', authenticate, createUpgradeSession);
 router.post('/verify-upgrade-session', authenticate, verifyUpgradeSession);
 

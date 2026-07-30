@@ -214,30 +214,3 @@ export function quote(
   };
 }
 
-const formatGbp = (pence: number) => `£${(pence / 100).toFixed(2)}`;
-
-/** Line item label and invoice description shown to the customer. */
-export function describeQuote(q: PriceQuote): { label: string; description: string } {
-  const productLabel = q.isGroup
-    ? `Group Nursery Listing (${q.quantity} nurseries)`
-    : q.tier === 'platinum'
-      ? 'Single Platinum Nursery Listing'
-      : 'Single Standard Nursery Listing';
-  const periodLabel = q.billing === 'annual' ? 'Annual' : 'Monthly';
-  const perNursery = formatGbp(q.unitAmountPence);
-  const total = formatGbp(q.totalPence);
-  const per = q.billing === 'annual' ? 'year' : 'month';
-
-  const sites = q.quantity === 1 ? '1 nursery' : `${q.quantity} nurseries`;
-  const discountNote =
-    q.discountPercent > 0 ? ` Includes a ${q.discountPercent}% group discount.` : '';
-  const annualNote = q.billing === 'annual' ? ' Paid upfront each year.' : '';
-
-  return {
-    label: `${productLabel} – ${periodLabel}`,
-    description:
-      `${sites} at ${perNursery} per nursery per ${per} — ${total} per ${per}.` +
-      `${discountNote}${annualNote}` +
-      ' Recurring subscription — 90 days written notice required before renewal date to cancel.',
-  };
-}

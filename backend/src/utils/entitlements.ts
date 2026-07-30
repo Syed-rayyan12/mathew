@@ -12,7 +12,7 @@
  * "Group" is derived, never stored, so it cannot contradict the count.
  */
 
-import { MIN_GROUP_SIZE, type PlanTier } from './pricing';
+import { type PlanTier } from './pricing';
 
 /**
  * Structural rather than Prisma's User so callers can pass a narrow `select`
@@ -113,21 +113,3 @@ export function canAddNursery(
   return isLive(account) && allowance(account, usedCount).remaining > 0;
 }
 
-/**
- * Turns Stripe Checkout Session metadata into the two columns.
- *
- * Metadata is a round trip through a third party, so it is untrusted input.
- * A group is Platinum by definition — pricing.ts refuses to quote a Standard
- * group at all — so a count of two or more forces the tier rather than letting
- * a combination land in the database that could never have been sold.
- */
-export function planFromMetadata(meta: {
-  plan?: string;
-  nurseryCount?: string;
-}): { tier: PlanTier; count: number } {
-  const parsed = Number(meta.nurseryCount);
-  const count = Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
-  const tier: PlanTier =
-    count >= MIN_GROUP_SIZE ? 'platinum' : normaliseTier(meta.plan);
-  return { tier, count };
-}

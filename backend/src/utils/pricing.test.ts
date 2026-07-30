@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   quote,
-  describeQuote,
   findGroupBand,
   PricingError,
   GROUP_BANDS,
@@ -107,18 +106,3 @@ describe('rejections', () => {
   });
 });
 
-describe('describeQuote', () => {
-  it('names single platinum without a discount note', () => {
-    const d = describeQuote(quote('platinum', 'monthly', 1));
-    expect(d.label).toBe('Single Platinum Nursery Listing – Monthly');
-    expect(d.description).toContain('1 nursery');
-    expect(d.description).not.toContain('discount');
-  });
-
-  it('names a group with its size and discount', () => {
-    const d = describeQuote(quote('platinum', 'monthly', 8));
-    expect(d.label).toBe('Group Nursery Listing (8 nurseries) – Monthly');
-    expect(d.description).toContain('20% group discount');
-    expect(d.description).toContain('£247.04');
-  });
-});

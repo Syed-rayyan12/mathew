@@ -4,7 +4,7 @@ import prisma from '../config/database';
 import { config } from '../config';
 import { hashPassword } from '../utils';
 import { generateShortId } from '../utils/id-generator';
-import { ensurePlanProducts, getStripe } from '../utils/stripe';
+import { ensurePlanPrices, ensurePlanProducts, getStripe } from '../utils/stripe';
 import {
   quote,
   describeQuote,
@@ -112,8 +112,6 @@ export const createCheckoutSession = async (
       throw err;
     }
 
-    const lineItem = describeQuote(priceQuote);
-
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -149,23 +147,25 @@ export const createCheckoutSession = async (
     const hashedPassword = existingUser ? '' : await hashPassword(password);
 
     const stripe = getStripe();
-    const products = await ensurePlanProducts();
+    // Verified here rather than at boot: a Stripe blip should not take the
+    // public site down to protect a path nobody is mid-way through. A
+    // mismatch between pricing.ts and the catalogue blocks checkout and
+    // leaves the site up.
+    const prices = await ensurePlanPrices();
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      mode: 'payment',
+      mode: 'subscription',
       allow_promotion_codes: true,
-      invoice_creation: {
-        enabled: true,
-        invoice_data: { description: lineItem.description },
-      },
       customer_email: email,
+      // A catalogue Price, not price_data. Inline prices are one-time use and
+      // cannot be updated, and subscriptions.update takes a Price id — so an
+      // in-place upgrade later is only possible if the subscription starts on
+      // a real Price. Quantity is the nursery count; Stripe derives the rate
+      // from the volume ladder.
       line_items: [
         {
-          price_data: {
-            currency: 'gbp',
-            product: products[tier],
-            unit_amount: priceQuote.unitAmountPence,
-          },
+          price: prices[tier][billing],
           quantity: priceQuote.quantity,
         },
       ],
@@ -178,9 +178,6 @@ export const createCheckoutSession = async (
         city: city || '',
         town: town || '',
         hashedPassword,
-        plan: tier,
-        billingPeriod: billing,
-        nurseryCount: String(priceQuote.quantity),
         existingUserId: existingUser?.id || '',
       },
       custom_text: {

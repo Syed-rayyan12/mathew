@@ -59,7 +59,7 @@ export async function ensurePlanProducts(): Promise<Record<PlanKey, string>> {
  *
  * Thrown rather than repaired: a Price cannot be edited once created, so the
  * only honest repair is a version bump, which is a human decision. Blocking
- * checkout is the safe failure — charging the wrong amount is not.
+ * checkout is the safe failure — charging the wrong amount (or name) is not.
  */
 export class PriceCatalogueError extends Error {}
 
@@ -128,11 +128,17 @@ export function verifyPrice(
     // flat_amount on a tier means a fixed charge on top of the per-unit rate;
     // pricing.ts never emits one, so any flat_amount in the catalogue is drift.
     for (const t of price.tiers ?? []) {
-      if (t.flat_amount != null || t.flat_amount_decimal != null) {
+      if (t.flat_amount != null) {
         const upTo = t.up_to === null ? 'inf' : t.up_to;
-        const amount = t.flat_amount ?? t.flat_amount_decimal;
         throw new PriceCatalogueError(
-          `Stripe price ${key} tier up_to=${upTo} has flat_amount ${amount}, which pricing.ts does not emit. ` +
+          `Stripe price ${key} tier up_to=${upTo} has flat_amount ${t.flat_amount}, which pricing.ts does not emit. ` +
+            'Bump PRICE_VERSION rather than editing the price.'
+        );
+      }
+      if (t.flat_amount_decimal != null) {
+        const upTo = t.up_to === null ? 'inf' : t.up_to;
+        throw new PriceCatalogueError(
+          `Stripe price ${key} tier up_to=${upTo} has flat_amount_decimal ${t.flat_amount_decimal}, which pricing.ts does not emit. ` +
             'Bump PRICE_VERSION rather than editing the price.'
         );
       }

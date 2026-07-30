@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import Stripe from 'stripe';
 import {
   GROUP_BANDS,
   PRICE_VERSION,
@@ -132,40 +133,70 @@ describe('priceLookupKey / parseLookupKey', () => {
 // verifyPrice (C2)
 // ---------------------------------------------------------------------------
 
+const STANDARD_RECURRING: Stripe.Price.Recurring = {
+  interval: 'month',
+  interval_count: 1,
+  meter: null,
+  trial_period_days: null,
+  usage_type: 'licensed',
+};
+
 /** Minimal Stripe.Price shape for a standard flat-rate monthly price. */
-function makeStandardPrice(overrides: Record<string, any> = {}): any {
+function makeStandardPrice(overrides: Partial<Stripe.Price> = {}): Stripe.Price {
   return {
     id: 'price_standard_monthly',
     object: 'price',
-    currency: 'gbp',
-    product: 'prod_standard',
+    active: true,
     billing_scheme: 'per_unit',
+    created: 0,
+    currency: 'gbp',
+    custom_unit_amount: null,
+    livemode: false,
+    lookup_key: null,
+    metadata: {},
+    nickname: null,
+    product: 'prod_standard',
+    recurring: STANDARD_RECURRING,
+    tax_behavior: null,
     tiers_mode: null,
-    tiers: undefined,
-    recurring: { interval: 'month', interval_count: 1 },
+    transform_quantity: null,
+    type: 'recurring',
     unit_amount: flatAmountPence('standard', 'monthly'),
+    unit_amount_decimal: String(flatAmountPence('standard', 'monthly')),
     ...overrides,
   };
 }
 
 /** Minimal Stripe.Price shape for a platinum volume-tiered monthly price. */
-function makePlatinumPrice(overrides: Record<string, any> = {}): any {
-  const tiers = toStripeTiers(GROUP_BANDS, 'monthly').map((t) => ({
+function makePlatinumPrice(overrides: Partial<Stripe.Price> = {}): Stripe.Price {
+  const tiers: Stripe.Price.Tier[] = toStripeTiers(GROUP_BANDS, 'monthly').map((t) => ({
     up_to: t.up_to === 'inf' ? null : t.up_to,
     unit_amount: t.unit_amount,
+    unit_amount_decimal: String(t.unit_amount),
     flat_amount: null,
     flat_amount_decimal: null,
   }));
   return {
     id: 'price_platinum_monthly',
     object: 'price',
-    currency: 'gbp',
-    product: 'prod_platinum',
+    active: true,
     billing_scheme: 'tiered',
-    tiers_mode: 'volume',
+    created: 0,
+    currency: 'gbp',
+    custom_unit_amount: null,
+    livemode: false,
+    lookup_key: null,
+    metadata: {},
+    nickname: null,
+    product: 'prod_platinum',
+    recurring: STANDARD_RECURRING,
+    tax_behavior: null,
     tiers,
-    recurring: { interval: 'month', interval_count: 1 },
+    tiers_mode: 'volume',
+    transform_quantity: null,
+    type: 'recurring',
     unit_amount: null,
+    unit_amount_decimal: null,
     ...overrides,
   };
 }
@@ -186,13 +217,30 @@ describe('verifyPrice (C2)', () => {
   it('throws when the price is on the wrong product', () => {
     expect(() =>
       verifyPrice(makeStandardPrice({ product: 'prod_wrong' }), 'standard', 'monthly', 'prod_standard')
-    ).toThrow(/prod_wrong.*prod_standard|Restore the Product/);
+    ).toThrow(/prod_wrong.*prod_standard/);
   });
 
   it('tolerates an expanded product object by reading .id', () => {
+    const expandedProduct: Stripe.Product = {
+      id: 'prod_standard',
+      object: 'product',
+      active: true,
+      created: 0,
+      description: null,
+      images: [],
+      livemode: false,
+      marketing_features: [],
+      metadata: {},
+      name: 'Single Standard Nursery Listing',
+      package_dimensions: null,
+      shippable: null,
+      type: 'service',
+      updated: 0,
+      url: null,
+    };
     expect(() =>
       verifyPrice(
-        makeStandardPrice({ product: { id: 'prod_standard', object: 'product' } }),
+        makeStandardPrice({ product: expandedProduct }),
         'standard',
         'monthly',
         'prod_standard'
@@ -203,18 +251,19 @@ describe('verifyPrice (C2)', () => {
   it('throws when interval_count is not 1 (e.g. quarterly billing)', () => {
     expect(() =>
       verifyPrice(
-        makeStandardPrice({ recurring: { interval: 'month', interval_count: 3 } }),
+        makeStandardPrice({ recurring: { ...STANDARD_RECURRING, interval_count: 3 } }),
         'standard',
         'monthly',
         'prod_standard'
       )
-    ).toThrow(/interval_count/);
+    ).toThrow(/interval_count 3, expected 1/);
   });
 
   it('throws when a platinum tier carries a flat_amount, naming the tier and amount', () => {
-    const tiersWithFlat = toStripeTiers(GROUP_BANDS, 'monthly').map((t, i) => ({
+    const tiersWithFlat: Stripe.Price.Tier[] = toStripeTiers(GROUP_BANDS, 'monthly').map((t, i) => ({
       up_to: t.up_to === 'inf' ? null : t.up_to,
       unit_amount: t.unit_amount,
+      unit_amount_decimal: String(t.unit_amount),
       flat_amount: i === 0 ? 500 : null,
       flat_amount_decimal: null,
     }));
@@ -224,14 +273,15 @@ describe('verifyPrice (C2)', () => {
   });
 
   it('throws when a platinum tier carries a flat_amount_decimal, naming the tier and amount', () => {
-    const tiersWithFlat = toStripeTiers(GROUP_BANDS, 'monthly').map((t, i) => ({
+    const tiersWithFlat: Stripe.Price.Tier[] = toStripeTiers(GROUP_BANDS, 'monthly').map((t, i) => ({
       up_to: t.up_to === 'inf' ? null : t.up_to,
       unit_amount: t.unit_amount,
+      unit_amount_decimal: String(t.unit_amount),
       flat_amount: null,
       flat_amount_decimal: i === 1 ? '250.5' : null,
     }));
     expect(() =>
       verifyPrice(makePlatinumPrice({ tiers: tiersWithFlat }), 'platinum', 'monthly', 'prod_platinum')
-    ).toThrow(/flat_amount 250\.5/);
+    ).toThrow(/flat_amount_decimal 250\.5/);
   });
 });

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import Stripe from 'stripe';
-import { planLine, lookupKeyOf } from './payment-history.controller';
+import { planLine, lookupKeyOf, foldPricePage } from './payment-history.controller';
 
 const STANDARD_KEY = 'mathew_standard_monthly_v1';
 const PLATINUM_KEY = 'mathew_platinum_monthly_v1';
@@ -42,7 +42,7 @@ function makeLine(
 
   return {
     id: `li_${Math.random()}`,
-    object: 'line_item',
+    object: 'line_item' as const,
     amount,
     currency: 'gbp',
     description: null,
@@ -60,7 +60,7 @@ function makeLine(
     subscription: null,
     subtotal: amount,
     taxes: null,
-  } as Stripe.InvoiceLineItem;
+  };
 }
 
 /**
@@ -73,12 +73,28 @@ function makeExpandedLine(
   amount: number,
   quantity: number
 ): Stripe.InvoiceLineItem {
-  const priceObj = {
+  const priceObj: Stripe.Price = {
     id: 'price_expanded',
-    object: 'price' as const,
+    object: 'price',
     lookup_key: lookupKey,
+    active: true,
+    billing_scheme: 'per_unit',
+    created: 0,
+    currency: 'gbp',
+    custom_unit_amount: null,
+    livemode: false,
+    metadata: {},
+    nickname: null,
+    product: 'prod_any',
+    recurring: null,
+    tax_behavior: null,
+    tiers_mode: null,
+    transform_quantity: null,
+    type: 'one_time',
+    unit_amount: null,
+    unit_amount_decimal: null,
     // Other Price fields omitted — only lookup_key matters here.
-  } as unknown as Stripe.Price;
+  };
 
   const pricing: Stripe.InvoiceLineItem.Pricing = {
     price_details: { price: priceObj, product: 'prod_any' },
@@ -88,7 +104,7 @@ function makeExpandedLine(
 
   return {
     id: `li_${Math.random()}`,
-    object: 'line_item',
+    object: 'line_item' as const,
     amount,
     currency: 'gbp',
     description: null,
@@ -106,7 +122,7 @@ function makeExpandedLine(
     subscription: null,
     subtotal: amount,
     taxes: null,
-  } as Stripe.InvoiceLineItem;
+  };
 }
 
 describe('lookupKeyOf', () => {
@@ -154,13 +170,13 @@ describe('planLine (C1)', () => {
     expect(result?.quantity).toBe(5);
   });
 
-  it('ignores lines whose lookup keys are unrecognised', () => {
+  it('ignores lines whose price id is absent from the map', () => {
     const unknown = makeLine('price_something_else', 9999, 1);
     const valid = makeLine(STANDARD_PRICE_ID, 2395, 1);
     expect(planLine([unknown, valid], makeMap())).toBe(valid);
   });
 
-  it('returns null when no line has a parseable key', () => {
+  it('returns null when no line has a price id in the map', () => {
     const unknown1 = makeLine('price_abc', 100, 1);
     const unknown2 = makeLine(null, 200, 1);
     expect(planLine([unknown1, unknown2], makeMap())).toBeNull();
@@ -179,5 +195,80 @@ describe('planLine (C1)', () => {
   it('resolves an expanded Stripe.Price object on a line (not just a bare id)', () => {
     const line = makeExpandedLine(STANDARD_KEY, 2395, 1);
     expect(planLine([line], makeMap())).toBe(line);
+  });
+
+  it('drops a line whose price id is in the map but whose lookup key does not parse', () => {
+    // buildPriceKeyMap ingests the full catalogue with no lookup_keys filter, so
+    // keys that are not mathew_* can land in the map. parseLookupKey is the only
+    // guard that stops one becoming a plan name.
+    const OTHER_PRICE_ID = 'price_other_product';
+    const OTHER_KEY = 'some_other_product_key';
+    const map = makeMap({ [OTHER_PRICE_ID]: OTHER_KEY });
+
+    // The unrecognised-key line has the greatest amount — it would win if
+    // parseLookupKey were not called.
+    const unparseable = makeLine(OTHER_PRICE_ID, 9999, 1);
+    const valid = makeLine(STANDARD_PRICE_ID, 2395, 1);
+    expect(planLine([unparseable, valid], map)).toBe(valid);
+  });
+
+  it('returns null when every line maps to a non-mathew lookup key', () => {
+    const OTHER_PRICE_ID = 'price_other_product';
+    const OTHER_KEY = 'some_other_product_key';
+    const map = makeMap({ [OTHER_PRICE_ID]: OTHER_KEY });
+
+    // Only a line with an unrecognised key — parseLookupKey must stop it.
+    const unparseable = makeLine(OTHER_PRICE_ID, 9999, 1);
+    expect(planLine([unparseable], map)).toBeNull();
+  });
+});
+
+describe('foldPricePage', () => {
+  function makePrice(id: string, lookupKey: string | null): Stripe.Price {
+    return {
+      id,
+      object: 'price',
+      lookup_key: lookupKey,
+      active: true,
+      billing_scheme: 'per_unit',
+      created: 0,
+      currency: 'gbp',
+      custom_unit_amount: null,
+      livemode: false,
+      metadata: {},
+      nickname: null,
+      product: 'prod_any',
+      recurring: null,
+      tax_behavior: null,
+      tiers_mode: null,
+      transform_quantity: null,
+      type: 'one_time',
+      unit_amount: null,
+      unit_amount_decimal: null,
+    };
+  }
+
+  it('maps price ids to their lookup keys', () => {
+    const prices = [
+      makePrice('price_a', 'mathew_standard_monthly_v1'),
+      makePrice('price_b', 'mathew_platinum_monthly_v1'),
+    ];
+    const result = foldPricePage(prices);
+    expect(result.get('price_a')).toBe('mathew_standard_monthly_v1');
+    expect(result.get('price_b')).toBe('mathew_platinum_monthly_v1');
+  });
+
+  it('skips prices with a null lookup_key', () => {
+    const prices = [
+      makePrice('price_with_key', 'mathew_standard_monthly_v1'),
+      makePrice('price_no_key', null),
+    ];
+    const result = foldPricePage(prices);
+    expect(result.size).toBe(1);
+    expect(result.has('price_no_key')).toBe(false);
+  });
+
+  it('returns an empty map for an empty page', () => {
+    expect(foldPricePage([])).toEqual(new Map());
   });
 });

@@ -29,7 +29,26 @@ import { planLabel } from '../utils/entitlements';
  * parseLookupKey deliberately tolerates any version suffix, so a v1 price that
  * has since been superseded by v2 still maps correctly.
  */
-export async function buildPriceKeyMap(): Promise<Map<string, string>> {
+/**
+ * Folds one page of Stripe.Price objects into the accumulator map.
+ *
+ * Extracted so the pure transformation can be tested without Stripe I/O.
+ * Prices without a lookup_key are skipped — they cannot be matched back to
+ * a plan tier.
+ */
+export function foldPricePage(
+  prices: Stripe.Price[],
+  into: Map<string, string> = new Map()
+): Map<string, string> {
+  for (const price of prices) {
+    if (price.lookup_key != null) {
+      into.set(price.id, price.lookup_key);
+    }
+  }
+  return into;
+}
+
+async function buildPriceKeyMap(): Promise<Map<string, string>> {
   const stripe = getStripe();
   const map = new Map<string, string>();
   let startingAfter: string | undefined;
@@ -39,11 +58,7 @@ export async function buildPriceKeyMap(): Promise<Map<string, string>> {
       limit: 100,
       starting_after: startingAfter,
     });
-    for (const price of page.data) {
-      if (price.lookup_key != null) {
-        map.set(price.id, price.lookup_key);
-      }
-    }
+    foldPricePage(page.data, map);
     startingAfter = page.has_more ? page.data[page.data.length - 1]?.id : undefined;
   } while (startingAfter);
 

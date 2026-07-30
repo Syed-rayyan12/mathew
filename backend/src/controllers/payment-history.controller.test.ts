@@ -93,7 +93,6 @@ function makeExpandedLine(
     type: 'one_time',
     unit_amount: null,
     unit_amount_decimal: null,
-    // Other Price fields omitted — only lookup_key matters here.
   };
 
   const pricing: Stripe.InvoiceLineItem.Pricing = {
@@ -270,5 +269,16 @@ describe('foldPricePage', () => {
 
   it('returns an empty map for an empty page', () => {
     expect(foldPricePage([])).toEqual(new Map());
+  });
+
+  // buildPriceKeyMap folds page after page into one accumulator. If this
+  // stopped carrying earlier pages forward, every price past the first 100
+  // would be unresolvable and those invoices would vanish from the table.
+  it('accumulates across pages', () => {
+    const first = foldPricePage([makePrice('price_a', 'mathew_standard_monthly_v1')]);
+    const second = foldPricePage([makePrice('price_b', 'mathew_platinum_annual_v1')], first);
+    expect(second.get('price_a')).toBe('mathew_standard_monthly_v1');
+    expect(second.get('price_b')).toBe('mathew_platinum_annual_v1');
+    expect(second.size).toBe(2);
   });
 });

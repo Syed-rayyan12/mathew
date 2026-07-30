@@ -17,24 +17,12 @@ import { parseLookupKey } from '../utils/pricing';
 import { planLabel } from '../utils/entitlements';
 
 /**
- * Resolves price ids to lookup keys.
- *
- * This API version (basil) leaves only a bare id string on
- * line.pricing.price_details.price — the Price object is not embedded in list
- * responses. Expanding four levels into a list response
- * (data.lines.data.pricing.price_details.price) is not reliable and Stripe
- * caps expansion depth, so we resolve ids through this catalogue map instead.
- *
- * Archived prices are included because grandfathered subscribers are on them:
- * parseLookupKey deliberately tolerates any version suffix, so a v1 price that
- * has since been superseded by v2 still maps correctly.
- */
-/**
  * Folds one page of Stripe.Price objects into the accumulator map.
  *
- * Extracted so the pure transformation can be tested without Stripe I/O.
- * Prices without a lookup_key are skipped — they cannot be matched back to
- * a plan tier.
+ * Folds in place into `into` and returns it, so callers must use the return
+ * value rather than relying on the mutation. Extracted so the transformation
+ * can be tested without Stripe I/O. Prices without a lookup_key are skipped —
+ * they cannot be matched back to a plan tier.
  */
 export function foldPricePage(
   prices: Stripe.Price[],
@@ -48,9 +36,24 @@ export function foldPricePage(
   return into;
 }
 
+/**
+ * Resolves price ids to lookup keys.
+ *
+ * This API version (basil) leaves only a bare id string on
+ * line.pricing.price_details.price — the Price object is not embedded in list
+ * responses. Expanding four levels into a list response
+ * (data.lines.data.pricing.price_details.price) is not reliable and Stripe
+ * caps expansion depth, so we resolve ids through this catalogue map instead.
+ *
+ * Archived prices are included because grandfathered subscribers are on them:
+ * parseLookupKey deliberately tolerates any version suffix, so a v1 price that
+ * has since been superseded by v2 still maps correctly. Do NOT add active:true
+ * to the list call below — it would silently drop every grandfathered
+ * subscriber from the admin payments table.
+ */
 async function buildPriceKeyMap(): Promise<Map<string, string>> {
   const stripe = getStripe();
-  const map = new Map<string, string>();
+  let map = new Map<string, string>();
   let startingAfter: string | undefined;
 
   do {
@@ -58,7 +61,7 @@ async function buildPriceKeyMap(): Promise<Map<string, string>> {
       limit: 100,
       starting_after: startingAfter,
     });
-    foldPricePage(page.data, map);
+    map = foldPricePage(page.data, map);
     startingAfter = page.has_more ? page.data[page.data.length - 1]?.id : undefined;
   } while (startingAfter);
 

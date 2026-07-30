@@ -5,12 +5,12 @@ export type PlanKey = 'standard' | 'platinum';
 
 const PLAN_DETAILS: Record<PlanKey, { name: string; description: string }> = {
   standard: {
-    name: 'Standard Nursery Listing',
-    description: 'Standard listing plan for nursery owners.',
+    name: 'Single Standard Nursery Listing',
+    description: 'Standard listing for a single nursery.',
   },
   platinum: {
     name: 'Platinum Nursery Listing',
-    description: 'Platinum listing plan for nursery owners.',
+    description: 'Platinum listing for a single nursery or a group.',
   },
 };
 

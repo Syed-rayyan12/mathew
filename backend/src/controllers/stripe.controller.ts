@@ -9,10 +9,40 @@ import {
   quote,
   describeQuote,
   PricingError,
-  type PlanKey,
+  type PlanTier,
   type BillingPeriod,
 } from '../utils/pricing';
 
+/**
+ * Writes what was just bought onto the account.
+ *
+ * Called from the webhook, verify-session and verify-upgrade-session, so a
+ * purchase always lands even if only one of them fires. Idempotent: running it
+ * twice with the same metadata is a no-op, which is exactly what happens when
+ * the webhook and the success redirect race.
+ */
+async function reconcileAccount(
+  tx: { user: { update: (args: any) => Promise<any> } },
+  userId: string,
+  tier: PlanTier,
+  paidNurseryCount: number
+): Promise<void> {
+  await tx.user.update({
+    where: { id: userId },
+    data: { planTier: tier, paidNurseryCount },
+  });
+}
+
+/** Reads the tier and count back out of Stripe session metadata. */
+function planFromMetadata(meta: Record<string, string | undefined>): {
+  tier: PlanTier;
+  count: number;
+} {
+  const tier: PlanTier = meta.plan === 'platinum' ? 'platinum' : 'standard';
+  const parsed = Number(meta.nurseryCount);
+  const count = Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
+  return { tier, count };
+}
 
 /**
  * POST /api/stripe/create-checkout-session
@@ -37,7 +67,7 @@ export const createCheckoutSession = async (
     }
 
     const billing: BillingPeriod = billingPeriod === 'annual' ? 'annual' : 'monthly';
-    const planKey: PlanKey = plan === 'platinum' ? 'platinum' : 'standard';
+    const tier: PlanTier = plan === 'platinum' ? 'platinum' : 'standard';
 
     // The client sends how many nurseries it wants, never the price. Everything
     // charged is derived here so a tampered request can't buy a group cheaply.
@@ -48,7 +78,7 @@ export const createCheckoutSession = async (
 
     let priceQuote;
     try {
-      priceQuote = quote(planKey, billing, count);
+      priceQuote = quote(tier, billing, count);
     } catch (err) {
       if (err instanceof PricingError) {
         return res.status(400).json({ success: false, message: err.message });
@@ -56,10 +86,7 @@ export const createCheckoutSession = async (
       throw err;
     }
 
-    const planConfig = {
-      ...describeQuote(priceQuote),
-      unitAmount: priceQuote.unitAmountPence,
-    };
+    const lineItem = describeQuote(priceQuote);
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -77,6 +104,21 @@ export const createCheckoutSession = async (
       // Existing nursery owner — allow them to create a new nursery group
     }
 
+    if (existingUser) {
+      const hasGroup = await prisma.group.findFirst({
+        where: { ownerId: existingUser.id },
+        select: { id: true },
+      });
+      if (hasGroup) {
+        return res.status(409).json({
+          success: false,
+          code: 'GROUP_ALREADY_EXISTS',
+          message:
+            'This account already has a nursery group. Add nurseries or change plan from your dashboard.',
+        });
+      }
+    }
+
     // Hash the password only for new accounts (not needed for existing users)
     const hashedPassword = existingUser ? '' : await hashPassword(password);
 
@@ -86,14 +128,17 @@ export const createCheckoutSession = async (
       payment_method_types: ['card'],
       mode: 'payment',
       allow_promotion_codes: true,
-      invoice_creation: { enabled: true },
+      invoice_creation: {
+        enabled: true,
+        invoice_data: { description: lineItem.description },
+      },
       customer_email: email,
       line_items: [
         {
           price_data: {
             currency: 'gbp',
-            product: products[planKey],
-            unit_amount: planConfig.unitAmount,
+            product: products[tier],
+            unit_amount: priceQuote.unitAmountPence,
           },
           quantity: priceQuote.quantity,
         },
@@ -107,7 +152,7 @@ export const createCheckoutSession = async (
         city: city || '',
         town: town || '',
         hashedPassword,
-        plan: planKey,
+        plan: tier,
         billingPeriod: billing,
         nurseryCount: String(priceQuote.quantity),
         existingUserId: existingUser?.id || '',
@@ -186,19 +231,25 @@ export const stripeWebhook = async (
           .replace(/[^a-z0-9]+/g, '-')
           .replace(/^-+|-+$/g, '');
 
-        await prisma.group.create({
-          data: {
-            id: groupId,
-            name: meta.nurseryName,
-            slug,
-            email: meta.email,
-            phone: meta.phone,
-            firstName: meta.firstName,
-            lastName: meta.lastName,
-            city: meta.city || '',
-            town: meta.town || null,
-            ownerId: meta.existingUserId,
-          },
+        const { tier, count } = planFromMetadata(meta);
+
+        await prisma.$transaction(async (tx: any) => {
+          await tx.group.create({
+            data: {
+              id: groupId,
+              name: meta.nurseryName,
+              slug,
+              email: meta.email,
+              phone: meta.phone,
+              firstName: meta.firstName,
+              lastName: meta.lastName,
+              city: meta.city || '',
+              town: meta.town || null,
+              ownerId: meta.existingUserId,
+            },
+          });
+
+          await reconcileAccount(tx, meta.existingUserId, tier, count);
         });
 
       } else {
@@ -213,6 +264,8 @@ export const stripeWebhook = async (
 
       const userId = await generateShortId('USR');
 
+      const { tier, count } = planFromMetadata(meta);
+
       await prisma.$transaction(async (tx: any) => {
         await tx.user.create({
           data: {
@@ -224,7 +277,8 @@ export const stripeWebhook = async (
             phone: meta.phone,
             nurseryName: meta.nurseryName,
             role: 'NURSERY_OWNER',
-            plan: meta.plan || 'standard',
+            planTier: tier,
+            paidNurseryCount: count,
             isActive: false,
             isOnline: true,
           },
@@ -281,30 +335,31 @@ export const createUpgradeSession = async (
 
     const { plan, billingPeriod, nurseryCount } = req.body;
 
-    if (!plan || plan !== 'platinum') {
-      return res.status(400).json({ success: false, message: 'Invalid upgrade plan.' });
-    }
+    const tier: PlanTier = plan === 'platinum' ? 'platinum' : 'standard';
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
 
-    if (user.plan === 'platinum') {
-      return res.status(400).json({ success: false, message: 'You are already on the Platinum plan.' });
-    }
-
     const billing: BillingPeriod = billingPeriod === 'annual' ? 'annual' : 'monthly';
 
-    // Group starts at two nurseries, so an upgrade has to say how many it covers.
     const requestedCount = Number(nurseryCount);
     const count = Number.isFinite(requestedCount) && requestedCount > 0
       ? Math.floor(requestedCount)
       : 0;
 
+    // Buying exactly what you already have is not an upgrade.
+    if (tier === user.planTier && count === user.paidNurseryCount) {
+      return res.status(400).json({
+        success: false,
+        message: 'You are already on this plan.',
+      });
+    }
+
     let priceQuote;
     try {
-      priceQuote = quote('platinum', billing, count);
+      priceQuote = quote(tier, billing, count);
     } catch (err) {
       if (err instanceof PricingError) {
         return res.status(400).json({ success: false, message: err.message });
@@ -312,10 +367,7 @@ export const createUpgradeSession = async (
       throw err;
     }
 
-    const planConfig = {
-      ...describeQuote(priceQuote),
-      unitAmount: priceQuote.unitAmountPence,
-    };
+    const lineItem = describeQuote(priceQuote);
     const stripe = getStripe();
     const products = await ensurePlanProducts();
 
@@ -323,14 +375,17 @@ export const createUpgradeSession = async (
       payment_method_types: ['card'],
       mode: 'payment',
       allow_promotion_codes: true,
-      invoice_creation: { enabled: true },
+      invoice_creation: {
+        enabled: true,
+        invoice_data: { description: lineItem.description },
+      },
       customer_email: user.email,
       line_items: [
         {
           price_data: {
             currency: 'gbp',
-            product: products.platinum,
-            unit_amount: planConfig.unitAmount,
+            product: products[tier],
+            unit_amount: priceQuote.unitAmountPence,
           },
           quantity: priceQuote.quantity,
         },
@@ -338,7 +393,7 @@ export const createUpgradeSession = async (
       metadata: {
         upgrade: 'true',
         userId,
-        plan,
+        plan: tier,
         billingPeriod: billing,
         nurseryCount: String(priceQuote.quantity),
       },
@@ -397,12 +452,14 @@ export const verifyUpgradeSession = async (
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
 
-    await prisma.user.update({
-      where: { id: meta.userId },
-      data: { plan: meta.plan || 'platinum' },
-    });
+    const { tier, count } = planFromMetadata(meta);
 
-    return res.json({ success: true, data: { plan: meta.plan } });
+    await reconcileAccount(prisma, meta.userId, tier, count);
+
+    return res.json({
+      success: true,
+      data: { planTier: tier, paidNurseryCount: count },
+    });
   } catch (error: any) {
     console.error('❌ verifyUpgradeSession error:', error?.message || error);
     return res.status(500).json({
@@ -442,9 +499,13 @@ export const verifySession = async (
       return res.status(400).json({ success: false, message: 'Session metadata missing.' });
     }
 
-    // Idempotent — skip if already created (e.g. webhook already ran)
+    const { tier, count } = planFromMetadata(meta);
+
+    // Idempotent — the webhook may have got here first. Still reconcile, so a
+    // purchase always lands on the account even when creation was skipped.
     const existingUser = await prisma.user.findUnique({ where: { email: meta.email } });
     if (existingUser) {
+      await reconcileAccount(prisma, existingUser.id, tier, count);
       return res.json({ success: true, alreadyExists: true });
     }
 
@@ -462,7 +523,8 @@ export const verifySession = async (
           phone: meta.phone,
           nurseryName: meta.nurseryName,
           role: 'NURSERY_OWNER',
-          plan: meta.plan || 'standard',
+          planTier: tier,
+          paidNurseryCount: count,
           isActive: false,
           isOnline: true,
         },

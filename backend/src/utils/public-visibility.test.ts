@@ -19,6 +19,16 @@ const source = readFileSync(
  */
 const ALLOWED_WITHOUT_FILTER = new Set(['searchNurseries']);
 
+/**
+ * Blocks that filter nurseries in more than one place, and how many.
+ *
+ * Presence of the fragment anywhere in a block is not enough for these:
+ * searchByCity filters twice — once for the nurseries counted on each group,
+ * once for the nursery list itself — so dropping either one would still leave
+ * the other's mention behind and the presence check would pass regardless.
+ */
+const FILTER_SITES: Record<string, number> = { searchByCity: 2 };
+
 interface Block {
   name: string;
   body: string;
@@ -57,7 +67,11 @@ describe('user.nursery.controller.ts', () => {
     const offenders = exportedBlocks(source)
       .filter((b) => queriesNurseries(b.body))
       .filter((b) => !ALLOWED_WITHOUT_FILTER.has(b.name))
-      .filter((b) => !b.body.includes('PUBLIC_NURSERY_WHERE'))
+      .filter(
+        (b) =>
+          (b.body.match(/PUBLIC_NURSERY_WHERE/g) ?? []).length <
+          (FILTER_SITES[b.name] ?? 1)
+      )
       .map((b) => b.name);
 
     expect(

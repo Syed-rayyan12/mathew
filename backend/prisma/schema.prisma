@@ -52,6 +52,7 @@ model User {
   /// Set when an admin schedules a cancellation. Billing continues until then.
   cancelAt             DateTime?
   jobs        Job[]       @relation("UserJobs")
+  @@index([subscriptionStatus])
   @@map("users")
 }
 

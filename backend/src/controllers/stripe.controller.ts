@@ -635,37 +635,16 @@ export const applyChange = async (req: Request, res: Response, next: NextFunctio
     const stripe = getStripe();
     const prices = await ensurePlanPrices();
 
-    // Retrieve subscription now (before the lock) to get period bounds for
-    // the proration date check.
-    const subForCheck = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
-    const itemForCheck = subForCheck.items.data[0];
-
-    if (!itemForCheck) {
-      return res.status(409).json({
-        success: false,
-        message: 'Your subscription is in an unexpected state. Please contact support.',
-      });
-    }
-
-    const nowSeconds = Math.floor(Date.now() / 1000);
-    if (
-      !isUsableProrationDate(
-        prorationDate,
-        itemForCheck.current_period_start,
-        itemForCheck.current_period_end,
-        nowSeconds
-      )
-    ) {
-      return res.status(409).json({
-        success: false,
-        code: 'PREVIEW_EXPIRED',
-        message: 'Your plan change quote has expired. Please review the change again.',
-      });
-    }
-
     // A4: hold a row-level lock across the nursery count and the Stripe call
     // so a concurrent createNursery cannot slip in between. Timeout raised to
     // 20 s because a Stripe round trip can exceed the 5 s default.
+    //
+    // Review fix 2: retrieve the subscription once, inside the transaction
+    // after the lock is taken, so the period bounds used for proration-date
+    // validation and the item id used for the update are read from the same
+    // consistent snapshot. Reading bounds before the lock would allow a period
+    // rollover between the two reads to validate against old bounds and submit
+    // against new ones.
     const result = await prisma.$transaction(
       async (tx: any) => {
         await tx.$queryRaw`SELECT "id" FROM "users" WHERE "id" = ${userId} FOR UPDATE`;
@@ -687,6 +666,32 @@ export const applyChange = async (req: Request, res: Response, next: NextFunctio
               body: {
                 success: false,
                 message: 'Your subscription is in an unexpected state. Please contact support.',
+              },
+            },
+          };
+        }
+
+        // A2 + review fix 2: validate the proration date here, inside the
+        // lock, against the period bounds from this single retrieve. The
+        // transaction rolls back cleanly if this returns a rejection — no
+        // partial change is left behind.
+        const nowSeconds = Math.floor(Date.now() / 1000);
+        if (
+          !isUsableProrationDate(
+            prorationDate,
+            item.current_period_start,
+            item.current_period_end,
+            nowSeconds
+          )
+        ) {
+          return {
+            ok: false as const,
+            rejection: {
+              status: 409,
+              body: {
+                success: false,
+                code: 'PREVIEW_EXPIRED',
+                message: 'Your plan change quote has expired. Please review the change again.',
               },
             },
           };

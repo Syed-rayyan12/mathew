@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SubscriptionShapeError, readSubscription } from './subscription-sync';
+import { SubscriptionShapeError, readSubscription, resolveDuplicate } from './subscription-sync';
 
 /**
  * The shape readSubscription actually reads, not a full Stripe object. Cast at
@@ -120,5 +120,115 @@ describe('readSubscription', () => {
     ).not.toThrow();
     expect(readSubscription(subscription({ lookupKey: 'mathew_platinum_monthly_v1', quantity: 8 })).paidNurseryCount)
       .toBe(8);
+  });
+});
+
+// Review fix 3: resolveDuplicate is the highest-risk logic; tested here as a
+// pure function, isolated from Stripe and database I/O.
+describe('resolveDuplicate', () => {
+  const RECORDED = 'sub_recorded';
+  const INCOMING = 'sub_incoming';
+  const T1 = 1_700_000_000; // older
+  const T2 = 1_700_010_000; // newer
+
+  it('no recorded id → keep incoming, cancel nothing', () => {
+    expect(resolveDuplicate({
+      recordedId: null,
+      recordedStatus: null,
+      recordedCreated: 0,
+      incomingId: INCOMING,
+      incomingCreated: T1,
+    })).toEqual({ keepId: INCOMING, cancelId: null });
+  });
+
+  it('recorded id equals incoming id → keep it, cancel nothing', () => {
+    expect(resolveDuplicate({
+      recordedId: INCOMING,
+      recordedStatus: 'active',
+      recordedCreated: T1,
+      incomingId: INCOMING,
+      incomingCreated: T1,
+    })).toEqual({ keepId: INCOMING, cancelId: null });
+  });
+
+  it('recorded present but not live (reactivation) → keep incoming, cancel nothing', () => {
+    expect(resolveDuplicate({
+      recordedId: RECORDED,
+      recordedStatus: 'canceled',
+      recordedCreated: T1,
+      incomingId: INCOMING,
+      incomingCreated: T2,
+    })).toEqual({ keepId: INCOMING, cancelId: null });
+  });
+
+  it('recorded missing from Stripe (resource_missing → status null) → keep incoming, cancel nothing', () => {
+    // resource_missing is represented by passing null status (review fix 1 feeds this path)
+    expect(resolveDuplicate({
+      recordedId: RECORDED,
+      recordedStatus: null,
+      recordedCreated: 0,
+      incomingId: INCOMING,
+      incomingCreated: T2,
+    })).toEqual({ keepId: INCOMING, cancelId: null });
+  });
+
+  it('recorded live and older → keep recorded, cancel incoming', () => {
+    expect(resolveDuplicate({
+      recordedId: RECORDED,
+      recordedStatus: 'active',
+      recordedCreated: T1,
+      incomingId: INCOMING,
+      incomingCreated: T2,
+    })).toEqual({ keepId: RECORDED, cancelId: INCOMING });
+  });
+
+  it('recorded live and newer → keep incoming, cancel recorded', () => {
+    expect(resolveDuplicate({
+      recordedId: RECORDED,
+      recordedStatus: 'active',
+      recordedCreated: T2,
+      incomingId: INCOMING,
+      incomingCreated: T1,
+    })).toEqual({ keepId: INCOMING, cancelId: RECORDED });
+  });
+
+  it('equal created timestamps → deterministic (keeps recorded, stable sort)', () => {
+    const result = resolveDuplicate({
+      recordedId: RECORDED,
+      recordedStatus: 'active',
+      recordedCreated: T1,
+      incomingId: INCOMING,
+      incomingCreated: T1,
+    });
+    // Must be deterministic — both calls must return the same answer.
+    expect(result).toEqual(resolveDuplicate({
+      recordedId: RECORDED,
+      recordedStatus: 'active',
+      recordedCreated: T1,
+      incomingId: INCOMING,
+      incomingCreated: T1,
+    }));
+    // Recorded wins the tie (stable sort — recorded <= incoming).
+    expect(result).toEqual({ keepId: RECORDED, cancelId: INCOMING });
+  });
+
+  it('past_due is treated as live (live on purpose per domain rules)', () => {
+    expect(resolveDuplicate({
+      recordedId: RECORDED,
+      recordedStatus: 'past_due',
+      recordedCreated: T1,
+      incomingId: INCOMING,
+      incomingCreated: T2,
+    })).toEqual({ keepId: RECORDED, cancelId: INCOMING });
+  });
+
+  it('trialing is treated as live', () => {
+    expect(resolveDuplicate({
+      recordedId: RECORDED,
+      recordedStatus: 'trialing',
+      recordedCreated: T1,
+      incomingId: INCOMING,
+      incomingCreated: T2,
+    })).toEqual({ keepId: RECORDED, cancelId: INCOMING });
   });
 });

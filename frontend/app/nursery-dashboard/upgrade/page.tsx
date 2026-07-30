@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { CheckCircle, XCircle, Zap, ArrowLeft, Loader2 } from 'lucide-react';
-import { authService } from '@/lib/api/auth';
+import { authService, type ChangePreview } from '@/lib/api/auth';
 import Link from 'next/link';
 import NurseryCountPicker from '@/components/sharedComponents/nursery-count-picker';
 import { useEntitlements } from '@/hooks/use-nursery-plan';
@@ -37,9 +37,10 @@ function UpgradeContent() {
 
   const { data: entitlements, loading: entitlementsLoading } = useEntitlements();
 
-  const [status, setStatus] = useState<'idle' | 'verifying' | 'success' | 'error' | 'cancelled'>(
-    cancelled ? 'cancelled' : upgraded && sessionId ? 'verifying' : 'idle'
-  );
+  const [status, setStatus] = useState<
+    'idle' | 'confirming' | 'verifying' | 'success' | 'error' | 'cancelled'
+  >(cancelled ? 'cancelled' : upgraded && sessionId ? 'verifying' : 'idle');
+  const [preview, setPreview] = useState<ChangePreview | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [newPlanLabel, setNewPlanLabel] = useState('');
   const [loading, setLoading] = useState(false);
@@ -108,6 +109,9 @@ function UpgradeContent() {
     return () => clearTimeout(t);
   }, [status, countdown]);
 
+  // Step one of two. Asks the server what this actually costs right now.
+  // A lapsed or never-subscribed account comes back `requiresCheckout` and
+  // still goes to Stripe, because there is no card on file to charge.
   const handleUpgrade = async () => {
     // The button already says "Contact us for a quote" up here; without this
     // guard it POSTs anyway and the server rejects the unpriced group.
@@ -118,14 +122,45 @@ function UpgradeContent() {
 
     setLoading(true);
     try {
-      // The count is never omitted — a tier-only change still has to say how
-      // many nurseries it covers, or there is nothing to price.
-      const res = await authService.createUpgradeSession('platinum', billingPeriod, targetCount);
+      const res = await authService.previewChange('platinum', billingPeriod, targetCount);
+      if (!res.success || !res.data) {
+        setErrorMsg(res.message || 'Could not price that change. Please try again.');
+        setStatus('error');
+        return;
+      }
 
-      if (res.url) {
-        window.location.href = res.url;
+      if (res.data.requiresCheckout) {
+        const session = await authService.createUpgradeSession('platinum', billingPeriod, targetCount);
+        if (session.url) {
+          window.location.href = session.url;
+        } else {
+          setErrorMsg(session.message || 'The server did not return a payment link. Please try again.');
+          setStatus('error');
+        }
+        return;
+      }
+
+      setPreview(res.data);
+      setStatus('confirming');
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'Could not reach the server. Please try again.');
+      setStatus('error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Step two. Charges the card on file. There is no redirect, so on success
+  // the page goes straight to the state it would otherwise have returned to.
+  const handleConfirm = async () => {
+    setLoading(true);
+    try {
+      const res = await authService.applyChange('platinum', billingPeriod, targetCount);
+      if (res.success && res.data) {
+        setNewPlanLabel(planLabel(res.data.planTier, res.data.paidNurseryCount));
+        setStatus('success');
       } else {
-        setErrorMsg(res.message || 'The server did not return a payment link. Please try again.');
+        setErrorMsg(res.message || 'The change could not be applied. Please try again.');
         setStatus('error');
       }
     } catch (err: any) {
@@ -135,6 +170,77 @@ function UpgradeContent() {
       setLoading(false);
     }
   };
+
+  // ── Confirm state ──────────────────────────────────────────────
+  // The one screen where the numbers are Stripe's rather than ours. Amount
+  // due now is a proration and will not match the sticker price.
+  if (status === 'confirming' && preview) {
+    return (
+      <div className="max-w-lg mx-auto px-4 py-10">
+        <div className="rounded-2xl border border-yellow-200 bg-white p-8 shadow-sm">
+          <h1 className="text-xl font-bold text-gray-900">Confirm your upgrade</h1>
+          <p className="text-gray-500 text-sm mt-1 mb-6">
+            You&apos;re moving to {preview.targetLabel}.
+          </p>
+
+          <div className="rounded-xl border border-gray-200 divide-y divide-gray-100 mb-6">
+            <div className="flex items-baseline justify-between px-4 py-4">
+              <span className="text-sm text-gray-600">Due today</span>
+              <span className="text-2xl font-bold text-gray-900">
+                {formatGbp(preview.amountDueNowPence)}
+              </span>
+            </div>
+            <div className="flex items-baseline justify-between px-4 py-4">
+              <span className="text-sm text-gray-600">
+                {billingPeriod === 'monthly' ? 'Then per month' : 'Then per year'}
+              </span>
+              <span className="text-base font-semibold text-gray-800">
+                {formatGbp(preview.nextRenewalPence)}
+              </span>
+            </div>
+            {preview.nextRenewalDate && (
+              <div className="flex items-baseline justify-between px-4 py-4">
+                <span className="text-sm text-gray-600">Next payment</span>
+                <span className="text-base font-semibold text-gray-800">
+                  {new Date(preview.nextRenewalDate).toLocaleDateString('en-GB', {
+                    day: 'numeric', month: 'long', year: 'numeric',
+                  })}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <p className="text-xs text-gray-500 mb-6">
+            {preview.intervalChanges
+              ? 'Changing your billing period restarts your billing cycle today, so this charge covers a full new period less credit for time you have already paid for.'
+              : 'Today\u2019s charge covers the rest of your current billing period. Your renewal date does not change.'}
+          </p>
+
+          <button
+            onClick={handleConfirm}
+            disabled={loading}
+            className="w-full py-3.5 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-bold rounded-xl transition flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {loading ? (
+              <><Loader2 size={16} className="animate-spin" /> Charging your card…</>
+            ) : (
+              <><Zap size={16} className="fill-yellow-900" /> Pay {formatGbp(preview.amountDueNowPence)} and upgrade</>
+            )}
+          </button>
+          <button
+            onClick={() => { setPreview(null); setStatus('idle'); }}
+            disabled={loading}
+            className="w-full mt-3 py-2.5 text-sm text-gray-500 hover:text-gray-800 transition disabled:opacity-60"
+          >
+            Back
+          </button>
+          <p className="text-center text-xs text-gray-400 mt-4">
+            Charged to the card already on your account · 90 days notice required to cancel
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // ── Success state ──────────────────────────────────────────────
   if (status === 'success') {
@@ -361,11 +467,11 @@ function UpgradeContent() {
           className="w-full py-3.5 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-bold rounded-xl transition flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {loading ? (
-            <><Loader2 size={16} className="animate-spin" /> Redirecting to payment…</>
+            <><Loader2 size={16} className="animate-spin" /> Checking your price…</>
           ) : (
             <><Zap size={16} className="fill-yellow-900" /> {upgradeQuote.bespoke
               ? 'Contact us for a quote'
-              : `Upgrade Now — ${formatGbp(upgradeQuote.totalPence)}/${billingPeriod === 'monthly' ? 'mo' : 'yr'}`}</>
+              : `Review upgrade — ${formatGbp(upgradeQuote.totalPence)}/${billingPeriod === 'monthly' ? 'mo' : 'yr'}`}</>
           )}
         </button>
         <p className="text-center text-xs text-gray-400 mt-3">

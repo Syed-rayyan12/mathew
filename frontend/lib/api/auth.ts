@@ -77,6 +77,25 @@ export interface UpgradeResult {
   paidNurseryCount: number;
 }
 
+/** What preview-change hands back. Amounts are pence, as everywhere else. */
+export interface ChangePreview {
+  /** True when there is no live subscription to update — go via Stripe. */
+  requiresCheckout: boolean;
+  amountDueNowPence: number;
+  nextRenewalPence: number;
+  /** Null when the interval changes, because the cycle is about to reset. */
+  nextRenewalDate: string | null;
+  intervalChanges: boolean;
+  currency: string;
+  targetLabel: string;
+}
+
+export interface ChangeResult {
+  planTier: 'standard' | 'platinum';
+  paidNurseryCount: number;
+  subscriptionStatus: string;
+}
+
 /**
  * create-upgrade-session puts the Stripe URL at the top level rather than
  * under `data`, so it does not fit the usual ApiResponse<T> shape.
@@ -163,6 +182,48 @@ export const authService = {
   getUserRole: (): string | null => {
     const user = TokenManager.getUser();
     return user?.role || null;
+  },
+
+  // Price a plan change without committing to it. The number that comes back
+  // is Stripe's proration, not the sticker price, so it is the only figure
+  // safe to show on a confirmation screen.
+  previewChange: async (
+    planTier: 'standard' | 'platinum',
+    billingPeriod: 'monthly' | 'annual',
+    nurseryCount: number
+  ): Promise<ApiResponse<ChangePreview>> => {
+    return nurseryApiClient.post<ChangePreview>(
+      '/stripe/preview-change',
+      { plan: planTier, billingPeriod, nurseryCount },
+      true
+    );
+  },
+
+  // Commit the change. Charges the card on file — there is no Stripe redirect.
+  applyChange: async (
+    planTier: 'standard' | 'platinum',
+    billingPeriod: 'monthly' | 'annual',
+    nurseryCount: number
+  ): Promise<ApiResponse<ChangeResult>> => {
+    const response = await nurseryApiClient.post<ChangeResult>(
+      '/stripe/apply-change',
+      { plan: planTier, billingPeriod, nurseryCount },
+      true
+    );
+    if (response.success && response.data?.planTier) {
+      const { planTier: tier, paidNurseryCount } = response.data;
+      try {
+        for (const key of ['nurseryUser', 'user']) {
+          const raw = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+          if (!raw) continue;
+          const stored = JSON.parse(raw);
+          stored.planTier = tier;
+          stored.paidNurseryCount = paidNurseryCount;
+          localStorage.setItem(key, JSON.stringify(stored));
+        }
+      } catch { /* ignore parse errors */ }
+    }
+    return response;
   },
 
   // Create Stripe upgrade checkout session for existing nursery owner.

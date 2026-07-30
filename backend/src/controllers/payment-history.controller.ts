@@ -1,64 +1,55 @@
+/**
+ * Every payment, including renewals.
+ *
+ * This used to list Checkout Sessions, which only exist for the first payment.
+ * Once plans renew, a session list shows the signup and nothing after it.
+ *
+ * The plan comes off the invoice line's price lookup key and the nursery count
+ * off its quantity, so a Group of 8 and a Single Platinum are finally
+ * distinguishable — they were both just "platinum" when this read metadata.
+ */
+
 import { NextFunction, Response } from 'express';
 import Stripe from 'stripe';
 import { AuthRequest } from '../middleware';
-import { getStripe, PlanKey } from '../utils/stripe';
+import { getStripe } from '../utils/stripe';
+import { parseLookupKey } from '../utils/pricing';
+import { planLabel } from '../utils/entitlements';
 
-const VALID_PLANS: PlanKey[] = ['standard', 'platinum'];
-
-function getPlan(session: Stripe.Checkout.Session): PlanKey | null {
-  const plan = session.metadata?.plan?.toLowerCase();
-  return VALID_PLANS.includes(plan as PlanKey) ? plan as PlanKey : null;
+function firstLine(invoice: Stripe.Invoice): Stripe.InvoiceLineItem | null {
+  return invoice.lines?.data?.[0] ?? null;
 }
 
-function inferBillingPeriod(plan: PlanKey, subtotal: number | null): 'monthly' | 'annual' | null {
-  const annualSubtotals: Record<PlanKey, number> = {
-    standard: 28740,
-    platinum: 46320,
-  };
-  const monthlySubtotals: Record<PlanKey, number> = {
-    standard: 2395,
-    platinum: 3860,
-  };
-
-  if (subtotal === annualSubtotals[plan]) return 'annual';
-  if (subtotal === monthlySubtotals[plan]) return 'monthly';
-  return null;
+function lookupKeyOf(line: Stripe.InvoiceLineItem | null): string | null {
+  const pricing = (line as any)?.pricing?.price_details;
+  return (line as any)?.price?.lookup_key ?? pricing?.lookup_key ?? null;
 }
 
-function getInvoice(session: Stripe.Checkout.Session): Stripe.Invoice | null {
-  return session.invoice && typeof session.invoice !== 'string' ? session.invoice : null;
-}
-
-function getReceiptUrl(session: Stripe.Checkout.Session): string | null {
-  if (!session.payment_intent || typeof session.payment_intent === 'string') return null;
-  const charge = session.payment_intent.latest_charge;
-  return charge && typeof charge !== 'string' ? charge.receipt_url : null;
-}
-
-function formatPayment(session: Stripe.Checkout.Session, plan: PlanKey) {
-  const invoice = getInvoice(session);
-  const billingPeriod = session.metadata?.billingPeriod === 'annual' || session.metadata?.billingPeriod === 'monthly'
-    ? session.metadata.billingPeriod
-    : inferBillingPeriod(plan, session.amount_subtotal);
+function formatInvoice(invoice: Stripe.Invoice) {
+  const line = firstLine(invoice);
+  const parsed = parseLookupKey(lookupKeyOf(line));
+  const quantity = line?.quantity ?? 1;
 
   return {
-    id: session.id,
-    customerName: session.customer_details?.name
-      || [session.metadata?.firstName, session.metadata?.lastName].filter(Boolean).join(' ')
-      || null,
-    customerEmail: session.customer_details?.email || session.customer_email || session.metadata?.email || null,
-    plan,
-    billingPeriod,
-    currency: session.currency || 'gbp',
-    subtotal: session.amount_subtotal || 0,
-    discount: session.total_details?.amount_discount || 0,
-    total: session.amount_total || 0,
-    paymentStatus: session.payment_status,
-    createdAt: new Date(session.created * 1000),
-    invoiceNumber: invoice?.number || null,
-    hostedInvoiceUrl: invoice?.hosted_invoice_url || null,
-    invoicePdf: invoice?.invoice_pdf || null,
-    receiptUrl: getReceiptUrl(session),
+    id: invoice.id,
+    customerName: invoice.customer_name || null,
+    customerEmail: invoice.customer_email || null,
+    plan: parsed?.tier ?? null,
+    planLabel: parsed
+      ? planLabel({ planTier: parsed.tier, paidNurseryCount: quantity })
+      : 'Unknown plan',
+    quantity,
+    billingPeriod: parsed?.billing ?? null,
+    currency: invoice.currency || 'gbp',
+    subtotal: invoice.subtotal ?? 0,
+    discount: invoice.total_discount_amounts?.reduce((sum, d) => sum + d.amount, 0) ?? 0,
+    total: invoice.total ?? 0,
+    paymentStatus: invoice.status ?? 'draft',
+    createdAt: new Date(invoice.created * 1000),
+    invoiceNumber: invoice.number || null,
+    hostedInvoiceUrl: invoice.hosted_invoice_url || null,
+    invoicePdf: invoice.invoice_pdf || null,
+    receiptUrl: null,
   };
 }
 
@@ -69,25 +60,25 @@ export const listPaymentHistory = async (
 ) => {
   try {
     const stripe = getStripe();
-    const sessions: Stripe.Checkout.Session[] = [];
+    const invoices: Stripe.Invoice[] = [];
     let startingAfter: string | undefined;
 
     do {
-      const page = await stripe.checkout.sessions.list({
+      const page = await stripe.invoices.list({
         limit: 100,
-        status: 'complete',
         starting_after: startingAfter,
-        expand: ['data.invoice', 'data.payment_intent.latest_charge'],
       });
-      sessions.push(...page.data);
+      invoices.push(...page.data);
       startingAfter = page.has_more ? page.data[page.data.length - 1]?.id : undefined;
     } while (startingAfter);
 
-    const payments = sessions
-      .map((session) => ({ session, plan: getPlan(session) }))
-      .filter((item): item is { session: Stripe.Checkout.Session; plan: PlanKey } => Boolean(item.plan))
-      .filter(({ session }) => ['paid', 'no_payment_required'].includes(session.payment_status))
-      .map(({ session, plan }) => formatPayment(session, plan));
+    // Drafts are not payments yet. Everything else — paid, open, void,
+    // uncollectible — is worth seeing, because a failed renewal is exactly
+    // what someone is looking for when they open this table.
+    const payments = invoices
+      .filter((invoice) => invoice.status !== 'draft')
+      .filter((invoice) => parseLookupKey(lookupKeyOf(firstLine(invoice))) !== null)
+      .map(formatInvoice);
 
     res.json({ success: true, data: payments });
   } catch (error) {

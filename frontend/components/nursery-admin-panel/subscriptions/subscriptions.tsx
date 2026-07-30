@@ -28,9 +28,11 @@ const STATUS_STYLES: Record<AdminSubscription['status'], string> = {
 };
 
 const PAYMENT_STATUS_STYLES: Record<AdminPaymentRecord['paymentStatus'], string> = {
+  draft: 'bg-gray-100 text-gray-600',
+  open: 'bg-amber-100 text-amber-700',
   paid: 'bg-green-100 text-green-700',
-  unpaid: 'bg-red-100 text-red-700',
-  no_payment_required: 'bg-blue-100 text-blue-700',
+  uncollectible: 'bg-red-100 text-red-700',
+  void: 'bg-gray-100 text-gray-600',
 };
 
 function formatDate(value: string) {
@@ -49,7 +51,8 @@ function formatCurrency(amount: number, currency: string) {
 }
 
 function paymentStatusLabel(status: AdminPaymentRecord['paymentStatus']) {
-  if (status === 'no_payment_required') return 'Free';
+  if (status === 'open') return 'Unpaid';
+  if (status === 'uncollectible') return 'Failed';
   return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
@@ -399,7 +402,7 @@ export default function Subscriptions() {
                     {paymentsLoading ? (
                       <tr><td colSpan={9} className="py-12 text-center text-muted-foreground">Loading payment history...</td></tr>
                     ) : payments.length === 0 ? (
-                      <tr><td colSpan={9} className="py-12 text-center text-muted-foreground">No completed Stripe payments found.</td></tr>
+                      <tr><td colSpan={9} className="py-12 text-center text-muted-foreground">No invoices found.</td></tr>
                     ) : payments.map((payment) => (
                       <tr key={payment.id} className="border-b hover:bg-gray-50">
                         <td className="px-3 py-5 text-sm text-muted-foreground">
@@ -412,7 +415,7 @@ export default function Subscriptions() {
                           <p className="font-semibold">{payment.customerName || 'Nursery owner'}</p>
                           <p className="text-sm text-muted-foreground">{payment.customerEmail || 'Email unavailable'}</p>
                         </td>
-                        <td className="px-3 py-5 font-medium capitalize">{payment.plan}</td>
+                        <td className="px-3 py-5 font-medium">{payment.planLabel}</td>
                         <td className="px-3 py-5 capitalize">{payment.billingPeriod || 'Unknown'}</td>
                         <td className="px-3 py-5 text-right">{formatCurrency(payment.subtotal, payment.currency)}</td>
                         <td className="px-3 py-5 text-right">{formatCurrency(payment.discount, payment.currency)}</td>

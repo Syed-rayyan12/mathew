@@ -47,13 +47,17 @@ export interface AdminPaymentRecord {
   id: string;
   customerName?: string | null;
   customerEmail?: string | null;
-  plan: 'standard' | 'platinum';
+  plan: 'standard' | 'platinum' | null;
+  /** Server-decided wording: "Single Standard" | "Single Platinum" | "Group of 8". */
+  planLabel: string;
+  /** Nurseries this invoice covered. This is what tells a Group from a Single. */
+  quantity: number;
   billingPeriod?: 'monthly' | 'annual' | null;
   currency: string;
   subtotal: number;
   discount: number;
   total: number;
-  paymentStatus: 'paid' | 'unpaid' | 'no_payment_required';
+  paymentStatus: 'draft' | 'open' | 'paid' | 'uncollectible' | 'void';
   createdAt: string;
   invoiceNumber?: string | null;
   hostedInvoiceUrl?: string | null;

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../config/database';
 import { NotFoundError } from '../utils';
+import { PUBLIC_NURSERY_WHERE } from '../utils/public-visibility';
 
 // Get all nursery groups (public - for nursery-group page)
 export const getAllGroups = async (
@@ -138,7 +139,7 @@ export const autocompleteSearch = async (
     // Search for matching nurseries
     const nurseries = await prisma.nursery.findMany({
       where: {
-        isApproved: true,
+        ...PUBLIC_NURSERY_WHERE,
         OR: [
           { name: { contains: searchTerm, mode: 'insensitive' } },
           { city: { contains: searchTerm, mode: 'insensitive' } },
@@ -443,9 +444,7 @@ export const searchByCity = async (
         _count: {
           select: {
             nurseries: {
-              where: {
-                isApproved: true
-              }
+              where: PUBLIC_NURSERY_WHERE
             }
           }
         }
@@ -459,7 +458,7 @@ export const searchByCity = async (
     // Get 2 nurseries in the city
     const nurseries = await prisma.nursery.findMany({
       where: {
-        isApproved: true,
+        ...PUBLIC_NURSERY_WHERE,
         city: { equals: city, mode: 'insensitive' },
       },
       select: {
@@ -512,7 +511,7 @@ export const getAllNurseries = async (
     const skip = (Number(page) - 1) * Number(limit);
 
     const where: any = {
-      isApproved: true,
+      ...PUBLIC_NURSERY_WHERE,
     };
 
     if (city) {
@@ -680,8 +679,8 @@ export const getNurseryBySlug = async (
   try {
     const { slug } = req.params;
 
-    const nursery = await (prisma as any).nursery.findUnique({
-      where: { slug },
+    const nursery = await (prisma as any).nursery.findFirst({
+      where: { slug, ...PUBLIC_NURSERY_WHERE },
       include: {
         owner: {
           select: { firstName: true, lastName: true, email: true, phone: true },

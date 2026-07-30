@@ -6,6 +6,7 @@ import { createNotification } from './notification.controller';
 import {
   planLabel,
   isGroup,
+  isLive,
   normaliseTier,
   allowance,
 } from '../utils/entitlements';
@@ -505,6 +506,10 @@ export const getSubscriptions = async (
         isActive: true,
         isVerified: true,
         createdAt: true,
+        subscriptionStatus: true,
+        currentPeriodEnd: true,
+        cancelAt: true,
+        stripeSubscriptionId: true,
         groups: {
           select: { id: true, name: true },
           orderBy: { createdAt: 'asc' },
@@ -530,11 +535,18 @@ export const getSubscriptions = async (
         isGroup: isGroup(owner),
         nurseriesUsed: limits.used,
         overAllowance: limits.used > limits.paid,
+        // Two different questions that used to share one word. `status` is the
+        // account (can they sign in), `subscriptionStatus` is the money.
         status: owner.isActive
           ? 'active'
           : owner.isVerified
             ? 'suspended'
             : 'pending',
+        subscriptionStatus: owner.subscriptionStatus,
+        isLive: isLive(owner),
+        currentPeriodEnd: owner.currentPeriodEnd,
+        cancelAt: owner.cancelAt,
+        canCancel: Boolean(owner.stripeSubscriptionId) && isLive(owner),
         createdAt: owner.createdAt,
         groups: owner.groups,
         nurseries: owner.nurseries,

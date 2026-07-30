@@ -22,6 +22,12 @@ export interface AdminSubscription {
   nurseriesUsed: number;
   overAllowance: boolean;
   status: 'active' | 'pending' | 'suspended';
+  /** Stripe's status string, or "none". Distinct from `status`, which is the account. */
+  subscriptionStatus: string;
+  isLive: boolean;
+  currentPeriodEnd: string | null;
+  cancelAt: string | null;
+  canCancel: boolean;
   createdAt: string;
   groups: Array<{ id: string; name: string }>;
   nurseries: Array<{ id: string; name: string }>;
@@ -269,6 +275,22 @@ export const adminService = {
   deactivateCoupon: async (id: string) => {
     return adminApiClient.patch<AdminCoupon>(
       `/admin/coupons/${id}/deactivate`,
+      {},
+      true
+    );
+  },
+
+  scheduleCancellation: async (userId: string, cancelAt?: string) => {
+    return adminApiClient.post<{ subscriptionStatus: string; cancelAt: string | null }>(
+      `/admin/subscriptions/${userId}/schedule-cancellation`,
+      cancelAt ? { cancelAt } : {},
+      true
+    );
+  },
+
+  cancelSubscriptionNow: async (userId: string) => {
+    return adminApiClient.post<{ subscriptionStatus: string; cancelAt: string | null }>(
+      `/admin/subscriptions/${userId}/cancel-now`,
       {},
       true
     );

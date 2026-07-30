@@ -168,6 +168,44 @@ export default function Subscriptions() {
     }
   };
 
+  const handleSchedule = async (item: AdminSubscription) => {
+    const suggested = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10);
+    const answer = window.prompt(
+      `End ${item.ownerName || item.email}'s subscription on which date? ` +
+        'Billing continues until then. 90 days is the notice period.',
+      suggested
+    );
+    if (!answer) return;
+
+    try {
+      const response = await adminService.scheduleCancellation(item.id, answer);
+      if (!response.success) throw new Error(response.message || 'Failed to schedule cancellation');
+      toast.success(`Cancellation scheduled for ${formatDate(answer)}`);
+      loadSubscriptions();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to schedule cancellation');
+    }
+  };
+
+  const handleCancelNow = async (item: AdminSubscription) => {
+    if (!window.confirm(
+      `Cancel ${item.ownerName || item.email}'s subscription immediately? ` +
+        'Their listings come off the site straight away. Their data is kept and ' +
+        'this can be reversed by starting a new subscription.'
+    )) return;
+
+    try {
+      const response = await adminService.cancelSubscriptionNow(item.id);
+      if (!response.success) throw new Error(response.message || 'Failed to cancel subscription');
+      toast.success('Subscription cancelled');
+      loadSubscriptions();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to cancel subscription');
+    }
+  };
+
   const handleDeactivateCoupon = async (coupon: AdminCoupon) => {
     if (!window.confirm(`Deactivate coupon ${coupon.code}?`)) return;
     try {
@@ -267,14 +305,17 @@ export default function Subscriptions() {
                       <th className="p-3 text-left">Plan</th>
                       <th className="p-3 text-left">Used / Paid</th>
                       <th className="p-3 text-left">Status</th>
+                      <th className="p-3 text-left">Billing</th>
+                      <th className="p-3 text-left">Renews</th>
+                      <th className="p-3 text-left">Actions</th>
                       <th className="p-3 text-left">Joined</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loading ? (
-                      <tr><td colSpan={7} className="py-12 text-center text-muted-foreground">Loading...</td></tr>
+                      <tr><td colSpan={10} className="py-12 text-center text-muted-foreground">Loading...</td></tr>
                     ) : subscriptions.length === 0 ? (
-                      <tr><td colSpan={7} className="py-12 text-center text-muted-foreground">No nursery owner accounts found.</td></tr>
+                      <tr><td colSpan={10} className="py-12 text-center text-muted-foreground">No nursery owner accounts found.</td></tr>
                     ) : subscriptions.map((item) => (
                       <tr key={item.id} className="border-b hover:bg-gray-50">
                         <td className="px-3 py-5">
@@ -294,6 +335,32 @@ export default function Subscriptions() {
                         </td>
                         <td className="px-3 py-5">
                           <Badge className={`${STATUS_STYLES[item.status]} capitalize`}>{item.status}</Badge>
+                        </td>
+                        <td className="px-3 py-5">
+                          <Badge className={item.isLive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}>
+                            {item.subscriptionStatus.replace('_', ' ')}
+                          </Badge>
+                        </td>
+                        <td className="px-3 py-5 text-sm text-muted-foreground">
+                          {item.cancelAt
+                            ? `Ends ${formatDate(item.cancelAt)}`
+                            : item.currentPeriodEnd
+                              ? formatDate(item.currentPeriodEnd)
+                              : '—'}
+                        </td>
+                        <td className="px-3 py-5">
+                          {item.canCancel ? (
+                            <div className="flex flex-wrap gap-2">
+                              <Button variant="outline" size="sm" onClick={() => handleSchedule(item)}>
+                                Schedule
+                              </Button>
+                              <Button variant="outline" size="sm" onClick={() => handleCancelNow(item)}>
+                                Cancel now
+                              </Button>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">—</span>
+                          )}
                         </td>
                         <td className="px-3 py-5 text-sm text-muted-foreground">{formatDate(item.createdAt)}</td>
                       </tr>

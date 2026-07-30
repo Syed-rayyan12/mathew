@@ -25,6 +25,7 @@ import {
 import { authenticate, authorize, authRateLimiter } from '../middleware';
 import { createCoupon, deactivateCoupon, listCoupons } from '../controllers/coupon.controller';
 import { listPaymentHistory } from '../controllers/payment-history.controller';
+import { cancelImmediately, scheduleCancellation } from '../controllers/admin-subscription.controller';
 
 const router = Router();
 
@@ -42,6 +43,8 @@ router.get('/reviews', getAllReviews);  // All reviews
 router.get('/articles', getAllArticles);  // All articles
 router.get('/stats', getDashboardStats);
 router.get('/subscriptions', getSubscriptions);
+router.post('/subscriptions/:userId/schedule-cancellation', scheduleCancellation);
+router.post('/subscriptions/:userId/cancel-now', cancelImmediately);
 router.get('/invoices', listPaymentHistory);
 router.get('/coupons', listCoupons);
 router.post('/coupons', createCoupon);

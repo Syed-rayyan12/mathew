@@ -99,4 +99,26 @@ describe('readSubscription', () => {
     two.items.data.push({ ...two.items.data[0] });
     expect(() => readSubscription(two)).toThrow(SubscriptionShapeError);
   });
+
+  // A5: quantity validation — quote() is the gate; a manual Stripe dashboard
+  // change could set a combination that was never sold here.
+  it('A5: refuses a Standard subscription with quantity 2 (Standard has no group)', () => {
+    expect(() =>
+      readSubscription(subscription({ lookupKey: 'mathew_standard_monthly_v1', quantity: 2 }))
+    ).toThrow(SubscriptionShapeError);
+  });
+
+  it('A5: refuses a Platinum subscription with quantity 61 (bespoke threshold)', () => {
+    expect(() =>
+      readSubscription(subscription({ lookupKey: 'mathew_platinum_monthly_v1', quantity: 61 }))
+    ).toThrow(SubscriptionShapeError);
+  });
+
+  it('A5: accepts a Platinum subscription with quantity 8 (valid group)', () => {
+    expect(() =>
+      readSubscription(subscription({ lookupKey: 'mathew_platinum_monthly_v1', quantity: 8 }))
+    ).not.toThrow();
+    expect(readSubscription(subscription({ lookupKey: 'mathew_platinum_monthly_v1', quantity: 8 })).paidNurseryCount)
+      .toBe(8);
+  });
 });

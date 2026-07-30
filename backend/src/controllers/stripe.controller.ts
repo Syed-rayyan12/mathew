@@ -19,9 +19,33 @@ import {
   reconcileFromSubscription,
 } from '../utils/subscription-sync';
 
-/** True if a unique-key insert lost the race, i.e. this work already landed. */
-function isAlreadyProcessed(err: any): boolean {
-  return err?.code === 'P2002';
+/** Thrown when a processedCheckoutSession insert finds the session already recorded. */
+class AlreadyProcessed extends Error {}
+
+/**
+ * A2: Validates a proration timestamp before it is sent to Stripe.
+ *
+ * Pure function — exported so it can be unit-tested without Stripe or a DB.
+ *
+ * Rules:
+ *   - must be a finite integer (seconds)
+ *   - must not be more than 15 minutes old relative to nowSeconds
+ *   - must fall within the subscription item's current period
+ *     (>= periodStart and <= periodEnd)
+ */
+export function isUsableProrationDate(
+  ts: unknown,
+  periodStart: number,
+  periodEnd: number,
+  nowSeconds: number
+): boolean {
+  if (!Number.isFinite(ts) || !Number.isInteger(ts)) return false;
+  const t = ts as number;
+  if (t > nowSeconds) return false;               // must not be in the future
+  if (nowSeconds - t > 15 * 60) return false;     // must not be more than 15 min old
+  if (t < periodStart) return false;              // must be within the period
+  if (t > periodEnd) return false;
+  return true;
 }
 
 /**
@@ -44,25 +68,46 @@ async function ensureAccount(session: any): Promise<string | null> {
 
   if (!meta?.email) return null;
 
-  const slug = String(meta.nurseryName)
+  // A3b: unique the group slug before the transaction so collisions between
+  // different owners with the same nursery name do not collapse onto one slug.
+  // The constraint remains the real guard; this is best-effort.
+  const baseSlug = String(meta.nurseryName)
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
+
+  async function resolveSlug(base: string): Promise<string> {
+    let candidate = base;
+    let suffix = 1;
+    while (await prisma.group.findUnique({ where: { slug: candidate } })) {
+      candidate = `${base}-${suffix}`;
+      suffix += 1;
+    }
+    return candidate;
+  }
 
   const groupId = await generateShortId('GRP');
 
   // Existing nursery owner buying a second group.
   if (meta.existingUserId) {
+    const slug = await resolveSlug(baseSlug);
     try {
       await prisma.$transaction(async (tx: any) => {
-        await tx.processedCheckoutSession.create({
-          data: {
-            id: session.id,
-            userId: meta.existingUserId,
-            planTier: 'pending',
-            nurseryCount: 0,
-          },
-        });
+        // A3a: wrap only the idempotency claim; other P2002s (e.g. group slug)
+        // now propagate and make the webhook return 500 → Stripe retries.
+        try {
+          await tx.processedCheckoutSession.create({
+            data: {
+              id: session.id,
+              userId: meta.existingUserId,
+              planTier: 'pending',
+              nurseryCount: 0,
+            },
+          });
+        } catch (err: any) {
+          if (err?.code === 'P2002') throw new AlreadyProcessed();
+          throw err;
+        }
         await tx.group.create({
           data: {
             id: groupId,
@@ -79,7 +124,7 @@ async function ensureAccount(session: any): Promise<string | null> {
         });
       });
     } catch (err) {
-      if (!isAlreadyProcessed(err)) throw err;
+      if (!(err instanceof AlreadyProcessed)) throw err;
     }
     return meta.existingUserId;
   }
@@ -88,12 +133,19 @@ async function ensureAccount(session: any): Promise<string | null> {
   if (existing) return existing.id;
 
   const userId = await generateShortId('USR');
+  const slug = await resolveSlug(baseSlug);
 
   try {
     await prisma.$transaction(async (tx: any) => {
-      await tx.processedCheckoutSession.create({
-        data: { id: session.id, userId, planTier: 'pending', nurseryCount: 0 },
-      });
+      // A3a: wrap only the idempotency claim.
+      try {
+        await tx.processedCheckoutSession.create({
+          data: { id: session.id, userId, planTier: 'pending', nurseryCount: 0 },
+        });
+      } catch (err: any) {
+        if (err?.code === 'P2002') throw new AlreadyProcessed();
+        throw err;
+      }
       await tx.user.create({
         data: {
           id: userId,
@@ -125,7 +177,7 @@ async function ensureAccount(session: any): Promise<string | null> {
     });
     return userId;
   } catch (err) {
-    if (!isAlreadyProcessed(err)) throw err;
+    if (!(err instanceof AlreadyProcessed)) throw err;
     // The other racer created it. Read back whichever id won.
     const winner = await prisma.user.findUnique({ where: { email: meta.email } });
     return winner?.id ?? null;
@@ -383,10 +435,15 @@ type ChangeRejection = { status: number; body: Record<string, unknown> };
  *
  * Shared by preview and apply so the confirmation screen cannot show a number
  * for something the apply call then refuses.
+ *
+ * A4: accepts an optional transaction client so applyChange can pass `tx` and
+ * have the nursery count happen under the row-level lock. previewChange and
+ * createUpgradeSession keep calling without one.
  */
 async function validateChange(
   userId: string,
-  body: any
+  body: any,
+  txClient?: any
 ): Promise<{ ok: true; change: ChangeRequest } | { ok: false; rejection: ChangeRejection }> {
   const tier: PlanTier = body.plan === 'platinum' ? 'platinum' : 'standard';
   const billing: BillingPeriod = body.billingPeriod === 'annual' ? 'annual' : 'monthly';
@@ -394,10 +451,12 @@ async function validateChange(
   const requested = Number(body.nurseryCount);
   const count = Number.isFinite(requested) && requested > 0 ? Math.floor(requested) : 0;
 
+  const db = txClient ?? prisma;
+
   // An allowance cannot be bought down below what is already in use, or the
   // owner would keep listings they have stopped paying for. Removing
   // nurseries first is the supported way down.
-  const inUse = await prisma.nursery.count({ where: { ownerId: userId } });
+  const inUse = await db.nursery.count({ where: { ownerId: userId } });
   if (count < inUse) {
     return {
       ok: false,
@@ -433,6 +492,9 @@ async function validateChange(
  *
  * What this change costs right now and what it renews at. No charge, no
  * redirect — the upgrade page becomes a confirmation screen with real numbers.
+ *
+ * A2: computes and returns prorationDate so the apply call can pin Stripe to
+ * the same second the preview was computed at.
  */
 export const previewChange = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -483,6 +545,9 @@ export const previewChange = async (req: Request, res: Response, next: NextFunct
       return res.status(400).json({ success: false, message: 'You are already on this plan.' });
     }
 
+    // A2: pin the proration timestamp so preview and apply use the same second.
+    const prorationDate = Math.floor(Date.now() / 1000);
+
     const preview = await stripe.invoices.createPreview({
       customer: typeof sub.customer === 'string' ? sub.customer : sub.customer.id,
       subscription: sub.id,
@@ -493,6 +558,7 @@ export const previewChange = async (req: Request, res: Response, next: NextFunct
         // is exactly what a Standard → Platinum move does.
         items: [{ id: item.id, price: prices[tier][billing], quantity: count }],
         proration_behavior: 'always_invoice',
+        proration_date: prorationDate,
       },
     });
 
@@ -514,6 +580,8 @@ export const previewChange = async (req: Request, res: Response, next: NextFunct
         intervalChanges,
         currency: preview.currency ?? 'gbp',
         targetLabel: planLabel({ planTier: tier, paidNurseryCount: count }),
+        // A2: returned so the frontend can pass it back to apply-change.
+        prorationDate,
       },
     });
   } catch (error: any) {
@@ -536,6 +604,15 @@ export const previewChange = async (req: Request, res: Response, next: NextFunct
  * still live, so the owner briefly holds the larger allowance unpaid. Stripe
  * retries, and a final failure hides everything. Unwinding a quantity change
  * mid-flight is worse.
+ *
+ * A2: requires prorationDate from the preview response. Rejected if absent,
+ * stale, or outside the current billing period — silently falling back to
+ * "now" would reintroduce the defect.
+ *
+ * A4: takes a SELECT FOR UPDATE on the user row inside a transaction so this
+ * path and createNursery serialise. The lock covers count → Stripe update;
+ * reconcileFromSubscription is called after the transaction commits so its
+ * write is never rolled back.
  */
 export const applyChange = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -553,30 +630,86 @@ export const applyChange = async (req: Request, res: Response, next: NextFunctio
       });
     }
 
-    const validated = await validateChange(userId, req.body);
-    if (!validated.ok) {
-      return res.status(validated.rejection.status).json(validated.rejection.body);
-    }
-    const { tier, billing, count } = validated.change;
-
+    // A2: validate the proration timestamp before touching Stripe.
+    const { prorationDate } = req.body;
     const stripe = getStripe();
     const prices = await ensurePlanPrices();
-    const sub = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
-    const item = sub.items.data[0];
 
-    if (!item) {
+    // Retrieve subscription now (before the lock) to get period bounds for
+    // the proration date check.
+    const subForCheck = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+    const itemForCheck = subForCheck.items.data[0];
+
+    if (!itemForCheck) {
       return res.status(409).json({
         success: false,
         message: 'Your subscription is in an unexpected state. Please contact support.',
       });
     }
 
-    const updated = await stripe.subscriptions.update(sub.id, {
-      items: [{ id: item.id, price: prices[tier][billing], quantity: count }],
-      proration_behavior: 'always_invoice',
-    });
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    if (
+      !isUsableProrationDate(
+        prorationDate,
+        itemForCheck.current_period_start,
+        itemForCheck.current_period_end,
+        nowSeconds
+      )
+    ) {
+      return res.status(409).json({
+        success: false,
+        code: 'PREVIEW_EXPIRED',
+        message: 'Your plan change quote has expired. Please review the change again.',
+      });
+    }
 
-    const snapshot = await reconcileFromSubscription(updated.id, userId);
+    // A4: hold a row-level lock across the nursery count and the Stripe call
+    // so a concurrent createNursery cannot slip in between. Timeout raised to
+    // 20 s because a Stripe round trip can exceed the 5 s default.
+    const result = await prisma.$transaction(
+      async (tx: any) => {
+        await tx.$queryRaw`SELECT "id" FROM "users" WHERE "id" = ${userId} FOR UPDATE`;
+
+        const validated = await validateChange(userId, req.body, tx);
+        if (!validated.ok) {
+          return { ok: false as const, rejection: validated.rejection };
+        }
+        const { tier, billing, count } = validated.change;
+
+        const sub = await stripe.subscriptions.retrieve(user.stripeSubscriptionId!);
+        const item = sub.items.data[0];
+
+        if (!item) {
+          return {
+            ok: false as const,
+            rejection: {
+              status: 409,
+              body: {
+                success: false,
+                message: 'Your subscription is in an unexpected state. Please contact support.',
+              },
+            },
+          };
+        }
+
+        const updated = await stripe.subscriptions.update(sub.id, {
+          items: [{ id: item.id, price: prices[tier][billing], quantity: count }],
+          proration_behavior: 'always_invoice',
+          proration_date: prorationDate,
+        });
+
+        return { ok: true as const, updatedId: updated.id };
+      },
+      { timeout: 20000 }
+    );
+
+    if (!result.ok) {
+      return res.status(result.rejection.status).json(result.rejection.body);
+    }
+
+    // reconcileFromSubscription writes with the global client — intentionally
+    // outside the transaction so its write is never rolled back by a later failure.
+    const snapshot = await reconcileFromSubscription(result.updatedId, userId);
 
     res.json({
       success: true,
@@ -602,6 +735,9 @@ export const applyChange = async (req: Request, res: Response, next: NextFunctio
  * lapsed. An account that *has* one uses apply-change instead, which needs no
  * redirect.
  *
+ * A1a: explicitly rejects when the account already has a live subscription,
+ * so a live owner cannot accidentally create a second one by POSTing here.
+ *
  * Reused rather than replaced so a reactivating owner keeps their Stripe
  * customer record, and with it their payment methods and invoice history.
  */
@@ -616,6 +752,16 @@ export const createUpgradeSession = async (
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
+
+    // A1a: refuse when the account already has a live subscription — apply-change
+    // is the correct path for that case and needs no redirect.
+    if (user.stripeSubscriptionId && isLive(user)) {
+      return res.status(409).json({
+        success: false,
+        code: 'ALREADY_SUBSCRIBED',
+        message: 'This account already has an active subscription. Change it from your plan page instead.',
+      });
+    }
 
     const validated = await validateChange(userId, req.body);
     if (!validated.ok) {

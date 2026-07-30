@@ -32,7 +32,8 @@ model User {
   shortlist   Shortlist[]
   recentlyViewed RecentlyViewed[]
   nurseryName String?
-  plan        String?     @default("standard") // "standard" | "platinum"
+  planTier         String  @default("standard") // "standard" | "platinum"
+  paidNurseryCount Int     @default(1)          // nurseries this account paid for
   jobs        Job[]       @relation("UserJobs")
   @@map("users")
 }

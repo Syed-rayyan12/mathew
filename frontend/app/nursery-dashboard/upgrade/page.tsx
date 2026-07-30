@@ -236,6 +236,8 @@ function UpgradeContent() {
           <p className="text-xs text-gray-500 mb-6">
             {preview.intervalChanges
               ? 'Changing your billing period restarts your billing cycle today, so this charge covers a full new period less credit for time you have already paid for.'
+              : !isPlatinum
+              ? 'Your Platinum features are available immediately. Today\u2019s charge covers the rest of your current billing period at the new rate. Your renewal date does not change.'
               : 'Today\u2019s charge covers the rest of your current billing period. Your renewal date does not change.'}
           </p>
 

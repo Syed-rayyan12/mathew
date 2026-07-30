@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { PUBLIC_NURSERY_WHERE } from './public-visibility';
+import { PUBLIC_NURSERY_WHERE, PUBLIC_GROUP_WHERE } from './public-visibility';
 
 // process.cwd(), not __dirname — vitest transforms to ESM, where __dirname
 // does not exist regardless of what tsconfig says. Vitest runs from backend/.
@@ -99,5 +99,46 @@ describe('user.nursery.controller.ts', () => {
       'findUnique cannot take a relation filter. getNurseryBySlug must use ' +
         'findFirst, or the detail page stays indexed after a lapse.'
     ).not.toMatch(/findUnique\(\{\s*where:\s*\{\s*slug\s*\}/);
+  });
+});
+
+// ── Group visibility ─────────────────────────────────────────────────────────
+
+describe('PUBLIC_GROUP_WHERE', () => {
+  it('gates on isActive', () => {
+    expect(PUBLIC_GROUP_WHERE.isActive).toBe(true);
+  });
+
+  it('accepts an owner who is live, or an admin', () => {
+    expect(PUBLIC_GROUP_WHERE.owner.OR).toEqual([
+      { role: 'ADMIN' },
+      { subscriptionStatus: { in: ['active', 'trialing', 'past_due'] } },
+    ]);
+  });
+});
+
+describe('user.nursery.controller.ts — group queries', () => {
+  const queriesGroups = (body: string): boolean =>
+    /\.group\.(findMany|findFirst|findUnique|count)/.test(body);
+
+  it('finds the public group queries at all, so this test cannot pass vacuously', () => {
+    const withQueries = exportedBlocks(source).filter((b) => queriesGroups(b.body));
+    expect(withQueries.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it('uses the shared filter in every public group query', () => {
+    const offenders = exportedBlocks(source)
+      .filter((b) => queriesGroups(b.body))
+      .filter(
+        (b) =>
+          (b.body.match(/PUBLIC_GROUP_WHERE/g) ?? []).length < 1
+      )
+      .map((b) => b.name);
+
+    expect(
+      offenders,
+      'These queries hand-roll their own group filter. A lapsed owner\u2019s ' +
+        'group page stays live through every one of them.'
+    ).toEqual([]);
   });
 });

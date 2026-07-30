@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../config/database';
 import { NotFoundError } from '../utils';
-import { PUBLIC_NURSERY_WHERE } from '../utils/public-visibility';
+import { PUBLIC_NURSERY_WHERE, PUBLIC_GROUP_WHERE } from '../utils/public-visibility';
 
 // Get all nursery groups (public - for nursery-group page)
 export const getAllGroups = async (
@@ -12,8 +12,8 @@ export const getAllGroups = async (
   try {
     const { city } = req.query;
     
-    const where: any = { 
-      isActive: true 
+    const where: any = {
+      ...PUBLIC_GROUP_WHERE,
     };
 
     // Filter by city or town if provided
@@ -62,9 +62,9 @@ export const getGroupBySlug = async (
     const { slug } = req.params;
 
     const group = await prisma.group.findFirst({
-      where: { 
+      where: {
         slug,
-        isActive: true 
+        ...PUBLIC_GROUP_WHERE,
       },
       select: {
         id: true,
@@ -119,7 +119,7 @@ export const autocompleteSearch = async (
     // Search for matching groups
     const groups = await prisma.group.findMany({
       where: {
-        isActive: true,
+        ...PUBLIC_GROUP_WHERE,
         OR: [
           { name: { contains: searchTerm, mode: 'insensitive' } },
           { city: { contains: searchTerm, mode: 'insensitive' } },
@@ -361,10 +361,10 @@ export const searchNurseries = async (
       take: 10,
     });
 
-    // Search groups 
+    // Search groups
     const groups = await prisma.group.findMany({
       where: {
-        isActive: true,
+        ...PUBLIC_GROUP_WHERE,
         OR: [
           { name: { contains: searchTerm, mode: 'insensitive' } },
           { city: { contains: searchTerm, mode: 'insensitive' } },
@@ -429,7 +429,7 @@ export const searchByCity = async (
     // Get 2 groups in the city
     const groups = await prisma.group.findMany({
       where: {
-        isActive: true,
+        ...PUBLIC_GROUP_WHERE,
         city: { equals: city, mode: 'insensitive' },
       },
       select: {

@@ -164,12 +164,15 @@ function UpgradeContent() {
   // Step two. Charges the card on file. There is no redirect, so on success
   // the page goes straight to the state it would otherwise have returned to.
   const handleConfirm = async () => {
-    if (!previewFor) return;
+    // The quote itself is now part of what confirm sends: the server prices
+    // against the second the preview was taken, so `preview` is as required
+    // here as `previewFor` is.
+    if (!preview || !previewFor) return;
     const { billing, count } = previewFor;
 
     setLoading(true);
     try {
-      const res = await authService.applyChange('platinum', billing, count);
+      const res = await authService.applyChange('platinum', billing, count, preview.prorationDate);
       if (res.success && res.data) {
         setNewPlanLabel(planLabel(res.data.planTier, res.data.paidNurseryCount));
         setStatus('success');
@@ -186,6 +189,14 @@ function UpgradeContent() {
           window.location.href = session.url;
           return;
         }
+      }
+      // A quote goes stale after fifteen minutes, so anyone who leaves this
+      // screen open lands here. Drop the quote before showing the error: "Try
+      // Again" returns to the idle state, and it must re-price rather than
+      // resubmit a timestamp the server has already refused.
+      if (err?.code === 'PREVIEW_EXPIRED') {
+        setPreview(null);
+        setPreviewFor(null);
       }
       setErrorMsg(err?.message || 'Could not reach the server. Please try again.');
       setStatus('error');
@@ -225,8 +236,13 @@ function UpgradeContent() {
               <div className="flex items-baseline justify-between px-4 py-4">
                 <span className="text-sm text-gray-600">Next payment</span>
                 <span className="text-base font-semibold text-gray-800">
+                  {/* Pinned to London: a billing date rendered in the
+                      browser's own zone shows the previous day to anyone
+                      west of the UK, on a screen that is about to charge
+                      their card. */}
                   {new Date(preview.nextRenewalDate).toLocaleDateString('en-GB', {
                     day: 'numeric', month: 'long', year: 'numeric',
+                    timeZone: 'Europe/London',
                   })}
                 </span>
               </div>

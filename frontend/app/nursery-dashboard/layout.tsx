@@ -1,6 +1,7 @@
 'use client';
 
 
+import BillingStatusBanner from '@/components/nursery-dashboard-panel/billing-status-banner';
 import Header from '@/components/nursery-dashboard-panel/header';
 import Sidebar from '@/components/nursery-dashboard-panel/sidebar';
 import React, { useState } from 'react';
@@ -29,7 +30,13 @@ export default function ParentDashboardLayout({ children }  : { children: React.
       <div className="flex flex-col flex-1 overflow-hidden">
         <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
         <main className="pl-12 pr-6 py-5 max-md:px-6 max-sm:px-6 md:pl-0 flex-1 overflow-y-auto">
-          {children} {/* ✅ This is what you want */}
+          {/* Above every section rather than on one page: a lapsed owner is
+              most likely to notice on whichever screen just stopped working,
+              and the explanation has to be there too. It renders nothing
+              while entitlements are loading and nothing for a healthy plan,
+              so the sections below are unaffected in the normal case. */}
+          <BillingStatusBanner />
+          {children}
         </main>
       </div>
     </div>

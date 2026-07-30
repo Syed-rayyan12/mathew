@@ -17,8 +17,17 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
   // Jobs is a Platinum feature — the server decides, not localStorage. While
   // the answer is in flight, show neither the links nor the upsell rather
   // than flashing "locked" at an owner who is not.
-  const canPostJobs = entitlements?.features.jobs ?? false;
+  //
+  // `features` answers only "was Platinum bought", so it has to be combined
+  // with liveness the same way usePlanFeatures does it. Without the AND, a
+  // lapsed Platinum owner keeps a working-looking Jobs section and never sees
+  // the upsell that would explain why every link behind it 403s.
+  const live = entitlements?.isLive ?? false;
+  const canPostJobs = live && (entitlements?.features.jobs ?? false);
   const planLabel = entitlements?.planLabel ?? 'Single Standard';
+  // Never subscribed is a different conversation from stopped paying, and
+  // "Upgrade to Platinum" is nonsense to someone who already bought Platinum.
+  const lapsed = !live && (entitlements?.subscriptionStatus ?? 'none') !== 'none';
 
   const baseLinks = [
     { name: 'Management Nurseries', href: '/nursery-dashboard' },
@@ -107,7 +116,7 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
                   <div
                     key={link.href}
                     className="px-4 py-2 rounded-lg text-gray-300 flex items-center gap-2 cursor-not-allowed select-none"
-                    title="Available on Platinum plan"
+                    title={lapsed ? 'Your plan has ended' : 'Available on Platinum plan'}
                   >
                     <Lock size={12} /> {link.name}
                   </div>
@@ -118,30 +127,36 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
                   className="mt-1 mx-1 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-yellow-700 bg-yellow-50 hover:bg-yellow-100 border border-yellow-200 transition"
                 >
                   <Zap size={11} className="fill-yellow-500 text-yellow-500" />
-                  Upgrade to unlock
+                  {lapsed ? 'Renew to unlock' : 'Upgrade to unlock'}
                 </Link>
               </>
             )}
           </div>
         </nav>
 
-        {/* Upgrade banner — only once we know the plan, and only if it lacks Jobs */}
+        {/* Upgrade banner — only once we know the plan, and only if it lacks
+            Jobs. A lapsed account is not being sold anything new, so it gets
+            the plan it already paid for and a route back to it. */}
         {!loading && !canPostJobs && (
           <div className="mt-auto pt-4">
             <div className="rounded-xl bg-gradient-to-br from-yellow-50 to-amber-50 border border-yellow-200 p-4 flex flex-col gap-2">
               <div className="flex items-center gap-2">
                 <Zap size={16} className="fill-yellow-500 text-yellow-500 shrink-0" />
-                <p className="text-xs font-semibold text-yellow-800">You&apos;re on {planLabel}</p>
+                <p className="text-xs font-semibold text-yellow-800">
+                  {lapsed ? `Your ${planLabel} plan has ended` : `You're on ${planLabel}`}
+                </p>
               </div>
               <p className="text-xs text-yellow-700 leading-snug">
-                Unlock job postings, applicant management & more.
+                {lapsed
+                  ? 'Restart your plan to put your nurseries back on the site and get your features back.'
+                  : 'Unlock job postings, applicant management & more.'}
               </p>
               <Link
                 href="/nursery-dashboard/upgrade"
                 onClick={() => setIsOpen(false)}
                 className="mt-1 w-full text-center text-xs font-semibold py-2 rounded-lg bg-yellow-400 hover:bg-yellow-500 text-yellow-900 transition"
               >
-                Upgrade to Platinum
+                {lapsed ? 'Restart your plan' : 'Upgrade to Platinum'}
               </Link>
             </div>
           </div>

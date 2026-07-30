@@ -102,18 +102,40 @@ export function usePlanFeatures() {
   const features = data?.features;
   const allowance = data?.allowance ?? EMPTY_ALLOWANCE;
 
+  /**
+   * The server reports what was bought and whether it is paid for as two
+   * separate answers, and expects the caller to combine them: `features`
+   * describes the purchased tier alone, while `requireFeature` 403s
+   * SUBSCRIPTION_INACTIVE before it ever reaches the feature check. Ungated,
+   * a lapsed Platinum owner would see the whole Platinum dashboard and get a
+   * 403 from every button on it.
+   *
+   * Unknown is never treated as paid, matching isLive() on the server.
+   */
+  const live = data?.isLive ?? false;
+
   return {
+    // Deliberately not live-gated. These describe the plan the owner bought,
+    // which is what the billing banner needs in order to say "your Group of 8
+    // has lapsed" rather than demoting them to a plan they never held.
     plan: data?.planTier ?? ('standard' as NurseryPlan),
     planLabel: data?.planLabel ?? 'Single Standard',
     isGroup: data?.isGroup ?? false,
     loading,
     refresh,
-    canPostJobs: features?.jobs ?? false,
-    canUploadVideo: features?.video ?? false,
-    canManageTeamMembers: features?.teamMembers ?? false,
-    canApproveRejectReviews: features?.reviewModeration ?? false,
+    canPostJobs: live && (features?.jobs ?? false),
+    canUploadVideo: live && (features?.video ?? false),
+    canManageTeamMembers: live && (features?.teamMembers ?? false),
+    canApproveRejectReviews: live && (features?.reviewModeration ?? false),
     allowance,
     /** The server 403s on the way past this; it only saves a round trip. */
-    canAddNursery: allowance.remaining > 0,
+    canAddNursery: live && allowance.remaining > 0,
+    // The billing state itself, so a call site can tell "you have never
+    // subscribed" apart from "your plan has ended" and word its prompt to
+    // match.
+    isLive: live,
+    subscriptionStatus: data?.subscriptionStatus ?? 'none',
+    currentPeriodEnd: data?.currentPeriodEnd ?? null,
+    cancelAt: data?.cancelAt ?? null,
   };
 }

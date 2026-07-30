@@ -88,6 +88,8 @@ export interface ChangePreview {
   intervalChanges: boolean;
   currency: string;
   targetLabel: string;
+  /** A2: the second the quote was priced at. Must be handed back to apply-change. */
+  prorationDate: number;
 }
 
 export interface ChangeResult {
@@ -200,14 +202,21 @@ export const authService = {
   },
 
   // Commit the change. Charges the card on file — there is no Stripe redirect.
+  //
+  // prorationDate comes from the preview response and is required, not
+  // optional: the server rejects anything that is not a finite integer with
+  // 409 PREVIEW_EXPIRED, so an omitted timestamp fails every single call. No
+  // caller legitimately reaches this without a quote in hand, and making the
+  // parameter optional is exactly how that breakage went unnoticed.
   applyChange: async (
     planTier: 'standard' | 'platinum',
     billingPeriod: 'monthly' | 'annual',
-    nurseryCount: number
+    nurseryCount: number,
+    prorationDate: number
   ): Promise<ApiResponse<ChangeResult>> => {
     const response = await nurseryApiClient.post<ChangeResult>(
       '/stripe/apply-change',
-      { plan: planTier, billingPeriod, nurseryCount },
+      { plan: planTier, billingPeriod, nurseryCount, prorationDate },
       true
     );
     if (response.success && response.data?.planTier) {

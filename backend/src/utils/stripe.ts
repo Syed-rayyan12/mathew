@@ -83,10 +83,6 @@ function readTiers(price: Stripe.Price): StripeTier[] {
 /**
  * Guards that a catalogue Price matches what pricing.ts says.
  *
- * Thrown rather than repaired: a Price cannot be edited once created, so the
- * only honest repair is a version bump, which is a human decision. Blocking
- * checkout is the safe failure — charging the wrong amount (or name) is not.
- *
  * Exported so tests can exercise it directly without Stripe I/O.
  */
 export function verifyPrice(
@@ -104,7 +100,7 @@ export function verifyPrice(
   if (actualProductId !== expectedProductId) {
     throw new PriceCatalogueError(
       `Stripe price ${key} is on product ${actualProductId}, expected ${expectedProductId}. ` +
-        'Bump PRICE_VERSION rather than editing the price.'
+        'Restore the Product in Stripe rather than minting new Prices.'
     );
   }
 
@@ -116,9 +112,8 @@ export function verifyPrice(
       `Stripe price ${key} renews every ${price.recurring?.interval ?? 'never'}, expected ${interval}.`
     );
   }
-  // interval_count: 1 means monthly/yearly; a value of 3 with interval 'month'
-  // would mean quarterly and bills the wrong amount.
-  if ((price.recurring?.interval_count ?? 1) !== 1) {
+  // A value of 3 with interval 'month' would mean quarterly and bills the wrong amount.
+  if (price.recurring?.interval_count !== 1) {
     throw new PriceCatalogueError(
       `Stripe price ${key} has interval_count ${price.recurring?.interval_count}, expected 1. ` +
         'Bump PRICE_VERSION rather than editing the price.'
@@ -134,8 +129,10 @@ export function verifyPrice(
     // pricing.ts never emits one, so any flat_amount in the catalogue is drift.
     for (const t of price.tiers ?? []) {
       if (t.flat_amount != null || t.flat_amount_decimal != null) {
+        const upTo = t.up_to === null ? 'inf' : t.up_to;
+        const amount = t.flat_amount ?? t.flat_amount_decimal;
         throw new PriceCatalogueError(
-          `Stripe price ${key} has a flat_amount on a tier, which pricing.ts does not emit. ` +
+          `Stripe price ${key} tier up_to=${upTo} has flat_amount ${amount}, which pricing.ts does not emit. ` +
             'Bump PRICE_VERSION rather than editing the price.'
         );
       }

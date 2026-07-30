@@ -16,9 +16,51 @@ import { getStripe } from '../utils/stripe';
 import { parseLookupKey } from '../utils/pricing';
 import { planLabel } from '../utils/entitlements';
 
-export function lookupKeyOf(line: Stripe.InvoiceLineItem | null): string | null {
-  const pricing = (line as any)?.pricing?.price_details;
-  return (line as any)?.price?.lookup_key ?? pricing?.lookup_key ?? null;
+/**
+ * Resolves price ids to lookup keys.
+ *
+ * This API version (basil) leaves only a bare id string on
+ * line.pricing.price_details.price — the Price object is not embedded in list
+ * responses. Expanding four levels into a list response
+ * (data.lines.data.pricing.price_details.price) is not reliable and Stripe
+ * caps expansion depth, so we resolve ids through this catalogue map instead.
+ *
+ * Archived prices are included because grandfathered subscribers are on them:
+ * parseLookupKey deliberately tolerates any version suffix, so a v1 price that
+ * has since been superseded by v2 still maps correctly.
+ */
+export async function buildPriceKeyMap(): Promise<Map<string, string>> {
+  const stripe = getStripe();
+  const map = new Map<string, string>();
+  let startingAfter: string | undefined;
+
+  do {
+    const page = await stripe.prices.list({
+      limit: 100,
+      starting_after: startingAfter,
+    });
+    for (const price of page.data) {
+      if (price.lookup_key != null) {
+        map.set(price.id, price.lookup_key);
+      }
+    }
+    startingAfter = page.has_more ? page.data[page.data.length - 1]?.id : undefined;
+  } while (startingAfter);
+
+  return map;
+}
+
+export function lookupKeyOf(
+  line: Stripe.InvoiceLineItem | null,
+  priceKeyMap: Map<string, string>
+): string | null {
+  const priceField = line?.pricing?.price_details?.price;
+  if (priceField == null) return null;
+  if (typeof priceField === 'string') {
+    return priceKeyMap.get(priceField) ?? null;
+  }
+  // Expanded Stripe.Price object
+  return priceField.lookup_key ?? null;
 }
 
 /**
@@ -35,15 +77,18 @@ export function lookupKeyOf(line: Stripe.InvoiceLineItem | null): string | null 
  * .filter in listPaymentHistory — so nothing outside this application can
  * accidentally become the plan name.
  */
-export function planLine(lines: Stripe.InvoiceLineItem[]): Stripe.InvoiceLineItem | null {
-  const parseable = lines.filter((l) => parseLookupKey(lookupKeyOf(l)) !== null);
+export function planLine(
+  lines: Stripe.InvoiceLineItem[],
+  priceKeyMap: Map<string, string>
+): Stripe.InvoiceLineItem | null {
+  const parseable = lines.filter((l) => parseLookupKey(lookupKeyOf(l, priceKeyMap)) !== null);
   if (parseable.length === 0) return null;
   return parseable.reduce((best, l) => (l.amount > best.amount ? l : best));
 }
 
-function formatInvoice(invoice: Stripe.Invoice) {
-  const line = planLine(invoice.lines?.data ?? []);
-  const parsed = parseLookupKey(lookupKeyOf(line));
+function formatInvoice(invoice: Stripe.Invoice, priceKeyMap: Map<string, string>) {
+  const line = planLine(invoice.lines?.data ?? [], priceKeyMap);
+  const parsed = parseLookupKey(lookupKeyOf(line, priceKeyMap));
   const quantity = line?.quantity ?? 1;
 
   return {
@@ -76,6 +121,11 @@ export const listPaymentHistory = async (
 ) => {
   try {
     const stripe = getStripe();
+
+    // Build the price catalogue map once per request so all invoices and all
+    // lines within each invoice share a consistent view of id → lookup_key.
+    const priceKeyMap = await buildPriceKeyMap();
+
     const invoices: Stripe.Invoice[] = [];
     let startingAfter: string | undefined;
 
@@ -93,8 +143,8 @@ export const listPaymentHistory = async (
     // what someone is looking for when they open this table.
     const payments = invoices
       .filter((invoice) => invoice.status !== 'draft')
-      .filter((invoice) => planLine(invoice.lines?.data ?? []) !== null)
-      .map(formatInvoice);
+      .filter((invoice) => planLine(invoice.lines?.data ?? [], priceKeyMap) !== null)
+      .map((invoice) => formatInvoice(invoice, priceKeyMap));
 
     res.json({ success: true, data: payments });
   } catch (error) {

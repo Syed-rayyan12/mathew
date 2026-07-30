@@ -186,7 +186,7 @@ describe('verifyPrice (C2)', () => {
   it('throws when the price is on the wrong product', () => {
     expect(() =>
       verifyPrice(makeStandardPrice({ product: 'prod_wrong' }), 'standard', 'monthly', 'prod_standard')
-    ).toThrow(PriceCatalogueError);
+    ).toThrow(/prod_wrong.*prod_standard|Restore the Product/);
   });
 
   it('tolerates an expanded product object by reading .id', () => {
@@ -208,10 +208,10 @@ describe('verifyPrice (C2)', () => {
         'monthly',
         'prod_standard'
       )
-    ).toThrow(PriceCatalogueError);
+    ).toThrow(/interval_count/);
   });
 
-  it('throws when a platinum tier carries a flat_amount', () => {
+  it('throws when a platinum tier carries a flat_amount, naming the tier and amount', () => {
     const tiersWithFlat = toStripeTiers(GROUP_BANDS, 'monthly').map((t, i) => ({
       up_to: t.up_to === 'inf' ? null : t.up_to,
       unit_amount: t.unit_amount,
@@ -220,10 +220,10 @@ describe('verifyPrice (C2)', () => {
     }));
     expect(() =>
       verifyPrice(makePlatinumPrice({ tiers: tiersWithFlat }), 'platinum', 'monthly', 'prod_platinum')
-    ).toThrow(PriceCatalogueError);
+    ).toThrow(/flat_amount 500/);
   });
 
-  it('throws when a platinum tier carries a flat_amount_decimal', () => {
+  it('throws when a platinum tier carries a flat_amount_decimal, naming the tier and amount', () => {
     const tiersWithFlat = toStripeTiers(GROUP_BANDS, 'monthly').map((t, i) => ({
       up_to: t.up_to === 'inf' ? null : t.up_to,
       unit_amount: t.unit_amount,
@@ -232,6 +232,6 @@ describe('verifyPrice (C2)', () => {
     }));
     expect(() =>
       verifyPrice(makePlatinumPrice({ tiers: tiersWithFlat }), 'platinum', 'monthly', 'prod_platinum')
-    ).toThrow(PriceCatalogueError);
+    ).toThrow(/flat_amount 250\.5/);
   });
 });

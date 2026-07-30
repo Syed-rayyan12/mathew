@@ -1,12 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import {
-  normaliseTier,
-  isGroup,
-  planLabel,
-  features,
   allowance,
   canAddNursery,
+  features,
+  isGroup,
+  isLive,
+  normaliseTier,
+  paidCount,
   planFromMetadata,
+  planLabel,
 } from './entitlements';
 import { quote } from './pricing';
 
@@ -97,15 +99,15 @@ describe('allowance', () => {
 
 describe('canAddNursery', () => {
   it('allows up to the paid count and no further', () => {
-    expect(canAddNursery(single('standard', 1), 0)).toBe(true);
-    expect(canAddNursery(single('standard', 1), 1)).toBe(false);
-    expect(canAddNursery(single('platinum', 3), 2)).toBe(true);
-    expect(canAddNursery(single('platinum', 3), 3)).toBe(false);
-    expect(canAddNursery(single('platinum', 3), 4)).toBe(false);
+    expect(canAddNursery({ ...single('standard', 1), subscriptionStatus: 'active' }, 0)).toBe(true);
+    expect(canAddNursery({ ...single('standard', 1), subscriptionStatus: 'active' }, 1)).toBe(false);
+    expect(canAddNursery({ ...single('platinum', 3), subscriptionStatus: 'active' }, 2)).toBe(true);
+    expect(canAddNursery({ ...single('platinum', 3), subscriptionStatus: 'active' }, 3)).toBe(false);
+    expect(canAddNursery({ ...single('platinum', 3), subscriptionStatus: 'active' }, 4)).toBe(false);
   });
 
   it('blocks an unpaid account entirely', () => {
-    expect(canAddNursery({ planTier: 'standard', paidNurseryCount: 0 }, 0)).toBe(false);
+    expect(canAddNursery({ planTier: 'standard', paidNurseryCount: 0, subscriptionStatus: 'active' }, 0)).toBe(false);
   });
 });
 
@@ -151,5 +153,58 @@ describe('planFromMetadata', () => {
     for (const raw of ['', 'abc', '0', '-3', '2.5', undefined]) {
       expect(planFromMetadata({ plan: 'platinum', nurseryCount: raw }).count).toBe(1);
     }
+  });
+});
+
+describe('isLive', () => {
+  it('is true for the three statuses that keep a listing up', () => {
+    expect(isLive({ subscriptionStatus: 'active' })).toBe(true);
+    expect(isLive({ subscriptionStatus: 'trialing' })).toBe(true);
+    expect(isLive({ subscriptionStatus: 'past_due' })).toBe(true);
+  });
+
+  it('is false for every status Stripe uses that does not', () => {
+    for (const status of [
+      'incomplete',
+      'incomplete_expired',
+      'canceled',
+      'unpaid',
+      'paused',
+    ]) {
+      expect(isLive({ subscriptionStatus: status }), status).toBe(false);
+    }
+  });
+
+  it('is false for an account that has never subscribed', () => {
+    expect(isLive({ subscriptionStatus: 'none' })).toBe(false);
+    expect(isLive({ subscriptionStatus: null })).toBe(false);
+    expect(isLive({ subscriptionStatus: '' })).toBe(false);
+  });
+
+  it('is false for anything unrecognised, rather than assuming paid', () => {
+    expect(isLive({ subscriptionStatus: 'ACTIVE' })).toBe(false);
+    expect(isLive({ subscriptionStatus: 'live' })).toBe(false);
+    expect(isLive({ subscriptionStatus: 'active ' })).toBe(false);
+  });
+});
+
+describe('canAddNursery composition', () => {
+  const group = { planTier: 'platinum', paidNurseryCount: 8 };
+
+  it('allows a nursery when there is headroom and the plan is paid for', () => {
+    expect(canAddNursery({ ...group, subscriptionStatus: 'active' }, 3)).toBe(true);
+  });
+
+  it('refuses when the plan is not paid for, even with headroom', () => {
+    expect(canAddNursery({ ...group, subscriptionStatus: 'canceled' }, 3)).toBe(false);
+    expect(canAddNursery({ ...group, subscriptionStatus: 'none' }, 0)).toBe(false);
+  });
+
+  it('refuses when there is no headroom, even while paid for', () => {
+    expect(canAddNursery({ ...group, subscriptionStatus: 'active' }, 8)).toBe(false);
+  });
+
+  it('still allows during the past_due retry window', () => {
+    expect(canAddNursery({ ...group, subscriptionStatus: 'past_due' }, 3)).toBe(true);
   });
 });

@@ -39,6 +39,26 @@ export interface Allowance {
   remaining: number;
 }
 
+/**
+ * The statuses that keep a listing on the site.
+ *
+ * past_due is here on purpose. Stripe's card retries run for roughly three
+ * weeks, and an expired card should not pull a nursery off the site before
+ * anyone has had a chance to fix it. The dashboard warns during that window.
+ */
+export const LIVE_SUBSCRIPTION_STATUSES = ['active', 'trialing', 'past_due'] as const;
+
+export interface BillingAccount {
+  subscriptionStatus: string | null;
+}
+
+/** Is this account currently paid for? Unknown is never treated as paid. */
+export function isLive(account: BillingAccount): boolean {
+  return (LIVE_SUBSCRIPTION_STATUSES as readonly string[]).includes(
+    account.subscriptionStatus ?? ''
+  );
+}
+
 /** Anything unrecognised is standard. Unknown must never grant platinum. */
 export function normaliseTier(tier: string | null | undefined): PlanTier {
   return tier === 'platinum' ? 'platinum' : 'standard';
@@ -80,8 +100,17 @@ export function allowance(account: PlanAccount, usedCount: number): Allowance {
   return { paid, used, remaining: Math.max(0, paid - used) };
 }
 
-export function canAddNursery(account: PlanAccount, usedCount: number): boolean {
-  return allowance(account, usedCount).remaining > 0;
+/**
+ * Both questions at once: is there headroom, and is the plan paid for.
+ *
+ * The AND lives here rather than inside allowance() so that admin can still
+ * see that a lapsed account bought eight nurseries.
+ */
+export function canAddNursery(
+  account: PlanAccount & BillingAccount,
+  usedCount: number
+): boolean {
+  return isLive(account) && allowance(account, usedCount).remaining > 0;
 }
 
 /**

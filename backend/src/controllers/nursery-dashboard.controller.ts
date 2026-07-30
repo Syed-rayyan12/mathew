@@ -158,8 +158,11 @@ export const createNursery = async (
     // put the account over its allowance.
     try {
       const newNursery = await prisma.$transaction(async (tx: any) => {
-        const locked: Array<{ planTier: string; paidNurseryCount: number }> =
-          await tx.$queryRaw`SELECT "planTier", "paidNurseryCount" FROM "users" WHERE "id" = ${userId} FOR UPDATE`;
+        const locked: Array<{
+          planTier: string;
+          paidNurseryCount: number;
+          subscriptionStatus: string;
+        }> = await tx.$queryRaw`SELECT "planTier", "paidNurseryCount", "subscriptionStatus" FROM "users" WHERE "id" = ${userId} FOR UPDATE`;
 
         const account = locked[0];
         if (!account) {

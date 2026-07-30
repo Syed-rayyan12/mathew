@@ -3316,8 +3316,8 @@ backfill, run this against the production database and read the output:
 SELECT u.id, u.email, u.role, u."planTier", u."paidNurseryCount",
        u."stripeSubscriptionId", u."subscriptionStatus",
        COUNT(n.id) AS nurseries
-FROM "User" u
-LEFT JOIN "Nursery" n ON n."ownerId" = u.id
+FROM "users" u
+LEFT JOIN "nurseries" n ON n."ownerId" = u.id
 WHERE u.role IN ('ADMIN', 'NURSERY_OWNER')
 GROUP BY u.id
 ORDER BY nurseries DESC;
@@ -3351,12 +3351,12 @@ Create `backend/prisma/migrations/20260731000100_backfill_subscription_status/mi
 -- These accounts have no Stripe subscription behind them. They are marked
 -- 'active' as a deliberate manual grant, not as a mirror of Stripe, and no
 -- webhook will ever move them because stripeSubscriptionId is null.
-UPDATE "User" u
+UPDATE "users" u
 SET "subscriptionStatus" = 'active'
 WHERE u.role = 'NURSERY_OWNER'
   AND u."subscriptionStatus" = 'none'
   AND EXISTS (
-    SELECT 1 FROM "Nursery" n
+    SELECT 1 FROM "nurseries" n
     WHERE n."ownerId" = u.id AND n."isApproved" = true
   );
 ```
@@ -3377,8 +3377,8 @@ Run this against the same database before and after applying. The "after"
 number is what the public site will show:
 
 ```sql
-SELECT COUNT(*) FROM "Nursery" n
-JOIN "User" u ON u.id = n."ownerId"
+SELECT COUNT(*) FROM "nurseries" n
+JOIN "users" u ON u.id = n."ownerId"
 WHERE n."isApproved" = true
   AND (u.role = 'ADMIN' OR u."subscriptionStatus" IN ('active','trialing','past_due'));
 ```
@@ -3386,7 +3386,7 @@ WHERE n."isApproved" = true
 Compare it against the current public total:
 
 ```sql
-SELECT COUNT(*) FROM "Nursery" WHERE "isApproved" = true;
+SELECT COUNT(*) FROM "nurseries" WHERE "isApproved" = true;
 ```
 
 A shortfall is the number of listings about to disappear. It should be zero,
@@ -3452,7 +3452,7 @@ In the database:
 ```sql
 SELECT "planTier", "paidNurseryCount", "subscriptionStatus",
        "stripeCustomerId", "stripeSubscriptionId", "currentPeriodEnd"
-FROM "User" WHERE email = '<the new owner>';
+FROM "users" WHERE email = '<the new owner>';
 ```
 
 Expected: `standard`, `1`, `active`, all three Stripe fields populated,

@@ -1,28 +1,32 @@
 /**
  * Single source of truth for what a nursery listing costs.
  *
- * Two plans, shown to users as "Single" and "Group". The internal keys stay
- * `standard` / `platinum` because they are written into Stripe product
- * metadata and the User.plan column — renaming them would orphan live
- * subscriptions for the sake of a label.
+ * Three products:
  *
- *   Single (standard)  — one nursery only, £23.95/mo, no banding
- *   Group  (platinum)  — two or more, with a volume discount by group size
+ *   Single Standard  — one nursery, £23.95/mo
+ *   Single Platinum  — one nursery, £38.60/mo
+ *   Group            — two or more, Platinum features at a volume discount
  *
- * The group price is a per-nursery rate that steps down as the group grows.
- * The total is simply rate x number of nurseries. Annual is the monthly rate
- * x 12; paying yearly earns no further discount.
+ * "Group" is not a tier of its own. It is the Platinum tier bought for more
+ * than one nursery, which is why the band rates are 10/20/30/40% off the
+ * single Platinum rate. There is no Standard group.
+ *
+ * The total is the per-nursery rate times the nursery count. Annual is the
+ * monthly rate x 12; paying yearly earns no further discount.
  *
  * Prices are in pence to keep away from floating point — Stripe wants pence
  * anyway. The frontend mirrors this table for display only; this file is what
  * actually gets charged.
  */
 
-export type PlanKey = 'standard' | 'platinum';
+export type PlanTier = 'standard' | 'platinum';
 export type BillingPeriod = 'monthly' | 'annual';
 
-/** Per-nursery monthly rate for a single-site listing. */
-export const SINGLE_MONTHLY_PENCE = 2395;
+/** One nursery, standard features. */
+export const SINGLE_STANDARD_MONTHLY_PENCE = 2395;
+
+/** One nursery, platinum features. The base the group bands discount from. */
+export const SINGLE_PLATINUM_MONTHLY_PENCE = 3860;
 
 /** Group size at or above which pricing is negotiated rather than self-serve. */
 export const BESPOKE_THRESHOLD = 61;
@@ -30,7 +34,7 @@ export const BESPOKE_THRESHOLD = 61;
 /** The smallest group. One nursery is a Single, not a Group. */
 export const MIN_GROUP_SIZE = 2;
 
-interface GroupBand {
+export interface GroupBand {
   min: number;
   max: number;
   /** Per-nursery monthly rate, in pence. */
@@ -51,7 +55,7 @@ export function findGroupBand(nurseryCount: number): GroupBand | null {
 }
 
 export interface PriceQuote {
-  planKey: PlanKey;
+  tier: PlanTier;
   billing: BillingPeriod;
   /** How many nurseries this subscription covers. */
   quantity: number;
@@ -60,6 +64,8 @@ export interface PriceQuote {
   /** unitAmountPence x quantity. */
   totalPence: number;
   discountPercent: number;
+  /** Derived, never stored: two or more nurseries is a Group. */
+  isGroup: boolean;
 }
 
 export class PricingError extends Error {}
@@ -69,7 +75,7 @@ export class PricingError extends Error {}
  * a wrong price is worse than a failed checkout.
  */
 export function quote(
-  planKey: PlanKey,
+  tier: PlanTier,
   billing: BillingPeriod,
   nurseryCount: number
 ): PriceQuote {
@@ -79,18 +85,18 @@ export function quote(
 
   let unitMonthlyPence: number;
   let discountPercent: number;
+  const isGroup = nurseryCount >= MIN_GROUP_SIZE;
 
-  if (planKey === 'standard') {
-    if (nurseryCount !== 1) {
-      throw new PricingError(
-        'The Single plan covers one nursery. Please choose the Group plan for more than one.'
-      );
-    }
-    unitMonthlyPence = SINGLE_MONTHLY_PENCE;
+  if (!isGroup) {
+    unitMonthlyPence =
+      tier === 'platinum' ? SINGLE_PLATINUM_MONTHLY_PENCE : SINGLE_STANDARD_MONTHLY_PENCE;
     discountPercent = 0;
   } else {
-    if (nurseryCount < MIN_GROUP_SIZE) {
-      throw new PricingError('The Group plan starts at two nurseries.');
+    if (tier !== 'platinum') {
+      throw new PricingError(
+        'A Group covers two or more nurseries and includes Platinum features. ' +
+          'The Standard plan is for a single nursery.'
+      );
     }
     if (nurseryCount >= BESPOKE_THRESHOLD) {
       throw new PricingError(
@@ -112,36 +118,37 @@ export function quote(
     billing === 'annual' ? unitMonthlyPence * 12 : unitMonthlyPence;
 
   return {
-    planKey,
+    tier,
     billing,
     quantity: nurseryCount,
     unitAmountPence,
     totalPence: unitAmountPence * nurseryCount,
     discountPercent,
+    isGroup,
   };
 }
 
 const formatGbp = (pence: number) => `£${(pence / 100).toFixed(2)}`;
 
-/** Line item label and description shown on Stripe Checkout and the invoice. */
+/** Line item label and invoice description shown to the customer. */
 export function describeQuote(q: PriceQuote): { label: string; description: string } {
-  const planLabel = q.planKey === 'standard' ? 'Single' : 'Group';
+  const productLabel = q.isGroup
+    ? `Group Nursery Listing (${q.quantity} nurseries)`
+    : q.tier === 'platinum'
+      ? 'Single Platinum Nursery Listing'
+      : 'Single Standard Nursery Listing';
   const periodLabel = q.billing === 'annual' ? 'Annual' : 'Monthly';
   const perNursery = formatGbp(q.unitAmountPence);
   const total = formatGbp(q.totalPence);
   const per = q.billing === 'annual' ? 'year' : 'month';
 
-  const sites =
-    q.quantity === 1 ? '1 nursery' : `${q.quantity} nurseries`;
+  const sites = q.quantity === 1 ? '1 nursery' : `${q.quantity} nurseries`;
   const discountNote =
     q.discountPercent > 0 ? ` Includes a ${q.discountPercent}% group discount.` : '';
-  const annualNote =
-    q.billing === 'annual'
-      ? ' Paid upfront each year.'
-      : '';
+  const annualNote = q.billing === 'annual' ? ' Paid upfront each year.' : '';
 
   return {
-    label: `${planLabel} Nursery Listing – ${periodLabel}`,
+    label: `${productLabel} – ${periodLabel}`,
     description:
       `${sites} at ${perNursery} per nursery per ${per} — ${total} per ${per}.` +
       `${discountNote}${annualNote}` +

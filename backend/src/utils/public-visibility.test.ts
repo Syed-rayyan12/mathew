@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { PUBLIC_NURSERY_WHERE, PUBLIC_GROUP_WHERE } from './public-visibility';
+import { PUBLIC_NURSERY_WHERE, PUBLIC_GROUP_WHERE, PUBLIC_JOB_WHERE } from './public-visibility';
 
 // process.cwd(), not __dirname — vitest transforms to ESM, where __dirname
 // does not exist regardless of what tsconfig says. Vitest runs from backend/.
@@ -139,6 +139,67 @@ describe('user.nursery.controller.ts — group queries', () => {
       offenders,
       'These queries hand-roll their own group filter. A lapsed owner\u2019s ' +
         'group page stays live through every one of them.'
+    ).toEqual([]);
+  });
+});
+
+// ── Job visibility ────────────────────────────────────────────────────────────
+
+describe('PUBLIC_JOB_WHERE', () => {
+  it('gates on isActive', () => {
+    expect(PUBLIC_JOB_WHERE.isActive).toBe(true);
+  });
+
+  it('admits a null poster (platform-posted adverts and deleted-account adverts)', () => {
+    const nullArm = PUBLIC_JOB_WHERE.OR[0] as { postedBy: { is: null } };
+    expect(nullArm.postedBy.is).toBeNull();
+  });
+
+  it('admits an ADMIN poster', () => {
+    const posterArm = PUBLIC_JOB_WHERE.OR[1] as {
+      postedBy: { is: { OR: { role?: string }[] } };
+    };
+    const adminClause = posterArm.postedBy.is.OR.find((c) => c.role === 'ADMIN');
+    expect(adminClause).toBeDefined();
+  });
+
+  it('requires both a live subscription status AND platinum tier for a paying poster', () => {
+    const posterArm = PUBLIC_JOB_WHERE.OR[1] as {
+      postedBy: { is: { OR: { subscriptionStatus?: { in: string[] }; planTier?: string }[] } };
+    };
+    const payingClause = posterArm.postedBy.is.OR.find(
+      (c) => c.subscriptionStatus !== undefined
+    );
+    expect(payingClause).toBeDefined();
+    expect(payingClause!.subscriptionStatus!.in).toEqual(['active', 'trialing', 'past_due']);
+    expect(payingClause!.planTier).toBe('platinum');
+  });
+});
+
+describe('job.controller.ts', () => {
+  const jobSource = readFileSync(
+    join(process.cwd(), 'src/controllers/job.controller.ts'),
+    'utf8'
+  );
+
+  const queriesJobs = (body: string): boolean =>
+    /\.job\.(findMany|findFirst|findUnique|count)/.test(body);
+
+  it('finds the public job queries at all, so this test cannot pass vacuously', () => {
+    const withQueries = exportedBlocks(jobSource).filter((b) => queriesJobs(b.body));
+    expect(withQueries.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('uses the shared filter in every public job query', () => {
+    const offenders = exportedBlocks(jobSource)
+      .filter((b) => queriesJobs(b.body))
+      .filter((b) => (b.body.match(/PUBLIC_JOB_WHERE/g) ?? []).length < 1)
+      .map((b) => b.name);
+
+    expect(
+      offenders,
+      'These queries hand-roll their own job filter. A lapsed or downgraded ' +
+        "owner's adverts stay live and applications go into a black hole."
     ).toEqual([]);
   });
 });

@@ -9,6 +9,7 @@ import {
   toStripeTiers,
   type StripeTier,
 } from './pricing';
+import { verifyPrice, PriceCatalogueError } from './stripe';
 
 /**
  * Every ladder that has ever been published, keyed by the version it was
@@ -124,5 +125,113 @@ describe('priceLookupKey / parseLookupKey', () => {
     expect(parseLookupKey('price_1234')).toBeNull();
     expect(parseLookupKey('mathew_gold_monthly_v1')).toBeNull();
     expect(parseLookupKey('mathew_platinum_weekly_v1')).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// verifyPrice (C2)
+// ---------------------------------------------------------------------------
+
+/** Minimal Stripe.Price shape for a standard flat-rate monthly price. */
+function makeStandardPrice(overrides: Record<string, any> = {}): any {
+  return {
+    id: 'price_standard_monthly',
+    object: 'price',
+    currency: 'gbp',
+    product: 'prod_standard',
+    billing_scheme: 'per_unit',
+    tiers_mode: null,
+    tiers: undefined,
+    recurring: { interval: 'month', interval_count: 1 },
+    unit_amount: flatAmountPence('standard', 'monthly'),
+    ...overrides,
+  };
+}
+
+/** Minimal Stripe.Price shape for a platinum volume-tiered monthly price. */
+function makePlatinumPrice(overrides: Record<string, any> = {}): any {
+  const tiers = toStripeTiers(GROUP_BANDS, 'monthly').map((t) => ({
+    up_to: t.up_to === 'inf' ? null : t.up_to,
+    unit_amount: t.unit_amount,
+    flat_amount: null,
+    flat_amount_decimal: null,
+  }));
+  return {
+    id: 'price_platinum_monthly',
+    object: 'price',
+    currency: 'gbp',
+    product: 'prod_platinum',
+    billing_scheme: 'tiered',
+    tiers_mode: 'volume',
+    tiers,
+    recurring: { interval: 'month', interval_count: 1 },
+    unit_amount: null,
+    ...overrides,
+  };
+}
+
+describe('verifyPrice (C2)', () => {
+  it('accepts a correct standard monthly price', () => {
+    expect(() =>
+      verifyPrice(makeStandardPrice(), 'standard', 'monthly', 'prod_standard')
+    ).not.toThrow();
+  });
+
+  it('accepts a correct platinum monthly price', () => {
+    expect(() =>
+      verifyPrice(makePlatinumPrice(), 'platinum', 'monthly', 'prod_platinum')
+    ).not.toThrow();
+  });
+
+  it('throws when the price is on the wrong product', () => {
+    expect(() =>
+      verifyPrice(makeStandardPrice({ product: 'prod_wrong' }), 'standard', 'monthly', 'prod_standard')
+    ).toThrow(PriceCatalogueError);
+  });
+
+  it('tolerates an expanded product object by reading .id', () => {
+    expect(() =>
+      verifyPrice(
+        makeStandardPrice({ product: { id: 'prod_standard', object: 'product' } }),
+        'standard',
+        'monthly',
+        'prod_standard'
+      )
+    ).not.toThrow();
+  });
+
+  it('throws when interval_count is not 1 (e.g. quarterly billing)', () => {
+    expect(() =>
+      verifyPrice(
+        makeStandardPrice({ recurring: { interval: 'month', interval_count: 3 } }),
+        'standard',
+        'monthly',
+        'prod_standard'
+      )
+    ).toThrow(PriceCatalogueError);
+  });
+
+  it('throws when a platinum tier carries a flat_amount', () => {
+    const tiersWithFlat = toStripeTiers(GROUP_BANDS, 'monthly').map((t, i) => ({
+      up_to: t.up_to === 'inf' ? null : t.up_to,
+      unit_amount: t.unit_amount,
+      flat_amount: i === 0 ? 500 : null,
+      flat_amount_decimal: null,
+    }));
+    expect(() =>
+      verifyPrice(makePlatinumPrice({ tiers: tiersWithFlat }), 'platinum', 'monthly', 'prod_platinum')
+    ).toThrow(PriceCatalogueError);
+  });
+
+  it('throws when a platinum tier carries a flat_amount_decimal', () => {
+    const tiersWithFlat = toStripeTiers(GROUP_BANDS, 'monthly').map((t, i) => ({
+      up_to: t.up_to === 'inf' ? null : t.up_to,
+      unit_amount: t.unit_amount,
+      flat_amount: null,
+      flat_amount_decimal: i === 1 ? '250.5' : null,
+    }));
+    expect(() =>
+      verifyPrice(makePlatinumPrice({ tiers: tiersWithFlat }), 'platinum', 'monthly', 'prod_platinum')
+    ).toThrow(PriceCatalogueError);
   });
 });

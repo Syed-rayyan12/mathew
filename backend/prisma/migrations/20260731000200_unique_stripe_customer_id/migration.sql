@@ -1,0 +1,12 @@
+-- A Stripe customer id must belong to exactly one account. Without this
+-- constraint, a customer that ends up written against two accounts lets a
+-- webhook reconcile the wrong one, silently sharing a billing identity.
+--
+-- Postgres treats NULLs as distinct values in a unique index, so the many
+-- accounts that have never subscribed (stripeCustomerId IS NULL) are
+-- unaffected.
+--
+-- With Fix A3 already in place, a genuine collision now surfaces as a webhook
+-- 500 and a Stripe retry (P2002 propagates from reconcileFromSubscription).
+-- That is the intended behaviour — a loud retry beats silent data corruption.
+CREATE UNIQUE INDEX "users_stripeCustomerId_key" ON "users"("stripeCustomerId");

@@ -80,9 +80,33 @@ function readTiers(price: Stripe.Price): StripeTier[] {
   }));
 }
 
-function verify(price: Stripe.Price, tier: PlanTier, billing: BillingPeriod): void {
+/**
+ * Guards that a catalogue Price matches what pricing.ts says.
+ *
+ * Thrown rather than repaired: a Price cannot be edited once created, so the
+ * only honest repair is a version bump, which is a human decision. Blocking
+ * checkout is the safe failure — charging the wrong amount (or name) is not.
+ *
+ * Exported so tests can exercise it directly without Stripe I/O.
+ */
+export function verifyPrice(
+  price: Stripe.Price,
+  tier: PlanTier,
+  billing: BillingPeriod,
+  expectedProductId: string
+): void {
   const key = priceLookupKey(tier, billing);
   const interval = billing === 'annual' ? 'year' : 'month';
+
+  // product — the name and description on the checkout page come off this.
+  const actualProductId =
+    typeof price.product === 'string' ? price.product : (price.product as { id: string })?.id;
+  if (actualProductId !== expectedProductId) {
+    throw new PriceCatalogueError(
+      `Stripe price ${key} is on product ${actualProductId}, expected ${expectedProductId}. ` +
+        'Bump PRICE_VERSION rather than editing the price.'
+    );
+  }
 
   if (price.currency !== 'gbp') {
     throw new PriceCatalogueError(`Stripe price ${key} is in ${price.currency}, expected gbp.`);
@@ -92,11 +116,29 @@ function verify(price: Stripe.Price, tier: PlanTier, billing: BillingPeriod): vo
       `Stripe price ${key} renews every ${price.recurring?.interval ?? 'never'}, expected ${interval}.`
     );
   }
+  // interval_count: 1 means monthly/yearly; a value of 3 with interval 'month'
+  // would mean quarterly and bills the wrong amount.
+  if ((price.recurring?.interval_count ?? 1) !== 1) {
+    throw new PriceCatalogueError(
+      `Stripe price ${key} has interval_count ${price.recurring?.interval_count}, expected 1. ` +
+        'Bump PRICE_VERSION rather than editing the price.'
+    );
+  }
 
   if (tier === 'platinum') {
     const expected = toStripeTiers(GROUP_BANDS, billing);
     if (price.billing_scheme !== 'tiered' || price.tiers_mode !== 'volume') {
       throw new PriceCatalogueError(`Stripe price ${key} is not a volume-tiered price.`);
+    }
+    // flat_amount on a tier means a fixed charge on top of the per-unit rate;
+    // pricing.ts never emits one, so any flat_amount in the catalogue is drift.
+    for (const t of price.tiers ?? []) {
+      if (t.flat_amount != null || t.flat_amount_decimal != null) {
+        throw new PriceCatalogueError(
+          `Stripe price ${key} has a flat_amount on a tier, which pricing.ts does not emit. ` +
+            'Bump PRICE_VERSION rather than editing the price.'
+        );
+      }
     }
     if (!sameTiers(readTiers(price), expected)) {
       throw new PriceCatalogueError(
@@ -170,7 +212,7 @@ export async function ensurePlanPrices(): Promise<PlanPriceIds> {
       const key = priceLookupKey(tier, billing);
       const found = await findByLookupKey(key);
       if (found) {
-        verify(found, tier, billing);
+        verifyPrice(found, tier, billing, products[tier]);
         ids[tier][billing] = found.id;
         continue;
       }

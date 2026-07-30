@@ -33,11 +33,6 @@ const PAYMENT_STATUS_STYLES: Record<AdminPaymentRecord['paymentStatus'], string>
   no_payment_required: 'bg-blue-100 text-blue-700',
 };
 
-const PLAN_LABELS: Record<string, string> = {
-  standard: 'Single',
-  platinum: 'Group',
-};
-
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('en-GB', {
     day: '2-digit',
@@ -263,22 +258,23 @@ export default function Subscriptions() {
               <div className="py-10 text-center text-red-600">{error}</div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[900px]">
+                <table className="w-full min-w-[1000px]">
                   <thead>
                     <tr className="h-14 border-2 border-gray-300 bg-[#F8F8F8]">
                       <th className="p-3 text-left">Owner</th>
                       <th className="p-3 text-left">Groups</th>
                       <th className="p-3 text-left">Nurseries</th>
                       <th className="p-3 text-left">Plan</th>
+                      <th className="p-3 text-left">Used / Paid</th>
                       <th className="p-3 text-left">Status</th>
                       <th className="p-3 text-left">Joined</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loading ? (
-                      <tr><td colSpan={6} className="py-12 text-center text-muted-foreground">Loading...</td></tr>
+                      <tr><td colSpan={7} className="py-12 text-center text-muted-foreground">Loading...</td></tr>
                     ) : subscriptions.length === 0 ? (
-                      <tr><td colSpan={6} className="py-12 text-center text-muted-foreground">No nursery owner accounts found.</td></tr>
+                      <tr><td colSpan={7} className="py-12 text-center text-muted-foreground">No nursery owner accounts found.</td></tr>
                     ) : subscriptions.map((item) => (
                       <tr key={item.id} className="border-b hover:bg-gray-50">
                         <td className="px-3 py-5">
@@ -287,7 +283,15 @@ export default function Subscriptions() {
                         </td>
                         <td className="max-w-[240px] px-3 py-5 text-sm">{namesOrFallback(item.groups, 'No groups')}</td>
                         <td className="max-w-[240px] px-3 py-5 text-sm">{namesOrFallback(item.nurseries, 'No nurseries')}</td>
-                        <td className="px-3 py-5 font-medium">{PLAN_LABELS[item.plan.toLowerCase()] || item.plan}</td>
+                        <td className="px-3 py-5 font-medium">{item.planLabel}</td>
+                        <td className="px-3 py-5 whitespace-nowrap">
+                          <span
+                            className={item.overAllowance ? 'text-red-600 font-semibold' : 'text-gray-700'}
+                            title={item.overAllowance ? 'This account has more nurseries than it paid for' : undefined}
+                          >
+                            {item.nurseriesUsed} / {item.paidNurseryCount}
+                          </span>
+                        </td>
                         <td className="px-3 py-5">
                           <Badge className={`${STATUS_STYLES[item.status]} capitalize`}>{item.status}</Badge>
                         </td>
@@ -341,7 +345,7 @@ export default function Subscriptions() {
                           <p className="font-semibold">{payment.customerName || 'Nursery owner'}</p>
                           <p className="text-sm text-muted-foreground">{payment.customerEmail || 'Email unavailable'}</p>
                         </td>
-                        <td className="px-3 py-5 font-medium">{PLAN_LABELS[payment.plan] || payment.plan}</td>
+                        <td className="px-3 py-5 font-medium capitalize">{payment.plan}</td>
                         <td className="px-3 py-5 capitalize">{payment.billingPeriod || 'Unknown'}</td>
                         <td className="px-3 py-5 text-right">{formatCurrency(payment.subtotal, payment.currency)}</td>
                         <td className="px-3 py-5 text-right">{formatCurrency(payment.discount, payment.currency)}</td>
@@ -415,7 +419,7 @@ export default function Subscriptions() {
                     <tr key={coupon.id} className="border-b hover:bg-gray-50">
                       <td className="px-3 py-5 font-mono font-semibold">{coupon.code}</td>
                       <td className="px-3 py-5">{coupon.percentOff}%</td>
-                      <td className="px-3 py-5">{coupon.plans.map((plan) => PLAN_LABELS[plan]).join(', ')}</td>
+                      <td className="px-3 py-5 capitalize">{coupon.plans.join(', ')}</td>
                       <td className="px-3 py-5">{coupon.timesRedeemed}</td>
                       <td className="px-3 py-5">
                         <Badge className={coupon.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}>
@@ -440,12 +444,19 @@ export default function Subscriptions() {
       )}
 
       {tab === 'plans' && (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <Card>
-            <CardHeader><CardTitle>Single</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Single Standard</CardTitle></CardHeader>
             <CardContent>
               <p className="text-2xl font-semibold">GBP 23.95/month</p>
               <p className="mt-1 text-sm text-muted-foreground">GBP 287.40 annually · one nursery</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader><CardTitle>Single Platinum</CardTitle></CardHeader>
+            <CardContent>
+              <p className="text-2xl font-semibold">GBP 38.60/month</p>
+              <p className="mt-1 text-sm text-muted-foreground">GBP 463.20 annually · one nursery</p>
             </CardContent>
           </Card>
           <Card>
@@ -489,7 +500,7 @@ export default function Subscriptions() {
               {(['standard', 'platinum'] as const).map((plan) => (
                 <label key={plan} className="flex items-center gap-3">
                   <Checkbox checked={couponForm.plans.includes(plan)} onCheckedChange={() => togglePlan(plan)} />
-                  <span>{PLAN_LABELS[plan]}</span>
+                  <span className="capitalize">{plan}</span>
                 </label>
               ))}
             </div>

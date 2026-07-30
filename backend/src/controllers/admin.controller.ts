@@ -3,6 +3,12 @@ import prisma from '../config/database';
 import { generateTokens, UnauthorizedError } from '../utils';
 import { AuthRequest } from '../middleware';
 import { createNotification } from './notification.controller';
+import {
+  planLabel,
+  isGroup,
+  normaliseTier,
+  allowance,
+} from '../utils/entitlements';
 
 const ADMIN_EMAIL = 'admin@mathew.com';
 const ADMIN_PASSWORD = 'Admin@123456';
@@ -494,7 +500,8 @@ export const getSubscriptions = async (
         firstName: true,
         lastName: true,
         nurseryName: true,
-        plan: true,
+        planTier: true,
+        paidNurseryCount: true,
         isActive: true,
         isVerified: true,
         createdAt: true,
@@ -510,21 +517,29 @@ export const getSubscriptions = async (
       orderBy: { createdAt: 'desc' },
     });
 
-    const subscriptions = owners.map((owner) => ({
-      id: owner.id,
-      ownerName: `${owner.firstName} ${owner.lastName}`.trim(),
-      email: owner.email,
-      nurseryName: owner.nurseryName,
-      plan: owner.plan || 'standard',
-      status: owner.isActive
-        ? 'active'
-        : owner.isVerified
-          ? 'suspended'
-          : 'pending',
-      createdAt: owner.createdAt,
-      groups: owner.groups,
-      nurseries: owner.nurseries,
-    }));
+    const subscriptions = owners.map((owner) => {
+      const limits = allowance(owner, owner.nurseries.length);
+      return {
+        id: owner.id,
+        ownerName: `${owner.firstName} ${owner.lastName}`.trim(),
+        email: owner.email,
+        nurseryName: owner.nurseryName,
+        planTier: normaliseTier(owner.planTier),
+        paidNurseryCount: limits.paid,
+        planLabel: planLabel(owner),
+        isGroup: isGroup(owner),
+        nurseriesUsed: limits.used,
+        overAllowance: limits.used > limits.paid,
+        status: owner.isActive
+          ? 'active'
+          : owner.isVerified
+            ? 'suspended'
+            : 'pending',
+        createdAt: owner.createdAt,
+        groups: owner.groups,
+        nurseries: owner.nurseries,
+      };
+    });
 
     res.json({ success: true, data: subscriptions });
   } catch (error) {

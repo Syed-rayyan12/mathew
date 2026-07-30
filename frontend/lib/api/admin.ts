@@ -14,7 +14,13 @@ export interface AdminSubscription {
   ownerName: string;
   email: string;
   nurseryName?: string | null;
-  plan: string;
+  planTier: 'standard' | 'platinum';
+  paidNurseryCount: number;
+  /** Server-decided wording: "Single Standard" | "Single Platinum" | "Group of 8". */
+  planLabel: string;
+  isGroup: boolean;
+  nurseriesUsed: number;
+  overAllowance: boolean;
   status: 'active' | 'pending' | 'suspended';
   createdAt: string;
   groups: Array<{ id: string; name: string }>;

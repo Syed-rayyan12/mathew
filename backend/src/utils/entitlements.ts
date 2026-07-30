@@ -12,7 +12,7 @@
  * "Group" is derived, never stored, so it cannot contradict the count.
  */
 
-import { type PlanTier } from './pricing';
+import { type PlanTier, JOBS_ADDON_ACTIVE_LIMIT } from './pricing';
 
 /**
  * Structural rather than Prisma's User so callers can pass a narrow `select`
@@ -52,6 +52,16 @@ export interface BillingAccount {
   subscriptionStatus: string | null;
 }
 
+export interface JobsAddonAccount {
+  jobsAddonStatus: string | null;
+}
+
+export function hasJobsAddon(account: JobsAddonAccount): boolean {
+  return (LIVE_SUBSCRIPTION_STATUSES as readonly string[]).includes(
+    account.jobsAddonStatus ?? ''
+  );
+}
+
 /** Is this account currently paid for? Unknown is never treated as paid. */
 export function isLive(account: BillingAccount): boolean {
   return (LIVE_SUBSCRIPTION_STATUSES as readonly string[]).includes(
@@ -82,10 +92,10 @@ export function planLabel(account: PlanAccount): string {
     : 'Single Standard';
 }
 
-export function features(account: PlanAccount): PlanFeatures {
+export function features(account: PlanAccount & Partial<JobsAddonAccount>): PlanFeatures {
   const unlocked = normaliseTier(account.planTier) === 'platinum';
   return {
-    jobs: unlocked,
+    jobs: unlocked || hasJobsAddon({ jobsAddonStatus: account.jobsAddonStatus ?? null }),
     video: unlocked,
     teamMembers: unlocked,
     reviewModeration: unlocked,
@@ -111,5 +121,17 @@ export function canAddNursery(
   usedCount: number
 ): boolean {
   return isLive(account) && allowance(account, usedCount).remaining > 0;
+}
+
+/**
+ * How many jobs may be active at once. null means unlimited.
+ * Platinum is unlimited. Add-on is JOBS_ADDON_ACTIVE_LIMIT. Neither is 0.
+ */
+export function activeJobLimit(
+  account: PlanAccount & JobsAddonAccount
+): number | null {
+  if (normaliseTier(account.planTier) === 'platinum') return null;
+  if (hasJobsAddon(account)) return JOBS_ADDON_ACTIVE_LIMIT;
+  return 0;
 }
 

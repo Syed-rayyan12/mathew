@@ -3,6 +3,8 @@ import {
   allowance,
   canAddNursery,
   features,
+  hasJobsAddon,
+  activeJobLimit,
   isGroup,
   isLive,
   normaliseTier,
@@ -160,5 +162,72 @@ describe('canAddNursery composition', () => {
 
   it('still allows during the past_due retry window', () => {
     expect(canAddNursery({ ...group, subscriptionStatus: 'past_due' }, 3)).toBe(true);
+  });
+});
+
+describe('hasJobsAddon', () => {
+  it('is true for the same live statuses as the main plan', () => {
+    expect(hasJobsAddon({ jobsAddonStatus: 'active' })).toBe(true);
+    expect(hasJobsAddon({ jobsAddonStatus: 'trialing' })).toBe(true);
+    expect(hasJobsAddon({ jobsAddonStatus: 'past_due' })).toBe(true);
+  });
+
+  it('is false for non-live statuses', () => {
+    for (const status of ['canceled', 'none', 'incomplete', null, '']) {
+      expect(hasJobsAddon({ jobsAddonStatus: status }), `status: ${status}`).toBe(false);
+    }
+  });
+});
+
+describe('features with jobs add-on', () => {
+  it('unlocks jobs on standard when add-on is live', () => {
+    const f = features({ planTier: 'standard', paidNurseryCount: 1, jobsAddonStatus: 'active' });
+    expect(f.jobs).toBe(true);
+  });
+
+  it('does NOT unlock video, teamMembers, reviewModeration, priorityPlacement or analytics via add-on', () => {
+    const f = features({ planTier: 'standard', paidNurseryCount: 1, jobsAddonStatus: 'active' });
+    expect(f.video).toBe(false);
+    expect(f.teamMembers).toBe(false);
+    expect(f.reviewModeration).toBe(false);
+    expect(f.priorityPlacement).toBe(false);
+    expect(f.analytics).toBe(false);
+  });
+
+  it('still unlocks jobs on platinum even without add-on', () => {
+    const f = features({ planTier: 'platinum', paidNurseryCount: 1 });
+    expect(f.jobs).toBe(true);
+  });
+
+  it('locks jobs on standard without add-on', () => {
+    const f = features({ planTier: 'standard', paidNurseryCount: 1 });
+    expect(f.jobs).toBe(false);
+  });
+
+  it('locks jobs when add-on is canceled', () => {
+    const f = features({ planTier: 'standard', paidNurseryCount: 1, jobsAddonStatus: 'canceled' });
+    expect(f.jobs).toBe(false);
+  });
+});
+
+describe('activeJobLimit', () => {
+  it('returns null (unlimited) for platinum', () => {
+    expect(activeJobLimit({ planTier: 'platinum', paidNurseryCount: 1, jobsAddonStatus: 'none' })).toBeNull();
+  });
+
+  it('returns 1 for standard with live add-on', () => {
+    expect(activeJobLimit({ planTier: 'standard', paidNurseryCount: 1, jobsAddonStatus: 'active' })).toBe(1);
+  });
+
+  it('returns 0 for standard without add-on', () => {
+    expect(activeJobLimit({ planTier: 'standard', paidNurseryCount: 1, jobsAddonStatus: 'none' })).toBe(0);
+  });
+
+  it('returns 0 for standard with canceled add-on', () => {
+    expect(activeJobLimit({ planTier: 'standard', paidNurseryCount: 1, jobsAddonStatus: 'canceled' })).toBe(0);
+  });
+
+  it('returns null for platinum even with a live add-on (edge case — should not happen)', () => {
+    expect(activeJobLimit({ planTier: 'platinum', paidNurseryCount: 1, jobsAddonStatus: 'active' })).toBeNull();
   });
 });

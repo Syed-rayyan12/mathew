@@ -9,7 +9,7 @@ import {
   unrejectReview,
   deleteReview,
 } from '../controllers/review.controller';
-import { authenticate, authorize, optionalAuthenticate } from '../middleware';
+import { authenticate, authorize, optionalAuthenticate, requireFeature } from '../middleware';
 
 const router = Router();
 
@@ -19,9 +19,9 @@ router.get('/nursery/:nurseryId', getNurseryReviews);
 
 // Protected routes
 router.get('/my-reviews', authenticate, getUserReviews);
-router.put('/:id/approve', authenticate, authorize('ADMIN', 'NURSERY_OWNER'), approveReview);
-router.put('/:id/unapprove', authenticate, authorize('ADMIN', 'NURSERY_OWNER'), unapproveReview);
-router.put('/:id/reject', authenticate, authorize('ADMIN', 'NURSERY_OWNER'), rejectReview);
+router.put('/:id/approve', authenticate, authorize('ADMIN', 'NURSERY_OWNER'), requireFeature('reviewModeration'), approveReview);
+router.put('/:id/unapprove', authenticate, authorize('ADMIN', 'NURSERY_OWNER'), requireFeature('reviewModeration'), unapproveReview);
+router.put('/:id/reject', authenticate, authorize('ADMIN', 'NURSERY_OWNER'), requireFeature('reviewModeration'), rejectReview);
 router.put('/:id/unreject', authenticate, authorize('ADMIN'), unrejectReview);
 router.delete('/:id', authenticate, authorize('ADMIN'), deleteReview);
 

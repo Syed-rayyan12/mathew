@@ -4,6 +4,14 @@ import { NotFoundError, UnauthorizedError } from '../utils';
 import { AuthRequest } from '../middleware';
 import { generateShortId } from '../utils/id-generator';
 import { createNotification } from './notification.controller';
+import {
+  features,
+  allowance,
+  canAddNursery,
+  planLabel,
+  isGroup,
+  normaliseTier,
+} from '../utils/entitlements';
 
 // Get nursery owner's GROUP (created via nursery signup/dashboard)
 export const getMyNursery = async (
@@ -97,6 +105,34 @@ export const createNursery = async (
       });
     }
 
+    // The allowance is what was paid for. A Single account has
+    // paidNurseryCount 1, so this same check covers "Standard cannot add a
+    // second nursery" — there is no separate Single/Group branch.
+    const account = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { planTier: true, paidNurseryCount: true },
+    });
+
+    if (!account) {
+      throw new UnauthorizedError('User not authenticated');
+    }
+
+    const used = await prisma.nursery.count({ where: { ownerId: userId } });
+
+    if (!canAddNursery(account, used)) {
+      const limits = allowance(account, used);
+      return res.status(403).json({
+        success: false,
+        code: 'NURSERY_LIMIT_REACHED',
+        paid: limits.paid,
+        used: limits.used,
+        message:
+          limits.paid === 0
+            ? 'Complete your payment to add a nursery.'
+            : `Your plan covers ${limits.paid} ${limits.paid === 1 ? 'nursery' : 'nurseries'}. Add more to your plan to continue.`,
+      });
+    }
+
     // Find parent group for this user
     const parentGroup = await prisma.group.findFirst({
       where: {
@@ -129,6 +165,8 @@ export const createNursery = async (
     // Generate custom short ID
     const nurseryId = await generateShortId('NUR');
 
+    const canUseVideo = features(account).video;
+
     // Create nursery
     try {
       const newNursery = await prisma.nursery.create({
@@ -149,7 +187,7 @@ export const createNursery = async (
           philosophy: philosophy || null,
           cardImage: cardImage || null,
           images: Array.isArray(images) ? images : [],
-          videoUrl: videoUrl || null,
+          videoUrl: canUseVideo ? videoUrl || null : null,
           pricingFeatures: Array.isArray(pricingFeatures) ? pricingFeatures : [],
           ownerId: userId,
           groupId: parentGroup.id,
@@ -233,6 +271,17 @@ export const updateNursery = async (
       throw new NotFoundError('Nursery not found');
     }
 
+    const account = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { planTier: true, paidNurseryCount: true },
+    });
+
+    if (!account) {
+      throw new UnauthorizedError('User not authenticated');
+    }
+
+    const canUseVideo = features(account).video;
+
     // Generate slug from name if name is updated
     let slug = nursery.slug;
     if (name && name !== nursery.name) {
@@ -258,7 +307,7 @@ export const updateNursery = async (
     if (philosophy !== undefined) updateData.philosophy = philosophy;
     if (cardImage !== undefined) updateData.cardImage = cardImage;
     if (images !== undefined) updateData.images = images;
-    if (videoUrl !== undefined) updateData.videoUrl = videoUrl;
+    if (videoUrl !== undefined) updateData.videoUrl = canUseVideo ? videoUrl : null;
     if (openingHours !== undefined) updateData.openingHours = openingHours;
 
     const updatedNursery = await prisma.nursery.update({
@@ -493,6 +542,51 @@ export const updateNurseryGroup = async (
       success: true,
       message: 'Nursery group updated successfully',
       data: updatedGroup,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/nursery-dashboard/entitlements
+ *
+ * The dashboard's source of truth for what to show. It replaces reading the
+ * plan out of localStorage — which is trivially editable — with a value the
+ * server derives from the same functions the gates use.
+ */
+export const getMyEntitlements = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      throw new UnauthorizedError('User not authenticated');
+    }
+
+    const account = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { planTier: true, paidNurseryCount: true },
+    });
+
+    if (!account) {
+      throw new UnauthorizedError('User not authenticated');
+    }
+
+    const used = await prisma.nursery.count({ where: { ownerId: userId } });
+
+    res.json({
+      success: true,
+      data: {
+        planTier: normaliseTier(account.planTier),
+        paidNurseryCount: account.paidNurseryCount,
+        planLabel: planLabel(account),
+        isGroup: isGroup(account),
+        features: features(account),
+        allowance: allowance(account, used),
+      },
     });
   } catch (error) {
     next(error);

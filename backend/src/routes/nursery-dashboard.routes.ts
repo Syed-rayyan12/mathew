@@ -6,7 +6,8 @@ import {
   deleteNursery, 
   getMyNurseryReviews,
   getMyGroup,
-  updateNurseryGroup
+  updateNurseryGroup,
+  getMyEntitlements
 } from '../controllers/nursery-dashboard.controller';
 import { authenticate, authorize } from '../middleware';
 
@@ -21,6 +22,9 @@ router.get('/my-nursery', getMyNursery);
 
 // Get my nursery group (for settings page)
 router.get('/my-group', getMyGroup);
+
+// What this account is allowed to do — the dashboard reads this, not localStorage
+router.get('/entitlements', getMyEntitlements);
 
 // Get my nursery reviews with stats
 router.get('/my-reviews', getMyNurseryReviews);

@@ -4,3 +4,4 @@ export { errorHandler } from './errorHandler';
 export { validate } from './validate';
 export { uploadSingle, uploadMultiple } from './upload';
 export { authRateLimiter, refreshRateLimiter } from './rate-limit';
+export { requireFeature } from './entitlement';

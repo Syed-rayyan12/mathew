@@ -17,6 +17,7 @@ import {
   nurseryUpdateApplicationStatus,
 } from '../controllers/nursery.job.controller';
 import { authenticate, authorize } from '../middleware/auth';
+import { requireFeature } from '../middleware';
 
 const router = Router();
 
@@ -34,12 +35,12 @@ router.get('/admin/applications', authenticate, authorize('ADMIN'), getApplicati
 router.put('/admin/applications/:id/status', authenticate, authorize('ADMIN'), updateApplicationStatus);
 
 // ── Nursery owner routes ──────────────────────────────────────────────────────
-router.get('/nursery/my-jobs', authenticate, authorize('NURSERY_OWNER'), nurseryGetMyJobs);
-router.post('/nursery', authenticate, authorize('NURSERY_OWNER'), nurseryCreateJob);
-router.put('/nursery/:id', authenticate, authorize('NURSERY_OWNER'), nurseryUpdateJob);
-router.delete('/nursery/:id', authenticate, authorize('NURSERY_OWNER'), nurseryDeleteJob);
+router.get('/nursery/my-jobs', authenticate, authorize('NURSERY_OWNER'), requireFeature('jobs'), nurseryGetMyJobs);
+router.post('/nursery', authenticate, authorize('NURSERY_OWNER'), requireFeature('jobs'), nurseryCreateJob);
+router.put('/nursery/:id', authenticate, authorize('NURSERY_OWNER'), requireFeature('jobs'), nurseryUpdateJob);
+router.delete('/nursery/:id', authenticate, authorize('NURSERY_OWNER'), requireFeature('jobs'), nurseryDeleteJob);
 
-router.get('/nursery/applications', authenticate, authorize('NURSERY_OWNER'), nurseryGetMyApplications);
-router.put('/nursery/applications/:id/status', authenticate, authorize('NURSERY_OWNER'), nurseryUpdateApplicationStatus);
+router.get('/nursery/applications', authenticate, authorize('NURSERY_OWNER'), requireFeature('jobs'), nurseryGetMyApplications);
+router.put('/nursery/applications/:id/status', authenticate, authorize('NURSERY_OWNER'), requireFeature('jobs'), nurseryUpdateApplicationStatus);
 
 export default router;

@@ -163,16 +163,37 @@ describe('PUBLIC_JOB_WHERE', () => {
     expect(adminClause).toBeDefined();
   });
 
-  it('requires both a live subscription status AND platinum tier for a paying poster', () => {
+  it('requires a live subscription AND (platinum OR live add-on) for a paying poster', () => {
     const posterArm = PUBLIC_JOB_WHERE.OR[1] as {
-      postedBy: { is: { OR: { subscriptionStatus?: { in: string[] }; planTier?: string }[] } };
+      postedBy: { is: { OR: any[] } };
     };
     const payingClause = posterArm.postedBy.is.OR.find(
-      (c) => c.subscriptionStatus !== undefined
+      (c: any) => c.subscriptionStatus !== undefined
     );
     expect(payingClause).toBeDefined();
     expect(payingClause!.subscriptionStatus!.in).toEqual(['active', 'trialing', 'past_due']);
-    expect(payingClause!.planTier).toBe('platinum');
+    // Must be platinum OR have a live add-on
+    const platinumArm = payingClause!.OR.find((c: any) => c.planTier === 'platinum');
+    expect(platinumArm).toBeDefined();
+    const addonArm = payingClause!.OR.find((c: any) => c.jobsAddonStatus !== undefined);
+    expect(addonArm).toBeDefined();
+    expect(addonArm!.jobsAddonStatus!.in).toEqual(['active', 'trialing', 'past_due']);
+  });
+
+  it('admits a paying poster with a live add-on on standard tier', () => {
+    const posterArm = PUBLIC_JOB_WHERE.OR[1] as {
+      postedBy: { is: { OR: any[] } };
+    };
+    const payingClause = posterArm.postedBy.is.OR.find(
+      (c: any) => c.subscriptionStatus !== undefined
+    );
+    // The paying arm now has a nested OR: platinum OR add-on live
+    expect(payingClause!.OR).toBeDefined();
+    const addonClause = payingClause!.OR.find(
+      (c: any) => c.jobsAddonStatus !== undefined
+    );
+    expect(addonClause).toBeDefined();
+    expect(addonClause!.jobsAddonStatus!.in).toEqual(['active', 'trialing', 'past_due']);
   });
 });
 

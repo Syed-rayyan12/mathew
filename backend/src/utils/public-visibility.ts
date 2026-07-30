@@ -76,7 +76,10 @@ export const PUBLIC_JOB_WHERE = {
             { role: 'ADMIN' as const },
             {
               subscriptionStatus: { in: [...LIVE_SUBSCRIPTION_STATUSES] },
-              planTier: 'platinum',
+              OR: [
+                { planTier: 'platinum' },
+                { jobsAddonStatus: { in: [...LIVE_SUBSCRIPTION_STATUSES] } },
+              ],
             },
           ],
         },

@@ -156,7 +156,10 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
                 onClick={() => setIsOpen(false)}
                 className="mt-1 w-full text-center text-xs font-semibold py-2 rounded-lg bg-yellow-400 hover:bg-yellow-500 text-yellow-900 transition"
               >
-                {lapsed ? 'Restart your plan' : 'Upgrade to Platinum'}
+                {/* Not "Restart your plan" — the upgrade page only sells
+                    Platinum and will not reactivate a lapsed Single Platinum
+                    below a group of two, so it cannot honour that promise. */}
+                {lapsed ? 'See your plan options' : 'Upgrade to Platinum'}
               </Link>
             </div>
           </div>

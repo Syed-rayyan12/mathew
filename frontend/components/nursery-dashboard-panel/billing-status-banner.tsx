@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { AlertTriangle, CalendarClock, CreditCard } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useEntitlements } from '@/hooks/use-nursery-plan';
@@ -49,6 +50,14 @@ const WARNING_BODY = 'text-amber-800';
 
 export default function BillingStatusBanner() {
   const { data, loading } = useEntitlements();
+  const pathname = usePathname();
+
+  // The upgrade page is where all three of these banners send people, and it
+  // is also where Stripe returns them afterwards. Telling someone their plan
+  // has ended directly above the screen confirming they have just paid for it
+  // is worse than saying nothing, and the page states the account's position
+  // itself. So it speaks for itself here.
+  if (pathname?.startsWith('/nursery-dashboard/upgrade')) return null;
 
   // Entitlements load after the first paint, and the failure case leaves them
   // null. Either way, say nothing rather than flash "your plan has ended" at
@@ -88,11 +97,16 @@ export default function BillingStatusBanner() {
             Your nurseries are hidden from the site and the features on your plan are
             switched off. Parents can&apos;t find you until your plan is running again.
           </p>
+          {/* "See your plan options" rather than "Restart your plan": the
+              upgrade page only sells Platinum, and a lapsed Single Platinum
+              owner is pushed to a group of two before it will sell anything
+              at all. Until reactivation can reproduce the plan that lapsed,
+              the link must not promise it. */}
           <Link
             href="/nursery-dashboard/upgrade"
             className="font-semibold underline underline-offset-2"
           >
-            Restart your plan
+            See your plan options
           </Link>
         </AlertDescription>
       </Alert>

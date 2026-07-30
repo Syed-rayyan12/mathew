@@ -35,7 +35,11 @@ function UpgradeContent() {
   const upgraded = searchParams.get('upgraded');
   const cancelled = searchParams.get('cancelled');
 
-  const { data: entitlements, loading: entitlementsLoading } = useEntitlements();
+  const {
+    data: entitlements,
+    loading: entitlementsLoading,
+    refresh: refreshEntitlements,
+  } = useEntitlements();
 
   const [status, setStatus] = useState<
     'idle' | 'confirming' | 'verifying' | 'success' | 'error' | 'cancelled'
@@ -94,6 +98,13 @@ function UpgradeContent() {
       authService.verifyUpgradeSession(sessionId)
         .then(res => {
           if (res.success && res.data) {
+            // Stripe sends us back here as a same-tab navigation, so the tab
+            // never loses focus and the hook's focus refetch never fires. The
+            // entitlements read on this fresh mount raced the payment and won,
+            // so the cache still holds the lapsed row — which the billing
+            // banner would happily render over the success screen. Reconcile
+            // has run by now, so ask again.
+            refreshEntitlements();
             setNewPlanLabel(planLabel(res.data.planTier, res.data.paidNurseryCount));
             setStatus('success');
           } else {
@@ -106,7 +117,9 @@ function UpgradeContent() {
           setStatus('error');
         });
     }
-  }, [upgraded, sessionId, status]);
+    // refreshEntitlements is a useCallback with no dependencies, so it is
+    // stable and cannot re-run this effect.
+  }, [upgraded, sessionId, status, refreshEntitlements]);
 
   // Countdown then hard-redirect so all components re-mount with updated plan
   useEffect(() => {
@@ -174,6 +187,10 @@ function UpgradeContent() {
     try {
       const res = await authService.applyChange('platinum', billing, count, preview.prorationDate);
       if (res.success && res.data) {
+        // Same reason as the Stripe return path: the plan just changed under
+        // the cached entitlements, and the success screen sits above a banner
+        // that reads them.
+        refreshEntitlements();
         setNewPlanLabel(planLabel(res.data.planTier, res.data.paidNurseryCount));
         setStatus('success');
       } else {

@@ -4,20 +4,22 @@ import prisma from '../config/database';
 import { config } from '../config';
 import { hashPassword } from '../utils';
 import { generateShortId } from '../utils/id-generator';
-import { ensurePlanPrices, getStripe } from '../utils/stripe';
+import { ensurePlanPrices, getStripe, ensureJobsAddonPrice } from '../utils/stripe';
 import {
   quote,
   parseLookupKey,
   PricingError,
   type PlanTier,
   type BillingPeriod,
+  JOBS_ADDON_MINIMUM_MONTHS,
 } from '../utils/pricing';
-import { isLive, planLabel } from '../utils/entitlements';
+import { isLive, planLabel, normaliseTier, hasJobsAddon } from '../utils/entitlements';
 import {
   SubscriptionShapeError,
   clearSubscription,
   reconcileFromSubscription,
 } from '../utils/subscription-sync';
+import { reconcileJobsAddon, clearJobsAddon } from '../utils/jobs-addon-sync';
 
 /** Thrown when a processedCheckoutSession insert finds the session already recorded. */
 class AlreadyProcessed extends Error {}
@@ -372,6 +374,30 @@ export const stripeWebhook = async (
         return res.json({ received: true });
       }
 
+      // ── Jobs add-on branch — MUST come before ensureAccount ──────────────
+      if (session.metadata?.mathew_purpose === 'jobs_addon') {
+        const addonUserId = session.metadata.userId;
+        if (!addonUserId) {
+          console.error('Jobs add-on session has no userId in metadata', session.id);
+          return res.json({ received: true });
+        }
+
+        // Set minimum term end if not already set
+        const sub = await getStripe().subscriptions.retrieve(subscriptionId);
+        const createdDate = new Date(sub.created * 1000);
+        const minimumTermEnd = new Date(createdDate);
+        minimumTermEnd.setMonth(minimumTermEnd.getMonth() + JOBS_ADDON_MINIMUM_MONTHS);
+
+        // Only set minimumTermEnd if it hasn't been set yet (idempotent)
+        await prisma.user.updateMany({
+          where: { id: addonUserId, jobsAddonMinimumTermEnd: null },
+          data: { jobsAddonMinimumTermEnd: minimumTermEnd },
+        });
+
+        await reconcileJobsAddon(subscriptionId, addonUserId);
+        return res.json({ received: true });
+      }
+
       const userId = await ensureAccount(session);
       if (!userId) {
         console.error('No account could be resolved for session', session.id);
@@ -388,9 +414,17 @@ export const stripeWebhook = async (
         where: { stripeSubscriptionId: sub.id },
         select: { id: true },
       });
-      // Not ours, or the signup webhook has not landed yet. If it is the
-      // latter, that webhook reconciles from scratch anyway.
-      if (owner) await reconcileFromSubscription(sub.id, owner.id);
+      if (owner) {
+        await reconcileFromSubscription(sub.id, owner.id);
+        return res.json({ received: true });
+      }
+
+      // Check if it's a jobs add-on subscription
+      const addonOwner = await prisma.user.findUnique({
+        where: { jobsAddonSubscriptionId: sub.id },
+        select: { id: true },
+      });
+      if (addonOwner) await reconcileJobsAddon(sub.id, addonOwner.id);
       return res.json({ received: true });
     }
 
@@ -400,9 +434,17 @@ export const stripeWebhook = async (
         where: { stripeSubscriptionId: sub.id },
         select: { id: true },
       });
-      // planTier and paidNurseryCount are left alone on purpose — admin still
-      // needs to see that a lapsed account bought a Group of eight.
-      if (owner) await clearSubscription(owner.id, sub.status);
+      if (owner) {
+        await clearSubscription(owner.id, sub.status);
+        return res.json({ received: true });
+      }
+
+      // Check if it's a jobs add-on subscription
+      const addonOwner = await prisma.user.findUnique({
+        where: { jobsAddonSubscriptionId: sub.id },
+        select: { id: true },
+      });
+      if (addonOwner) await clearJobsAddon(addonOwner.id, sub.status);
       return res.json({ received: true });
     }
   } catch (err) {
@@ -716,6 +758,10 @@ export const applyChange = async (req: Request, res: Response, next: NextFunctio
     // outside the transaction so its write is never rolled back by a later failure.
     const snapshot = await reconcileFromSubscription(result.updatedId, userId);
 
+    if (normaliseTier(snapshot.planTier) === 'platinum') {
+      await cancelJobsAddonOnPlatinum(userId);
+    }
+
     res.json({
       success: true,
       data: {
@@ -849,6 +895,10 @@ export const verifyUpgradeSession = async (
 
     const snapshot = await reconcileFromSubscription(subscriptionId, meta.userId);
 
+    if (normaliseTier(snapshot.planTier) === 'platinum') {
+      await cancelJobsAddonOnPlatinum(meta.userId);
+    }
+
     return res.json({
       success: true,
       data: {
@@ -913,6 +963,232 @@ export const verifySession = async (
     return res.status(500).json({
       success: false,
       message: 'Failed to verify payment. Please contact support.',
+    });
+  }
+};
+
+// ── Jobs add-on ──────────────────────────────────────────────────────────────
+
+/**
+ * Best-effort cleanup: if the account just became Platinum and had a live
+ * add-on, cancel it immediately. Swallowed on failure — the upgrade's money
+ * has already been taken and must not be reported as failed.
+ */
+async function cancelJobsAddonOnPlatinum(userId: string): Promise<void> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { jobsAddonSubscriptionId: true, jobsAddonStatus: true },
+    });
+    if (!user?.jobsAddonSubscriptionId || !hasJobsAddon(user)) return;
+
+    await getStripe().subscriptions.cancel(user.jobsAddonSubscriptionId, {
+      prorate: false,
+    } as any);
+    await clearJobsAddon(userId, 'canceled');
+    console.log(`🧹 Cancelled jobs add-on for user ${userId} on Platinum upgrade`);
+  } catch (err: any) {
+    // Loud log, swallowed error. The next webhook or a manual check fixes it.
+    console.error(`❌ Failed to cancel jobs add-on on Platinum upgrade for ${userId}:`, err?.message || err);
+  }
+}
+
+/**
+ * POST /api/stripe/jobs-addon/checkout
+ *
+ * Creates a Stripe Checkout session for the £5.99/mo jobs add-on.
+ * Guards: main plan live, tier is standard, no active add-on already.
+ */
+export const jobsAddonCheckout = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId: string = (req as any).user?.userId;
+    if (!userId) return res.status(401).json({ success: false, message: 'Unauthorised.' });
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        stripeCustomerId: true,
+        subscriptionStatus: true,
+        planTier: true,
+        jobsAddonStatus: true,
+      },
+    });
+
+    if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
+
+    if (!isLive(user)) {
+      return res.status(403).json({
+        success: false,
+        code: 'SUBSCRIPTION_INACTIVE',
+        message: 'Your subscription is not active. Reactivate your plan first.',
+      });
+    }
+
+    if (normaliseTier(user.planTier) === 'platinum') {
+      return res.status(409).json({
+        success: false,
+        code: 'ALREADY_INCLUDED',
+        message: 'Job posting is already included in your Platinum plan.',
+      });
+    }
+
+    if (hasJobsAddon(user)) {
+      return res.status(409).json({
+        success: false,
+        code: 'ADDON_ALREADY_ACTIVE',
+        message: 'You already have an active jobs add-on.',
+      });
+    }
+
+    if (!user.stripeCustomerId) {
+      return res.status(409).json({
+        success: false,
+        message: 'No Stripe customer found. Please contact support.',
+      });
+    }
+
+    const priceId = await ensureJobsAddonPrice();
+
+    const session = await getStripe().checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'subscription',
+      customer: user.stripeCustomerId,
+      line_items: [{ price: priceId, quantity: 1 }],
+      metadata: {
+        mathew_purpose: 'jobs_addon',
+        userId,
+      },
+      custom_text: {
+        submit: {
+          message: `⚠️ Monthly recurring payment of £5.99. Minimum commitment of ${JOBS_ADDON_MINIMUM_MONTHS} months. By completing payment you agree to these terms.`,
+        },
+      },
+      success_url: `${config.frontendUrl}/nursery-dashboard/jobs?addon_session={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${config.frontendUrl}/nursery-dashboard/jobs`,
+    });
+
+    res.json({ success: true, url: session.url });
+  } catch (error: any) {
+    console.error('❌ jobsAddonCheckout error:', error?.message || error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to start checkout. Please try again.',
+    });
+  }
+};
+
+/**
+ * POST /api/stripe/jobs-addon/verify-session
+ *
+ * Called by the success redirect. Reconciles and is idempotent — racing the
+ * webhook is harmless.
+ */
+export const jobsAddonVerifySession = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { sessionId } = req.body;
+    if (!sessionId) return res.status(400).json({ success: false, message: 'Session ID is required.' });
+
+    const session = await getStripe().checkout.sessions.retrieve(sessionId);
+    const meta = session.metadata;
+
+    if (!meta || meta.mathew_purpose !== 'jobs_addon' || !meta.userId) {
+      return res.status(400).json({ success: false, message: 'Invalid session metadata.' });
+    }
+
+    const callerId: string | undefined = (req as any).user?.userId;
+    if (!callerId || callerId !== meta.userId) {
+      return res.status(403).json({ success: false, message: 'This payment belongs to another account.' });
+    }
+
+    const subscriptionId =
+      typeof session.subscription === 'string' ? session.subscription : session.subscription?.id;
+
+    if (!subscriptionId) {
+      return res.status(400).json({ success: false, message: 'Payment not completed.' });
+    }
+
+    // Set the minimum term end date from the subscription's created timestamp
+    const sub = await getStripe().subscriptions.retrieve(subscriptionId);
+    const createdDate = new Date(sub.created * 1000);
+    const minimumTermEnd = new Date(createdDate);
+    minimumTermEnd.setMonth(minimumTermEnd.getMonth() + JOBS_ADDON_MINIMUM_MONTHS);
+
+    await prisma.user.update({
+      where: { id: meta.userId },
+      data: { jobsAddonMinimumTermEnd: minimumTermEnd },
+    });
+
+    await reconcileJobsAddon(subscriptionId, meta.userId);
+
+    return res.json({ success: true });
+  } catch (error: any) {
+    console.error('❌ jobsAddonVerifySession error:', error?.message || error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to verify add-on payment. Please contact support.',
+    });
+  }
+};
+
+/**
+ * POST /api/stripe/jobs-addon/cancel
+ *
+ * Schedules cancellation. Inside the minimum term, cancel_at is pinned to
+ * the term end. Outside, cancel_at_period_end lets the current month finish.
+ */
+export const jobsAddonCancel = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId: string = (req as any).user?.userId;
+    if (!userId) return res.status(401).json({ success: false, message: 'Unauthorised.' });
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        jobsAddonSubscriptionId: true,
+        jobsAddonStatus: true,
+        jobsAddonMinimumTermEnd: true,
+      },
+    });
+
+    if (!user?.jobsAddonSubscriptionId || !hasJobsAddon(user)) {
+      return res.status(409).json({
+        success: false,
+        message: 'No active jobs add-on to cancel.',
+      });
+    }
+
+    const stripe = getStripe();
+    const now = new Date();
+    let endsAt: Date;
+
+    if (user.jobsAddonMinimumTermEnd && now < user.jobsAddonMinimumTermEnd) {
+      // Inside minimum term — cancel at the term end
+      await stripe.subscriptions.update(user.jobsAddonSubscriptionId, {
+        cancel_at: Math.floor(user.jobsAddonMinimumTermEnd.getTime() / 1000),
+      });
+      endsAt = user.jobsAddonMinimumTermEnd;
+    } else {
+      // Outside minimum term — cancel at end of current period
+      await stripe.subscriptions.update(user.jobsAddonSubscriptionId, {
+        cancel_at_period_end: true,
+      });
+      const sub = await stripe.subscriptions.retrieve(user.jobsAddonSubscriptionId);
+      const item = sub.items.data[0];
+      endsAt = new Date((item?.current_period_end ?? 0) * 1000);
+    }
+
+    // Re-sync so the dashboard shows the cancelAt immediately
+    await reconcileJobsAddon(user.jobsAddonSubscriptionId, userId);
+
+    res.json({
+      success: true,
+      data: { endsAt: endsAt.toISOString() },
+    });
+  } catch (error: any) {
+    console.error('❌ jobsAddonCancel error:', error?.message || error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to cancel add-on. Please try again.',
     });
   }
 };

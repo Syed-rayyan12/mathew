@@ -8,6 +8,8 @@ import {
   type BillingPeriod,
   type PlanTier,
   type StripeTier,
+  JOBS_ADDON_MONTHLY_PENCE,
+  jobsAddonLookupKey,
 } from './pricing';
 
 export type PlanKey = 'standard' | 'platinum';
@@ -225,4 +227,49 @@ export async function ensurePlanPrices(): Promise<PlanPriceIds> {
   }
 
   return ids;
+}
+
+// ── Jobs add-on product and price ────────────────────────────────────────────
+
+export async function ensureJobsAddonProduct(): Promise<string> {
+  const stripe = getStripe();
+  const existing = await stripe.products.list({ active: true, limit: 100 });
+  const product =
+    existing.data.find((p) => p.metadata.mathew_plan === 'jobs_addon') ||
+    (await stripe.products.create({
+      name: 'Jobs Add-on',
+      description: 'Post one job vacancy at a time. £5.99/mo, minimum 3 months.',
+      metadata: { mathew_plan: 'jobs_addon' },
+    }));
+  return product.id;
+}
+
+export async function ensureJobsAddonPrice(): Promise<string> {
+  const stripe = getStripe();
+  const key = jobsAddonLookupKey();
+  const page = await stripe.prices.list({
+    lookup_keys: [key],
+    active: true,
+    limit: 1,
+  });
+
+  if (page.data[0]) {
+    const price = page.data[0];
+    if (price.unit_amount !== JOBS_ADDON_MONTHLY_PENCE) {
+      throw new PriceCatalogueError(
+        `Stripe price ${key} charges ${price.unit_amount}, expected ${JOBS_ADDON_MONTHLY_PENCE}.`
+      );
+    }
+    return price.id;
+  }
+
+  const productId = await ensureJobsAddonProduct();
+  const created = await stripe.prices.create({
+    currency: 'gbp',
+    product: productId,
+    lookup_key: key,
+    recurring: { interval: 'month' },
+    unit_amount: JOBS_ADDON_MONTHLY_PENCE,
+  });
+  return created.id;
 }

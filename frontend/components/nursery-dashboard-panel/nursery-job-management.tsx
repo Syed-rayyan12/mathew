@@ -1,15 +1,18 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Loader2, X, Users, Search, Lock, Building2, Upload } from 'lucide-react'
+import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Loader2, X, Users, Search, Building2, Upload } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select'
 import { jobService, Job, JOB_TYPE_LABEL } from '@/lib/api/jobs'
 import { nurseryGroupService } from '@/lib/api/nursery-group'
+import { nurseryDashboardService } from '@/lib/api/nursery'
 import { uploadService } from '@/lib/api/upload'
 import { usePlanFeatures } from '@/hooks/use-nursery-plan'
 import { toast } from 'sonner'
 import Link from 'next/link'
+import JobsPaywallCard from './jobs-paywall-card'
+import SwapActiveJobDialog from './swap-active-job-dialog'
 
 const JOB_TYPES = [
   { value: 'FULL_TIME', label: 'Full-time' },
@@ -38,9 +41,11 @@ interface JobFormModalProps {
   onSaved: () => void
   groupName?: string
   groupLocation?: string
+  replaceActiveJobId?: string | null
+  onLimitHit?: (payload: any, isEdit: boolean, editId?: string, activeJob?: { id: string; title: string }) => void
 }
 
-function JobFormModal({ initial, onClose, onSaved, groupName, groupLocation }: JobFormModalProps) {
+function JobFormModal({ initial, onClose, onSaved, groupName, groupLocation, replaceActiveJobId, onLimitHit }: JobFormModalProps) {
   const isEdit = !!initial
   const [form, setForm] = useState<FormState>(
     initial
@@ -98,6 +103,7 @@ function JobFormModal({ initial, onClose, onSaved, groupName, groupLocation }: J
         responsibilities: form.responsibilities.split('\n').map(s => s.trim()).filter(Boolean),
         requirements: form.requirements.split('\n').map(s => s.trim()).filter(Boolean),
         image: form.image.trim() || null,
+        ...(replaceActiveJobId && { replaceActiveJobId }),
       }
 
       const res = isEdit
@@ -109,6 +115,11 @@ function JobFormModal({ initial, onClose, onSaved, groupName, groupLocation }: J
         onSaved()
         onClose()
       } else {
+        if ((res as any).code === 'ACTIVE_JOB_LIMIT' && onLimitHit) {
+          onLimitHit(payload, isEdit, initial?.id, (res as any).data?.activeJob)
+          onClose()
+          return
+        }
         toast.error(res.message || 'Failed to save job')
       }
     } catch (err: any) {
@@ -278,7 +289,7 @@ const TYPE_BADGE: Record<string, string> = {
 }
 
 export default function NurseryJobManagement() {
-  const { canPostJobs, loading: planLoading } = usePlanFeatures()
+  const { canPostJobs, loading: planLoading, jobsAddon, activeJobLimit, refresh: refreshPlan } = usePlanFeatures()
   const [jobs, setJobs] = useState<Job[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -286,6 +297,14 @@ export default function NurseryJobManagement() {
   const [editJob, setEditJob] = useState<Job | null>(null)
   const [groupName, setGroupName] = useState<string>('')
   const [groupLocation, setGroupLocation] = useState<string>('')
+  const [swapDialog, setSwapDialog] = useState<{
+    newJobTitle: string
+    activeJobId: string
+    activeJobTitle: string
+    pendingPayload: any
+    isEdit: boolean
+    editId?: string
+  } | null>(null)
 
   const load = useCallback(() => {
     setLoading(true)
@@ -308,6 +327,22 @@ export default function NurseryJobManagement() {
     }).catch(() => {})
   }, [])
 
+  // Verify add-on checkout session on return from Stripe
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const addonSession = params.get('addon_session')
+    if (addonSession) {
+      nurseryDashboardService.jobsAddonVerifySession(addonSession)
+        .then(() => {
+          refreshPlan()
+          // Clean up the URL
+          window.history.replaceState({}, '', window.location.pathname)
+          toast.success('Jobs add-on activated!')
+        })
+        .catch(() => toast.error('Failed to verify add-on payment'))
+    }
+  }, [])
+
   // Don't judge the plan until the server has answered.
   if (planLoading) {
     return (
@@ -318,25 +353,7 @@ export default function NurseryJobManagement() {
   }
 
   if (!canPostJobs) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-10 max-w-md">
-          <Lock size={40} className="text-yellow-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Platinum Plan Required</h2>
-          <p className="text-gray-500 text-sm mb-6">
-            Job posting is available on the <strong>Platinum</strong> plan —
-            Single Platinum or Group. Upgrade to post jobs and receive
-            applications directly from the website.
-          </p>
-          <Link
-            href="/nursery-dashboard/upgrade"
-            className="inline-block bg-primary text-white px-6 py-2.5 rounded-xl font-medium hover:opacity-90 transition text-sm"
-          >
-            Upgrade my plan
-          </Link>
-        </div>
-      </div>
-    )
+    return <JobsPaywallCard canPurchaseAddon={jobsAddon.canPurchase} />
   }
 
   const handleDelete = async (id: string) => {
@@ -385,6 +402,39 @@ export default function NurseryJobManagement() {
           <p className="text-2xl font-bold text-primary mt-1">{jobs.reduce((s, j) => s + (j._count?.applications ?? 0), 0)}</p>
         </div>
       </div>
+
+      {/* Add-on status strip */}
+      {jobsAddon.isLive && activeJobLimit !== null && (
+        <div className="flex items-center justify-between bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 text-sm">
+          <span className="text-blue-700">
+            Jobs add-on active · one live advert
+            {jobsAddon.cancelAt
+              ? ` · ends ${new Date(jobsAddon.cancelAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`
+              : jobsAddon.currentPeriodEnd
+                ? ` · renews ${new Date(jobsAddon.currentPeriodEnd).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`
+                : ''}
+          </span>
+          {!jobsAddon.cancelAt && (
+            <button
+              onClick={async () => {
+                if (!confirm('Are you sure you want to cancel your jobs add-on?')) return
+                try {
+                  const res = await nurseryDashboardService.jobsAddonCancel()
+                  if (res.success && res.data) {
+                    toast.success(`Add-on will end on ${new Date(res.data.endsAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`)
+                    refreshPlan()
+                  } else {
+                    toast.error((res as any).message || 'Failed to cancel')
+                  }
+                } catch { toast.error('Failed to cancel add-on') }
+              }}
+              className="text-xs text-blue-600 hover:underline"
+            >
+              Cancel add-on
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Search */}
       <div className="relative">
@@ -481,6 +531,41 @@ export default function NurseryJobManagement() {
           onSaved={load}
           groupName={groupName}
           groupLocation={groupLocation}
+          onLimitHit={(payload, isEdit, editId, activeJob) => {
+            setShowForm(false)
+            setEditJob(null)
+            setSwapDialog({
+              newJobTitle: payload.title,
+              activeJobId: activeJob?.id ?? '',
+              activeJobTitle: activeJob?.title ?? 'current job',
+              pendingPayload: payload,
+              isEdit,
+              editId,
+            })
+          }}
+        />
+      )}
+
+      {swapDialog && (
+        <SwapActiveJobDialog
+          newJobTitle={swapDialog.newJobTitle}
+          activeJobTitle={swapDialog.activeJobTitle}
+          activeJobId={swapDialog.activeJobId}
+          onCancel={() => setSwapDialog(null)}
+          onConfirm={async (replaceId) => {
+            setSwapDialog(null)
+            try {
+              const res = swapDialog.isEdit
+                ? await jobService.nurseryUpdateJob(swapDialog.editId!, { ...swapDialog.pendingPayload, replaceActiveJobId: replaceId })
+                : await jobService.nurseryCreateJob({ ...swapDialog.pendingPayload, replaceActiveJobId: replaceId })
+              if (res.success) {
+                toast.success('Job published, previous advert taken offline')
+                load()
+              } else {
+                toast.error((res as any).message || 'Failed to swap')
+              }
+            } catch { toast.error('Failed to swap jobs') }
+          }}
         />
       )}
     </div>

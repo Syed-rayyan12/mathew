@@ -5,6 +5,8 @@ import { useSearchParams } from 'next/navigation'
 import { X, MapPin, Clock, Briefcase, ChevronRight, CheckCircle, Search, Trash2 } from 'lucide-react'
 import { jobService, Job, JOB_TYPE_LABEL } from '@/lib/api/jobs'
 import { toast } from 'sonner'
+import Link from 'next/link'
+import { JOBS_ADDON_MONTHLY_PENCE, formatGbp } from '@/lib/pricing'
 
 const DEFAULT_JOB_IMAGE = 'https://images.unsplash.com/photo-1573496799652-408c2ac9fe98?w=600&h=300&fit=crop'
 
@@ -420,6 +422,20 @@ export default function JobsContent() {
             )}
           </div>
         )}
+        {/* Nursery owner banner */}
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl px-5 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
+          <div>
+            <p className="text-sm font-medium text-gray-900">Are you a nursery?</p>
+            <p className="text-xs text-gray-500 mt-0.5">Advertise your vacancy here from {formatGbp(JOBS_ADDON_MONTHLY_PENCE)}/mo</p>
+          </div>
+          <Link
+            href="/nursery-dashboard/jobs"
+            className="text-sm font-medium text-primary hover:underline whitespace-nowrap"
+          >
+            Post a job
+          </Link>
+        </div>
+
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredJobs.map(job => (
             <div

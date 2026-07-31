@@ -219,7 +219,12 @@ export function quote(
 /** £6.99/mo, monthly only. */
 export const JOBS_ADDON_MONTHLY_PENCE = 699;
 
-/** First three payments are locked in. */
+/**
+ * First three payments are locked in.
+ *
+ * Mirrored in frontend/lib/pricing.ts and asserted by pricing-parity.test.ts,
+ * so change both together or the suite fails.
+ */
 export const JOBS_ADDON_MINIMUM_MONTHS = 3;
 
 /** One live advert at a time on the add-on. Platinum is unlimited. */

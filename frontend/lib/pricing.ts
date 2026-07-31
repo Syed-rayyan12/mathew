@@ -16,6 +16,8 @@ export const SINGLE_STANDARD_MONTHLY_PENCE = 2395;
 export const SINGLE_PLATINUM_MONTHLY_PENCE = 3860;
 export const BESPOKE_THRESHOLD = 61;
 export const MIN_GROUP_SIZE = 2;
+// Display only. The Stripe Price these mirror is versioned server-side, so a
+// rate change here must be paired with a version bump in backend pricing.ts.
 export const JOBS_ADDON_MONTHLY_PENCE = 699;
 export const JOBS_ADDON_MINIMUM_MONTHS = 3;
 /** Largest group that can check out without talking to a human. */

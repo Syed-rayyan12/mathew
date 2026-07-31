@@ -22,7 +22,7 @@ export function requireFeature(feature: keyof PlanFeatures) {
 
     const account = await prisma.user.findUnique({
       where: { id: userId },
-      select: { planTier: true, paidNurseryCount: true, subscriptionStatus: true },
+      select: { planTier: true, paidNurseryCount: true, subscriptionStatus: true, jobsAddonStatus: true },
     });
 
     if (!account) {

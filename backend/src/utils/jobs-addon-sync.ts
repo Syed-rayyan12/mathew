@@ -8,7 +8,7 @@
 import Stripe from 'stripe';
 import prisma from '../config/database';
 import { getStripe } from './stripe';
-import { parseJobsAddonLookupKey } from './pricing';
+import { parseJobsAddonLookupKey, JOBS_ADDON_ACTIVE_LIMIT } from './pricing';
 import { SubscriptionShapeError } from './subscription-sync';
 
 export interface JobsAddonSnapshot {
@@ -78,11 +78,34 @@ export async function reconcileJobsAddon(
     },
   });
 
+  // Enforce the one-active-job limit. A former Platinum account may have
+  // multiple active jobs from when the tier was unlimited. Leaving them
+  // active would expose them all through PUBLIC_JOB_WHERE once the add-on
+  // makes the account eligible for job visibility again.
+  const activeJobs = await prisma.job.findMany({
+    where: { postedById: userId, isActive: true },
+    orderBy: { createdAt: 'desc' },
+    select: { id: true },
+  });
+
+  if (activeJobs.length > JOBS_ADDON_ACTIVE_LIMIT) {
+    const keepId = activeJobs[0].id;
+    await prisma.job.updateMany({
+      where: {
+        postedById: userId,
+        isActive: true,
+        id: { not: keepId },
+      },
+      data: { isActive: false },
+    });
+  }
+
   return snapshot;
 }
 
 /**
- * Marks the add-on as ended. Leaves jobsAddonMinimumTermEnd for the record.
+ * Marks the add-on as ended. Clears all add-on columns so a re-purchase
+ * starts with a clean slate (including minimumTermEnd).
  */
 export async function clearJobsAddon(
   userId: string,
@@ -94,6 +117,7 @@ export async function clearJobsAddon(
       jobsAddonStatus: status,
       jobsAddonCancelAt: null,
       jobsAddonCurrentPeriodEnd: null,
+      jobsAddonMinimumTermEnd: null,
     },
   });
 }

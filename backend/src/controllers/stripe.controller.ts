@@ -405,6 +405,16 @@ export const stripeWebhook = async (
       }
 
       await reconcileFromSubscription(subscriptionId, userId);
+
+      // If the plan is now Platinum, cancel any jobs add-on
+      const account = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { planTier: true },
+      });
+      if (account && normaliseTier(account.planTier) === 'platinum') {
+        await cancelJobsAddonOnPlatinum(userId);
+      }
+
       return res.json({ received: true });
     }
 
@@ -1004,47 +1014,45 @@ export const jobsAddonCheckout = async (req: Request, res: Response, next: NextF
     const userId: string = (req as any).user?.userId;
     if (!userId) return res.status(401).json({ success: false, message: 'Unauthorised.' });
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        stripeCustomerId: true,
-        subscriptionStatus: true,
-        planTier: true,
-        jobsAddonStatus: true,
-      },
-    });
+    const result = await prisma.$transaction(async (tx: any) => {
+      // Lock the user row to prevent concurrent checkout sessions
+      await tx.$queryRaw`SELECT "id" FROM "users" WHERE "id" = ${userId} FOR UPDATE`;
 
-    if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
-
-    if (!isLive(user)) {
-      return res.status(403).json({
-        success: false,
-        code: 'SUBSCRIPTION_INACTIVE',
-        message: 'Your subscription is not active. Reactivate your plan first.',
+      const user = await tx.user.findUnique({
+        where: { id: userId },
+        select: {
+          stripeCustomerId: true,
+          subscriptionStatus: true,
+          planTier: true,
+          jobsAddonStatus: true,
+          jobsAddonSubscriptionId: true,
+        },
       });
-    }
 
-    if (normaliseTier(user.planTier) === 'platinum') {
-      return res.status(409).json({
-        success: false,
-        code: 'ALREADY_INCLUDED',
-        message: 'Job posting is already included in your Platinum plan.',
-      });
-    }
+      if (!user) return { ok: false as const, status: 404, body: { success: false, message: 'User not found.' } };
 
-    if (hasJobsAddon(user)) {
-      return res.status(409).json({
-        success: false,
-        code: 'ADDON_ALREADY_ACTIVE',
-        message: 'You already have an active jobs add-on.',
-      });
-    }
+      if (!isLive(user)) {
+        return { ok: false as const, status: 403, body: { success: false, code: 'SUBSCRIPTION_INACTIVE', message: 'Your subscription is not active. Reactivate your plan first.' } };
+      }
 
-    if (!user.stripeCustomerId) {
-      return res.status(409).json({
-        success: false,
-        message: 'No Stripe customer found. Please contact support.',
-      });
+      if (normaliseTier(user.planTier) === 'platinum') {
+        return { ok: false as const, status: 409, body: { success: false, code: 'ALREADY_INCLUDED', message: 'Job posting is already included in your Platinum plan.' } };
+      }
+
+      // Check both mirrored status AND subscription ID to catch pending sessions
+      if (hasJobsAddon(user) || user.jobsAddonSubscriptionId) {
+        return { ok: false as const, status: 409, body: { success: false, code: 'ADDON_ALREADY_ACTIVE', message: 'You already have an active jobs add-on.' } };
+      }
+
+      if (!user.stripeCustomerId) {
+        return { ok: false as const, status: 409, body: { success: false, message: 'No Stripe customer found. Please contact support.' } };
+      }
+
+      return { ok: true as const, stripeCustomerId: user.stripeCustomerId };
+    }, { timeout: 10000 });
+
+    if (!result.ok) {
+      return res.status(result.status).json(result.body);
     }
 
     const priceId = await ensureJobsAddonPrice();
@@ -1052,7 +1060,7 @@ export const jobsAddonCheckout = async (req: Request, res: Response, next: NextF
     const session = await getStripe().checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'subscription',
-      customer: user.stripeCustomerId,
+      customer: result.stripeCustomerId,
       line_items: [{ price: priceId, quantity: 1 }],
       metadata: {
         mathew_purpose: 'jobs_addon',

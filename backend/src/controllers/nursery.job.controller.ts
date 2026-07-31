@@ -52,6 +52,19 @@ export const nurseryCreateJob = async (req: Request, res: Response, next: NextFu
         return { ok: false as const, status: 404, body: { success: false, message: 'User not found' } };
       }
 
+      // Resolve and validate location BEFORE any swap/deactivation so that a
+      // missing location returns an error without having mutated any data.
+      const group = owner.groups?.[0];
+      const resolvedNurseryName =
+        group?.name || owner.nurseryName ||
+        `${owner.firstName ?? ''} ${owner.lastName ?? ''}`.trim() || null;
+      const resolvedLocation =
+        (location && location.trim()) || group?.town || group?.city || '';
+
+      if (!resolvedLocation) {
+        return { ok: false as const, status: 400, body: { success: false, message: 'location is required' } };
+      }
+
       const limit = activeJobLimit(owner);
 
       // Count active jobs for this user
@@ -88,17 +101,6 @@ export const nurseryCreateJob = async (req: Request, res: Response, next: NextFu
           where: { id: decision.deactivateId },
           data: { isActive: false },
         });
-      }
-
-      const group = owner.groups?.[0];
-      const resolvedNurseryName =
-        group?.name || owner.nurseryName ||
-        `${owner.firstName ?? ''} ${owner.lastName ?? ''}`.trim() || null;
-      const resolvedLocation =
-        (location && location.trim()) || group?.town || group?.city || '';
-
-      if (!resolvedLocation) {
-        return { ok: false as const, status: 400, body: { success: false, message: 'location is required' } };
       }
 
       const job = await tx.job.create({

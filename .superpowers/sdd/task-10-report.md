@@ -1,49 +1,43 @@
-# Task 10 Report: Dashboard gates ask about billing too
+# Task 10 Report: Frontend UI — paywall card, swap dialog, status strip, public banner
 
-## What was implemented
+## Status: COMPLETE
 
-### Step 1 — `requireFeature` now checks subscription liveness
+## Commit SHA: 4498463
 
-File: `backend/src/middleware/entitlement.ts`
+## Files changed
 
-- Added `isLive` to the import from `../utils/entitlements`.
-- Widened the Prisma select in `requireFeature` to include `subscriptionStatus` (needed by `isLive()`).
-- Inserted an `if (!isLive(account))` guard between the `!account` guard and the `features(account)[feature]` check, returning HTTP 403 with `code: 'SUBSCRIPTION_INACTIVE'`. The `ADMIN` early-return above it is untouched, so admins pass through without a subscription.
+### Created
+- `frontend/components/nursery-dashboard-panel/jobs-paywall-card.tsx`
+  - Shows "Platinum Plan Required" lock when `canPurchaseAddon` is false
+  - Shows the £5.99/mo add-on offer card with checkout CTA when `canPurchaseAddon` is true
+  - Includes comparison link to Platinum upgrade
+  - Calls `nurseryDashboardService.jobsAddonCheckout()` on button click
 
-### Step 2 — Entitlements endpoint reports billing state
+- `frontend/components/nursery-dashboard-panel/swap-active-job-dialog.tsx`
+  - Modal dialog explaining the one-live-advert limit
+  - Shows which job will be taken offline
+  - Confirm button triggers `onConfirm(activeJobId)` callback
 
-File: `backend/src/controllers/nursery-dashboard.controller.ts`
+### Modified
+- `frontend/components/nursery-dashboard-panel/nursery-job-management.tsx`
+  - Added imports: `nurseryDashboardService`, `JobsPaywallCard`, `SwapActiveJobDialog`
+  - Removed unused `Lock` icon import
+  - Updated `usePlanFeatures` destructuring to include `jobsAddon`, `activeJobLimit`, `refresh: refreshPlan`
+  - Added `swapDialog` state for tracking pending swap
+  - Added `useEffect` to verify `addon_session` URL param on return from Stripe checkout
+  - Replaced old inline paywall block with `<JobsPaywallCard canPurchaseAddon={jobsAddon.canPurchase} />`
+  - Added add-on status strip after Stats grid (shows active status, renewal/end date, cancel button)
+  - Added `replaceActiveJobId` and `onLimitHit` props to `JobFormModalProps`
+  - Updated `handleSubmit` to include `replaceActiveJobId` in payload and detect `ACTIVE_JOB_LIMIT` response
+  - Added `SwapActiveJobDialog` render with confirm handler that re-submits with `replaceActiveJobId`
+  - Wired `onLimitHit` on `JobFormModal` to set swap dialog state
 
-- Added `isLive` to the import from `../utils/entitlements`.
-- Widened the Prisma select in `getMyEntitlements` to also fetch `subscriptionStatus`, `currentPeriodEnd`, and `cancelAt`.
-- Extended the JSON response with: `subscriptionStatus`, `isLive`, `currentPeriodEnd`, `cancelAt`.
+- `frontend/components/landing-page/jobs-content.tsx`
+  - Added imports: `Link` from `next/link`, `JOBS_ADDON_MONTHLY_PENCE` and `formatGbp` from `@/lib/pricing`
+  - Added nursery-owner recruitment banner before the job cards grid showing "Advertise your vacancy here from £5.99/mo" with link to `/nursery-dashboard/jobs`
 
-### Step 3 — Frontend type widened
+## TypeScript
+`tsc --noEmit` passed with zero errors.
 
-File: `frontend/lib/api/nursery.ts`
-
-- Added four new fields to the `Entitlements` interface: `subscriptionStatus: string`, `isLive: boolean`, `currentPeriodEnd: string | null`, `cancelAt: string | null`, with JSDoc matching the brief.
-
-## Test commands and output
-
-```
-cd backend && npx tsc --noEmit
-# (no output — clean)
-
-cd backend && npx vitest run
-# Test Files  6 passed (6)
-#       Tests 72 passed (72)
-
-cd frontend && npx tsc --noEmit
-# (no output — clean)
-```
-
-All 72 backend tests passed; both TypeScript compilations were error-free.
-
-## Deviations from the brief
-
-None. Every code snippet and ordering instruction was followed verbatim. The entitlements-endpoint select was located by the symbol `getMyEntitlements` rather than by the approximate line numbers in the brief (Tasks 1-9 shifted the file), as instructed.
-
-## Concerns
-
-None. The implementation is straightforward additive changes with no behavioural risk to existing passing tests.
+## Deviations from brief
+None. All four steps implemented as specified.

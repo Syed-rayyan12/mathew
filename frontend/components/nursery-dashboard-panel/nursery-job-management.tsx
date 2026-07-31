@@ -353,7 +353,12 @@ export default function NurseryJobManagement() {
     )
   }
 
-  if (!canPostJobs) {
+  // A lapsed add-on holder (status !== 'none' but not live) should still see
+  // their saved jobs and applications read-only — the spec says "nothing is
+  // deleted". Only show the full-page paywall to users who have never had
+  // jobs access at all.
+  const hadJobsAddon = jobsAddon.status !== 'none'
+  if (!canPostJobs && !hadJobsAddon) {
     return <JobsPaywallCard canPurchaseAddon={jobsAddon.canPurchase} />
   }
 
@@ -374,18 +379,27 @@ export default function NurseryJobManagement() {
 
   return (
     <div className="space-y-6">
+      {/* Lapsed add-on banner — spec says saved jobs and applications stay readable */}
+      {!canPostJobs && hadJobsAddon && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
+          Your jobs add-on has ended. Your saved jobs and applications are still here — re-subscribe to publish again.
+        </div>
+      )}
+
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">My Job Postings</h1>
           <p className="text-sm text-gray-500 mt-1">Post jobs for your nursery — they appear live on the Jobs page</p>
         </div>
-        <button
-          onClick={() => { setEditJob(null); setShowForm(true) }}
-          className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-medium hover:opacity-90 transition text-sm"
-        >
-          <Plus size={16} /> Post a Job
-        </button>
+        {canPostJobs && (
+          <button
+            onClick={() => { setEditJob(null); setShowForm(true) }}
+            className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-medium hover:opacity-90 transition text-sm"
+          >
+            <Plus size={16} /> Post a Job
+          </button>
+        )}
       </div>
 
       {/* Stats */}

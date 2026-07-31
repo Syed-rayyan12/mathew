@@ -1058,6 +1058,9 @@ export const jobsAddonCheckout = async (req: Request, res: Response, next: NextF
         mathew_purpose: 'jobs_addon',
         userId,
       },
+      subscription_data: {
+        metadata: { mathew_purpose: 'jobs_addon' },
+      },
       custom_text: {
         submit: {
           message: `⚠️ Monthly recurring payment of £5.99. Minimum commitment of ${JOBS_ADDON_MINIMUM_MONTHS} months. By completing payment you agree to these terms.`,
@@ -1113,8 +1116,10 @@ export const jobsAddonVerifySession = async (req: Request, res: Response, next: 
     const minimumTermEnd = new Date(createdDate);
     minimumTermEnd.setMonth(minimumTermEnd.getMonth() + JOBS_ADDON_MINIMUM_MONTHS);
 
-    await prisma.user.update({
-      where: { id: meta.userId },
+    // Only set minimumTermEnd if it hasn't been set yet (idempotent — matches
+    // the webhook handler). The spec says "written once, never recomputed".
+    await prisma.user.updateMany({
+      where: { id: meta.userId, jobsAddonMinimumTermEnd: null },
       data: { jobsAddonMinimumTermEnd: minimumTermEnd },
     });
 

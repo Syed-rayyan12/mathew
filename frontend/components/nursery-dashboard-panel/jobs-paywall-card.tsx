@@ -18,8 +18,8 @@ export default function JobsPaywallCard({ canPurchaseAddon }: JobsPaywallCardPro
     setLoading(true)
     try {
       const res = await nurseryDashboardService.jobsAddonCheckout()
-      if (res.success && res.data?.url) {
-        window.location.href = res.data.url
+      if (res.success && (res as any).url) {
+        window.location.href = (res as any).url
       } else {
         toast.error((res as any).message || 'Failed to start checkout')
         setLoading(false)

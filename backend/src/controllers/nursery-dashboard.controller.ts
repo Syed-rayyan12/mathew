@@ -12,6 +12,8 @@ import {
   isGroup,
   isLive,
   normaliseTier,
+  hasJobsAddon,
+  activeJobLimit,
 } from '../utils/entitlements';
 
 /**
@@ -600,6 +602,10 @@ export const getMyEntitlements = async (
         subscriptionStatus: true,
         currentPeriodEnd: true,
         cancelAt: true,
+        jobsAddonStatus: true,
+        jobsAddonCurrentPeriodEnd: true,
+        jobsAddonCancelAt: true,
+        jobsAddonMinimumTermEnd: true,
       },
     });
 
@@ -625,6 +631,15 @@ export const getMyEntitlements = async (
         isLive: isLive(account),
         currentPeriodEnd: account.currentPeriodEnd,
         cancelAt: account.cancelAt,
+        jobsAddon: {
+          status: account.jobsAddonStatus,
+          isLive: hasJobsAddon(account),
+          currentPeriodEnd: account.jobsAddonCurrentPeriodEnd,
+          cancelAt: account.jobsAddonCancelAt,
+          minimumTermEnd: account.jobsAddonMinimumTermEnd,
+          canPurchase: isLive(account) && normaliseTier(account.planTier) === 'standard' && !hasJobsAddon(account),
+        },
+        activeJobLimit: activeJobLimit(account),
       },
     });
   } catch (error) {

@@ -137,5 +137,7 @@ export function usePlanFeatures() {
     subscriptionStatus: data?.subscriptionStatus ?? 'none',
     currentPeriodEnd: data?.currentPeriodEnd ?? null,
     cancelAt: data?.cancelAt ?? null,
+    jobsAddon: data?.jobsAddon ?? { status: 'none', isLive: false, currentPeriodEnd: null, cancelAt: null, minimumTermEnd: null, canPurchase: false },
+    activeJobLimit: data?.activeJobLimit ?? 0,
   };
 }

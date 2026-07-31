@@ -91,11 +91,11 @@ export const jobService = {
     nurseryApiClient.get<Job[]>('/jobs/nursery/my-jobs', true),
 
   // Nursery: create a job
-  nurseryCreateJob: (data: Partial<Job>): Promise<ApiResponse<Job>> =>
+  nurseryCreateJob: (data: Partial<Job> & { replaceActiveJobId?: string }): Promise<ApiResponse<Job>> =>
     nurseryApiClient.post<Job>('/jobs/nursery', data, true),
 
   // Nursery: update a job
-  nurseryUpdateJob: (id: string, data: Partial<Job>): Promise<ApiResponse<Job>> =>
+  nurseryUpdateJob: (id: string, data: Partial<Job> & { replaceActiveJobId?: string }): Promise<ApiResponse<Job>> =>
     nurseryApiClient.put<Job>(`/jobs/nursery/${id}`, data, true),
 
   // Nursery: delete a job

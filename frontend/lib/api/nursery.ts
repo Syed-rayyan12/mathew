@@ -298,6 +298,15 @@ export interface PlanFeatureFlags {
   analytics: boolean;
 }
 
+export interface JobsAddonInfo {
+  status: string;
+  isLive: boolean;
+  currentPeriodEnd: string | null;
+  cancelAt: string | null;
+  minimumTermEnd: string | null;
+  canPurchase: boolean;
+}
+
 export interface Entitlements {
   planTier: 'standard' | 'platinum';
   paidNurseryCount: number;
@@ -312,6 +321,8 @@ export interface Entitlements {
   isLive: boolean;
   currentPeriodEnd: string | null;
   cancelAt: string | null;
+  jobsAddon: JobsAddonInfo;
+  activeJobLimit: number | null;
 }
 
 // Nursery Dashboard service (for nursery owners)
@@ -319,6 +330,15 @@ export const nurseryDashboardService = {
   // What this account may do — the dashboard's source of truth
   getEntitlements: async () => {
     return nurseryApiClient.get<Entitlements>('/nursery-dashboard/entitlements', true);
+  },
+  jobsAddonCheckout: async () => {
+    return nurseryApiClient.post<{ url: string }>('/stripe/jobs-addon/checkout', {}, true);
+  },
+  jobsAddonVerifySession: async (sessionId: string) => {
+    return nurseryApiClient.post('/stripe/jobs-addon/verify-session', { sessionId }, true);
+  },
+  jobsAddonCancel: async () => {
+    return nurseryApiClient.post<{ endsAt: string }>('/stripe/jobs-addon/cancel', {}, true);
   },
 
   // Get my nursery profile

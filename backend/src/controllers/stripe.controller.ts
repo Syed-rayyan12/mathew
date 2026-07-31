@@ -12,6 +12,7 @@ import {
   type PlanTier,
   type BillingPeriod,
   JOBS_ADDON_MINIMUM_MONTHS,
+  JOBS_ADDON_MONTHLY_PENCE,
 } from '../utils/pricing';
 import { isLive, planLabel, normaliseTier, hasJobsAddon } from '../utils/entitlements';
 import {
@@ -1006,7 +1007,7 @@ async function cancelJobsAddonOnPlatinum(userId: string): Promise<void> {
 /**
  * POST /api/stripe/jobs-addon/checkout
  *
- * Creates a Stripe Checkout session for the £5.99/mo jobs add-on.
+ * Creates a Stripe Checkout session for the £6.99/mo jobs add-on.
  * Guards: main plan live, tier is standard, no active add-on already.
  */
 export const jobsAddonCheckout = async (req: Request, res: Response, next: NextFunction) => {
@@ -1071,7 +1072,7 @@ export const jobsAddonCheckout = async (req: Request, res: Response, next: NextF
       },
       custom_text: {
         submit: {
-          message: `⚠️ Monthly recurring payment of £5.99. Minimum commitment of ${JOBS_ADDON_MINIMUM_MONTHS} months. By completing payment you agree to these terms.`,
+          message: `⚠️ Monthly recurring payment of £${(JOBS_ADDON_MONTHLY_PENCE / 100).toFixed(2)}. Minimum commitment of ${JOBS_ADDON_MINIMUM_MONTHS} months. By completing payment you agree to these terms.`,
         },
       },
       success_url: `${config.frontendUrl}/nursery-dashboard/jobs?addon_session={CHECKOUT_SESSION_ID}`,

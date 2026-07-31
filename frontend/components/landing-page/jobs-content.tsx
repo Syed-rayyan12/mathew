@@ -292,6 +292,20 @@ export default function JobsContent() {
               Join our growing team and help shape the future of early years childcare across the UK.
             </p>
 
+            {/* Nursery owners — straight through to the job posting flow */}
+            <div className="flex flex-wrap items-center gap-3">
+              <Link
+                href="/nursery-dashboard/jobs"
+                className="inline-flex items-center gap-2 bg-white text-gray-900 font-semibold text-sm px-6 py-3 rounded-lg shadow-lg hover:bg-gray-100 transition"
+              >
+                <Briefcase size={16} />
+                Post a job
+              </Link>
+              <span className="text-white/80 text-sm">
+                Advertise your vacancy from {formatGbp(JOBS_ADDON_MONTHLY_PENCE)}/mo
+              </span>
+            </div>
+
             {/* Search — job title + location, sits bottom-left */}
             <div className="w-full max-w-2xl mt-2">
               <div className="flex items-center bg-white rounded-lg gap-2 shadow-lg p-3 border border-gray-200 max-sm:flex-col max-sm:items-stretch">
@@ -416,26 +430,14 @@ export default function JobsContent() {
             <p className="text-lg font-medium">
               {(appliedSearch || appliedLocation) ? `No jobs found${appliedLocation ? ` in "${appliedLocation}"` : ''}${appliedSearch ? ` for "${appliedSearch}"` : ''}` : 'No open positions at the moment'}
             </p>
-            <p className="text-sm mt-1">{(appliedSearch || appliedLocation) ? 'Try a different search or location.' : 'Check back soon for new opportunities.'}</p>
+            {(appliedSearch || appliedLocation) && (
+              <p className="text-sm mt-1">Try a different search or location.</p>
+            )}
             {(appliedSearch || appliedLocation || typeFilter !== 'all') && (
               <button onClick={() => { setLocalSearch(''); setAppliedSearch(''); setLocalLocation(''); setAppliedLocation(''); setTypeFilter('all'); }} className="mt-4 text-sm text-primary underline">Clear all filters</button>
             )}
           </div>
         )}
-        {/* Nursery owner banner */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl px-5 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
-          <div>
-            <p className="text-sm font-medium text-gray-900">Are you a nursery?</p>
-            <p className="text-xs text-gray-500 mt-0.5">Advertise your vacancy here from {formatGbp(JOBS_ADDON_MONTHLY_PENCE)}/mo</p>
-          </div>
-          <Link
-            href="/nursery-dashboard/jobs"
-            className="text-sm font-medium text-primary hover:underline whitespace-nowrap"
-          >
-            Post a job
-          </Link>
-        </div>
-
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredJobs.map(job => (
             <div

@@ -23,8 +23,11 @@ export default function NurseriesPage() {
   const searchParams = useSearchParams();
   const cityFromUrl = searchParams.get('city') || '';
   const top20 = searchParams.get('top20') === 'true';
+  const searchFromUrl = searchParams.get('search') || '';
 
-  const [searchQuery, setSearchQuery] = useState("");
+  // Seeded from ?search= so the header site-search lands on filtered results;
+  // still fully editable afterwards via the box below.
+  const [searchQuery, setSearchQuery] = useState(searchFromUrl);
   // Raw nurseries fetched from API — never re-fetched on filter changes
   const [allNurseries, setAllNurseries] = useState<Nursery[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,6 +45,12 @@ export default function NurseriesPage() {
   useEffect(() => {
     fetchNurseries();
   }, [cityFromUrl, top20]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Searching again from the header while already on /products swaps the query
+  // string without remounting, so the initial useState value alone won't do.
+  useEffect(() => {
+    setSearchQuery(searchFromUrl);
+  }, [searchFromUrl]);
 
   // Load all shortlisted nursery IDs in a single API call (not N calls)
   const loadShortlistIds = useCallback(async () => {

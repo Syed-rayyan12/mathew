@@ -2,7 +2,7 @@
  * Sync for the jobs add-on subscription.
  *
  * Deliberately parallel to subscription-sync.ts, sharing no code with it.
- * Mixing them is how a £5.99 add-on change ends up breaking plan billing.
+ * Mixing them is how a £6.99 add-on change ends up breaking plan billing.
  */
 
 import Stripe from 'stripe';

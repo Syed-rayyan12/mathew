@@ -114,7 +114,7 @@ describe('rejections', () => {
 
 describe('jobs add-on pricing', () => {
   it('exports the add-on rate', () => {
-    expect(JOBS_ADDON_MONTHLY_PENCE).toBe(599);
+    expect(JOBS_ADDON_MONTHLY_PENCE).toBe(699);
   });
 
   it('exports the minimum term', () => {
@@ -127,9 +127,9 @@ describe('jobs add-on pricing', () => {
 
   it('round-trips the add-on lookup key', () => {
     const key = jobsAddonLookupKey();
-    expect(key).toBe('mathew_jobs_addon_monthly_v1');
+    expect(key).toBe('mathew_jobs_addon_monthly_v2');
     const parsed = parseJobsAddonLookupKey(key);
-    expect(parsed).toEqual({ version: 1 });
+    expect(parsed).toEqual({ version: 2 });
   });
 
   it('rejects plan keys from parseJobsAddonLookupKey', () => {

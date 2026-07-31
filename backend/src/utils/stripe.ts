@@ -238,7 +238,7 @@ export async function ensureJobsAddonProduct(): Promise<string> {
     existing.data.find((p) => p.metadata.mathew_plan === 'jobs_addon') ||
     (await stripe.products.create({
       name: 'Jobs Add-on',
-      description: 'Post one job vacancy at a time. £5.99/mo, minimum 3 months.',
+      description: 'Post one job vacancy at a time. £6.99/mo, minimum 3 months.',
       metadata: { mathew_plan: 'jobs_addon' },
     }));
   return product.id;

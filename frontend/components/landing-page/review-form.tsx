@@ -357,15 +357,15 @@ export default function NurseryReviewForm() {
 
       ) : !selectedNursery ? (
         /* SEARCH — centered when no nursery selected */
-        <div className="flex flex-col items-center justify-center min-h-[40vh] bg-primary  py-12 px-4">
+        <div className="flex flex-col items-center justify-center min-h-[40vh] bg-primary/5 border-y border-primary/15 py-12 px-4">
           <motion.h1
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-3xl font-medium text-white mb-2 text-center"
+            className="text-3xl font-medium text-gray-900 mb-2 text-center"
           >
             Submit Your Feedback
           </motion.h1>
-          <p className="text-white mb-8 text-center">Search for a nursery to get started</p>
+          <p className="text-gray-500 mb-8 text-center">Search for a nursery to get started</p>
 
           <div className="relative w-full max-w-xl">
             <div className="flex gap-2">

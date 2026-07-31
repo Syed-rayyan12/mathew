@@ -52,7 +52,7 @@ model User {
   /// Set when an admin schedules a cancellation. Billing continues until then.
   cancelAt             DateTime?
   /// ── Jobs add-on ──────────────────────────────────────────────────────────
-  /// Separate Stripe subscription for the £5.99/mo job-posting add-on.
+  /// Separate Stripe subscription for the £6.99/mo job-posting add-on.
   /// Same mirror pattern as the plan columns above.
   jobsAddonSubscriptionId   String?   @unique
   jobsAddonStatus           String    @default("none")

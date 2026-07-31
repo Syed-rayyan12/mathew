@@ -216,8 +216,8 @@ export function quote(
 
 // ── Jobs add-on ──────────────────────────────────────────────────────────────
 
-/** £5.99/mo, monthly only. */
-export const JOBS_ADDON_MONTHLY_PENCE = 599;
+/** £6.99/mo, monthly only. */
+export const JOBS_ADDON_MONTHLY_PENCE = 699;
 
 /** First three payments are locked in. */
 export const JOBS_ADDON_MINIMUM_MONTHS = 3;
@@ -225,8 +225,14 @@ export const JOBS_ADDON_MINIMUM_MONTHS = 3;
 /** One live advert at a time on the add-on. Platinum is unlimited. */
 export const JOBS_ADDON_ACTIVE_LIMIT = 1;
 
-/** Versioned independently of plan prices. */
-export const JOBS_ADDON_PRICE_VERSION = 1;
+/**
+ * Versioned independently of plan prices.
+ *
+ * v1 was £5.99. Stripe Prices are immutable, so a rate change means a new
+ * lookup key — bumping this mints the £6.99 Price and leaves anyone already
+ * subscribed on the v1 Price, which parseJobsAddonLookupKey still reads.
+ */
+export const JOBS_ADDON_PRICE_VERSION = 2;
 
 const ADDON_KEY_RE = /^mathew_jobs_addon_monthly_v(\d+)$/;
 

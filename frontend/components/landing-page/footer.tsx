@@ -11,7 +11,10 @@ export default function Footer() {
         minHeight: '60vh',
       }}
     >
-      <div className="max-w-7xl pt-4 sm:pt-8 md:pt-16 lg:pt-40 xl:pt-48 mx-auto px-4 md:px-6 lg:px-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 text-white">
+      {/* Top padding clears the horizontal rule baked into footer.png — the
+          columns used to start right on it, which made the first link in each
+          one hard to read. */}
+      <div className="max-w-7xl pt-10 sm:pt-16 md:pt-24 lg:pt-52 xl:pt-60 mx-auto px-4 md:px-6 lg:px-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 text-white">
 
         <div className="flex flex-col gap-4 sm:col-span-2 lg:col-span-1 pb-4">
           <img src="/images/footer-logo.png" alt="Logo" className="object-cover h-auto max-w-[120px] md:max-w-[150px]" />

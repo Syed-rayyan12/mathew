@@ -97,15 +97,14 @@ function JobFormModal({ initial, onClose, onSaved, groupName, groupLocation, rep
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
+    const payload = {
+      ...form,
+      responsibilities: form.responsibilities.split('\n').map(s => s.trim()).filter(Boolean),
+      requirements: form.requirements.split('\n').map(s => s.trim()).filter(Boolean),
+      image: form.image.trim() || null,
+      ...(replaceActiveJobId && { replaceActiveJobId }),
+    }
     try {
-      const payload = {
-        ...form,
-        responsibilities: form.responsibilities.split('\n').map(s => s.trim()).filter(Boolean),
-        requirements: form.requirements.split('\n').map(s => s.trim()).filter(Boolean),
-        image: form.image.trim() || null,
-        ...(replaceActiveJobId && { replaceActiveJobId }),
-      }
-
       const res = isEdit
         ? await jobService.nurseryUpdateJob(initial!.id, payload)
         : await jobService.nurseryCreateJob(payload)
@@ -115,14 +114,16 @@ function JobFormModal({ initial, onClose, onSaved, groupName, groupLocation, rep
         onSaved()
         onClose()
       } else {
-        if ((res as any).code === 'ACTIVE_JOB_LIMIT' && onLimitHit) {
-          onLimitHit(payload, isEdit, initial?.id, (res as any).data?.activeJob)
-          onClose()
-          return
-        }
         toast.error(res.message || 'Failed to save job')
       }
     } catch (err: any) {
+      // The API client throws ApiException for non-2xx. A 409 ACTIVE_JOB_LIMIT
+      // carries the active job's id and title so the swap dialog can name it.
+      if (err?.code === 'ACTIVE_JOB_LIMIT' && onLimitHit) {
+        onLimitHit(payload, isEdit, initial?.id, err.data?.activeJob)
+        onClose()
+        return
+      }
       toast.error(err?.message || 'An error occurred')
     } finally {
       setSaving(false)

@@ -144,12 +144,15 @@ export class ApiException extends Error {
    * FEATURE_NOT_IN_PLAN. Present only where the endpoint sets one.
    */
   code?: string;
+  /** Structured payload from the server, e.g. { activeJob: { id, title } }. */
+  data?: any;
 
-  constructor(message: string, statusCode: number, code?: string) {
+  constructor(message: string, statusCode: number, code?: string, data?: any) {
     super(message);
     this.name = 'ApiException';
     this.statusCode = statusCode;
     this.code = code;
+    this.data = data;
   }
 }
 
@@ -275,7 +278,8 @@ class ApiClient {
         throw new ApiException(
           data.message || 'An error occurred',
           response.status,
-          data.code
+          data.code,
+          data.data
         );
       }
 

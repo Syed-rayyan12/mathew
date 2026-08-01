@@ -34,8 +34,9 @@ const bebasNeue = localFont({
 
 
 export const metadata: Metadata = {
-  title: "Mathew Nursuries",
-  description: "Mathew",
+  title: "UK's leading nursery directory - discover, manage child nurseries",
+  description:
+    "Find, compare and review child nurseries across the UK. Search by location, read verified parent reviews, and manage your nursery listing in one place.",
 };
 
 export default function RootLayout({

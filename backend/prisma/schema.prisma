@@ -59,9 +59,25 @@ model User {
   jobsAddonCurrentPeriodEnd DateTime?
   jobsAddonCancelAt         DateTime?
   jobsAddonMinimumTermEnd   DateTime?
+
+  /// ── Plan term and cancellation notice ────────────────────────────────────
+  /// The 12-month minimum term on the main plan. Written once by the webhook
+  /// that starts the subscription, idempotently. Null means the account
+  /// predates the term — notice period only, never "term expired".
+  minimumTermEnd    DateTime?
+  /// When cancellation notice was served, starting the 90-day clock. Written
+  /// by the nursery's self-serve request, read by the admin confirm.
+  noticeServedAt    DateTime?
+  /// "none" | "requested" | "confirmed". Drives the admin queue.
+  noticeStatus      String    @default("none")
+  /// The campaign the account signed up under, carried from the CTA through
+  /// Checkout metadata. Null means full price from day one.
+  offerCode         String?
+
   jobs        Job[]       @relation("UserJobs")
   @@index([subscriptionStatus])
   @@index([jobsAddonStatus])
+  @@index([noticeStatus])
   @@map("users")
 }
 

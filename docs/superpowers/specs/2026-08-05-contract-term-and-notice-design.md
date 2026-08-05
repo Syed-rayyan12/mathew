@@ -193,9 +193,11 @@ line 10 is driven by the same flag.
 
 - `cancellationEndDate` — unit tests for all three branches: term binds,
   notice binds, grandfathered null.
-- `pricing-parity.test.ts` — picks up `PLAN_MINIMUM_TERM_MONTHS`,
-  `NOTICE_DAYS` and `OFFER_TRIAL_MONTHS` through its existing mirror
-  assertion.
+- `pricing-parity.test.ts` — gains an explicit assertion per new constant
+  (`PLAN_MINIMUM_TERM_MONTHS`, `NOTICE_DAYS`, `OFFER_TRIAL_MONTHS`). The
+  mirror is not automatic: the file asserts each constant by name through its
+  `constant(name)` helper, so a new value needs a new line in both
+  `frontend/lib/pricing.ts` and the test.
 - Webhook idempotency for `minimumTermEnd`, mirroring the add-on's coverage.
 - `request-cancellation` — a second call must not move `noticeServedAt`.
 - `schedule-cancellation` — rejects a date below the floor without

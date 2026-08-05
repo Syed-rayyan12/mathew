@@ -318,20 +318,29 @@ export function cancellationEndDate(
  * drift — change both together.
  */
 export const TERM_NOTICE_SENTENCE =
-  "Your subscription runs for a minimum of 12 months from your start date. You can cancel at any time by giving 90 days' written notice — your subscription ends on the later of your 12-month term end or 90 days from the date you give notice.";
+  'The service runs on a 12 month rolling contract. It renews automatically each year unless you cancel in writing at least 90 days before the renewal date.';
 
 /**
  * The same disclosure for someone who actually qualifies for the launch
  * offer.
  *
- * Split from the sentence above rather than shown to everyone: the free
- * months are gated on the launch6 code, so promising them on a full-price
- * Checkout button would misstate the price at the point of payment. Note the
- * twelve months INCLUDE the free ones — that is what planMinimumTermEnd does,
- * measuring from subscription creation rather than from the trial end.
+ * Split from the sentence above rather than shown to everyone: an account
+ * that has already had a term gets no second trial, so promising free months
+ * on its Checkout button would misstate the price at the point of payment.
+ * The two strings are otherwise identical — this one only adds the opening
+ * free-months sentence.
+ *
+ * NOTE: this wording is the client's, supplied verbatim, and it describes a
+ * different contract from the one the code enforces. "After that" reads as
+ * six free months followed by twelve paid, but planMinimumTermEnd measures
+ * the term from subscription creation, so the free months sit inside it.
+ * "Cancel at least 90 days before the renewal date" reads as an annual
+ * window, but cancellationEndDate accepts notice at any time and ends the
+ * subscription at max(term end, notice + 90 days). Raised and confirmed with
+ * the client on 2026-08-05; the copy was kept as written.
  */
 export const OFFER_TERM_NOTICE_SENTENCE =
-  "Your first six months are free. Your subscription runs for a minimum of 12 months from your start date, which includes the free months. You can cancel at any time by giving 90 days' written notice — your subscription ends on the later of your 12-month term end or 90 days from the date you give notice.";
+  'Your first six months are free. After that, the service runs on a 12 month rolling contract. It renews automatically each year unless you cancel in writing at least 90 days before the renewal date.';
 
 /**
  * The full Checkout button message for a billing interval.

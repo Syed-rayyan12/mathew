@@ -11,17 +11,19 @@
 import { cn } from '@/lib/utils';
 
 export const TERM_NOTICE_TEXT =
-  "Your subscription runs for a minimum of 12 months from your start date. You can cancel at any time by giving 90 days' written notice — your subscription ends on the later of your 12-month term end or 90 days from the date you give notice.";
+  'The service runs on a 12 month rolling contract. It renews automatically each year unless you cancel in writing at least 90 days before the renewal date.';
 
 /**
  * Shown only where the launch offer actually applies.
  *
- * The free months are gated on the launch6 code, so this must not appear on
- * the pricing page, on a full-price signup or on an upgrade — those people
- * are being charged today and the free-months claim would be untrue.
+ * An account that has already had a term gets no second trial, so this must
+ * not appear where such a customer is being charged today — the free-months
+ * claim would be untrue for them. Mirrors OFFER_TERM_NOTICE_SENTENCE in
+ * backend/src/utils/pricing.ts, which carries the full note on why this
+ * wording differs from what the code enforces.
  */
 export const OFFER_TERM_NOTICE_TEXT =
-  "Your first six months are free. Your subscription runs for a minimum of 12 months from your start date, which includes the free months. You can cancel at any time by giving 90 days' written notice — your subscription ends on the later of your 12-month term end or 90 days from the date you give notice.";
+  'Your first six months are free. After that, the service runs on a 12 month rolling contract. It renews automatically each year unless you cancel in writing at least 90 days before the renewal date.';
 
 export default function TermNotice({
   className = '',

@@ -86,10 +86,11 @@ describe('checkoutTerms', () => {
     expect(checkoutTerms('annual', true)).toContain(OFFER_TERM_NOTICE_SENTENCE);
   });
 
-  it('says the free months sit inside the twelve, not before them', () => {
-    // The term is measured from subscription creation, so the offer must not
-    // read as six free plus twelve paid.
-    expect(checkoutTerms('monthly', true)).toContain('which includes the free months');
+  it('opens with the free months only on the offer variant', () => {
+    // The two strings are otherwise identical; the offer one just prepends
+    // the free-months sentence.
+    expect(checkoutTerms('monthly', true)).toContain('Your first six months are free.');
+    expect(checkoutTerms('monthly', true)).toContain(TERM_NOTICE_SENTENCE.replace(/^The/, 'the'));
   });
 
   it('says upfront only on the annual variant', () => {

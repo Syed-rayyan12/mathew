@@ -26,7 +26,7 @@ describe('term disclosure parity', () => {
   it('is not hand-copied into the Checkout calls', () => {
     // Both Checkout paths must go through checkoutTerms(). A literal copy of
     // the sentence in the controller is the drift this whole task prevents.
-    expect(controller).not.toContain('Your subscription runs for a minimum of');
+    expect(controller).not.toContain('12 month rolling contract');
     expect(controller).not.toContain('Your first six months are free');
     expect(controller.split('checkoutTerms(').length - 1).toBe(2);
   });

@@ -7,6 +7,7 @@ import { authService, type PricedChangePreview } from '@/lib/api/auth';
 import Link from 'next/link';
 import NurseryCountPicker from '@/components/sharedComponents/nursery-count-picker';
 import { useEntitlements } from '@/hooks/use-nursery-plan';
+import { nurseryDashboardService } from '@/lib/api/nursery';
 import { MIN_GROUP_SIZE, formatGbp, planLabel, priceFor } from '@/lib/pricing';
 
 const PLATINUM_FEATURES = [
@@ -64,6 +65,37 @@ function UpgradeContent() {
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
   const [axis, setAxis] = useState<UpgradeAxis>('tier');
   const [nurseryCount, setNurseryCount] = useState<number>(MIN_GROUP_SIZE);
+  const [noticeState, setNoticeState] = useState<
+    | { status: 'idle' }
+    | { status: 'sending' }
+    | { status: 'sent'; endsAt: string }
+    | { status: 'error'; message: string }
+  >({ status: 'idle' });
+
+  /**
+   * Serving notice. The server records the date and returns the end date it
+   * implies; it is idempotent, so clicking twice returns the first date
+   * rather than restarting the ninety-day clock.
+   */
+  const requestCancellation = async () => {
+    setNoticeState({ status: 'sending' });
+    try {
+      const res = await nurseryDashboardService.requestPlanCancellation();
+      if (!res.success || !res.data) {
+        setNoticeState({
+          status: 'error',
+          message: res.message ?? 'Something went wrong.',
+        });
+        return;
+      }
+      setNoticeState({ status: 'sent', endsAt: res.data.endsAt });
+    } catch {
+      setNoticeState({
+        status: 'error',
+        message: 'Could not reach the server. Please try again.',
+      });
+    }
+  };
 
   const paidCount = entitlements?.paidNurseryCount ?? 1;
   const usedCount = entitlements?.allowance.used ?? 0;
@@ -545,6 +577,31 @@ function UpgradeContent() {
         <p className="text-center text-xs text-gray-400 mt-3">
           Secure payment via Stripe · Recurring payment · 90 days notice required to cancel
         </p>
+        {noticeState.status === 'sent' ? (
+          <p className="text-sm text-muted-foreground mt-4">
+            Your notice is recorded. Your subscription will end on{' '}
+            <strong>
+              {new Date(noticeState.endsAt).toLocaleDateString('en-GB', {
+                day: 'numeric', month: 'long', year: 'numeric',
+              })}
+            </strong>
+            . You&apos;ll be billed as normal until then, and our team will be in touch to confirm.
+          </p>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={requestCancellation}
+              disabled={noticeState.status === 'sending'}
+              className="text-sm underline text-muted-foreground hover:text-foreground mt-4 disabled:opacity-50"
+            >
+              {noticeState.status === 'sending' ? 'Recording…' : 'Request cancellation'}
+            </button>
+            {noticeState.status === 'error' && (
+              <p className="text-sm text-destructive mt-2">{noticeState.message}</p>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

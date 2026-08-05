@@ -340,6 +340,15 @@ export const nurseryDashboardService = {
   jobsAddonCancel: async () => {
     return nurseryApiClient.post<{ endsAt: string }>('/stripe/jobs-addon/cancel', {}, true);
   },
+  // Serving notice on the main plan. Records the date only — an admin
+  // confirms before Stripe is told anything.
+  requestPlanCancellation: async () => {
+    return nurseryApiClient.post<{ noticeServedAt: string; endsAt: string }>(
+      '/stripe/plan/request-cancellation',
+      {},
+      true
+    );
+  },
 
   // Get my nursery profile
   getMyNursery: async () => {

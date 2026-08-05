@@ -14,6 +14,7 @@ import {
   JOBS_ADDON_MINIMUM_MONTHS,
   JOBS_ADDON_MONTHLY_PENCE,
   OFFER_TRIAL_DAYS,
+  planMinimumTermEnd,
 } from '../utils/pricing';
 import { isOfferEligible } from '../utils/offer';
 import { isLive, planLabel, normaliseTier, hasJobsAddon } from '../utils/entitlements';
@@ -414,6 +415,21 @@ export const stripeWebhook = async (
         console.error('No account could be resolved for session', session.id);
         return res.json({ received: true });
       }
+
+      // The twelve-month term runs from when the subscription was created,
+      // trial or not — the trial is inside the term, not before it. Written
+      // once: updateMany with a null guard is what makes the webhook and any
+      // redelivery agree, matching the jobs add-on above.
+      const planSub = await getStripe().subscriptions.retrieve(subscriptionId);
+      await prisma.user.updateMany({
+        where: { id: userId, minimumTermEnd: null },
+        data: {
+          minimumTermEnd: planMinimumTermEnd(new Date(planSub.created * 1000)),
+          ...(session.metadata?.offerCode
+            ? { offerCode: session.metadata.offerCode }
+            : {}),
+        },
+      });
 
       await reconcileFromSubscription(subscriptionId, userId);
 

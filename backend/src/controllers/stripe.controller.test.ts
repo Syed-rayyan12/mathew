@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { isUsableProrationDate } from './stripe.controller';
+import { planMinimumTermEnd, OFFER_TRIAL_DAYS } from '../utils/pricing';
 
 // Representative timestamps. All arithmetic is in seconds.
 const PERIOD_START = 1_700_000_000; // arbitrary fixed point
@@ -57,5 +58,35 @@ describe('isUsableProrationDate (A2)', () => {
     const ts  = PERIOD_START + 60 * 60;
     const now = ts + 15 * 60;               // exactly 15 min, not over
     expect(isUsableProrationDate(ts, PERIOD_START, PERIOD_END, now)).toBe(true);
+  });
+});
+
+describe('plan minimum term on checkout.session.completed', () => {
+  it('is twelve months from subscription creation', () => {
+    const created = new Date('2026-08-05T12:00:00Z');
+    expect(planMinimumTermEnd(created).toISOString())
+      .toBe(new Date('2027-08-05T12:00:00Z').toISOString());
+  });
+
+  it('does not drift when the same subscription is seen twice', () => {
+    // Redelivery recomputes from sub.created, which never changes, so the
+    // value the guard would have written is identical to the one already
+    // stored. The `where: { minimumTermEnd: null }` clause then makes the
+    // second write a no-op rather than an equal-value overwrite.
+    const created = new Date('2026-08-05T12:00:00Z');
+    expect(planMinimumTermEnd(created).getTime())
+      .toBe(planMinimumTermEnd(created).getTime());
+  });
+
+  it('runs from subscription creation, not from the trial end', () => {
+    // A six-month trial sits INSIDE the term. If the term were measured from
+    // the first invoice the offer would buy an 18-month commitment, which is
+    // not what the disclosure says.
+    const created = new Date('2026-08-05T12:00:00Z');
+    const trialEnd = new Date(created.getTime() + OFFER_TRIAL_DAYS * 864e5);
+    expect(planMinimumTermEnd(created).getTime())
+      .toBeLessThan(planMinimumTermEnd(trialEnd).getTime());
+    expect(planMinimumTermEnd(created).toISOString())
+      .toBe(new Date('2027-08-05T12:00:00Z').toISOString());
   });
 });

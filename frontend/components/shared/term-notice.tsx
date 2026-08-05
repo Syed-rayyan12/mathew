@@ -11,9 +11,25 @@
 import { cn } from '@/lib/utils';
 
 export const TERM_NOTICE_TEXT =
-  "12-month minimum term. Subscriptions run for 12 months from your start date. To cancel, 90 days' written notice is required — your subscription ends on the later of your 12-month term end or 90 days from the date notice is given.";
+  "Your subscription runs for a minimum of 12 months from your start date. You can cancel at any time by giving 90 days' written notice — your subscription ends on the later of your 12-month term end or 90 days from the date you give notice.";
 
-export default function TermNotice({ className = '' }: { className?: string }) {
+/**
+ * Shown only where the launch offer actually applies.
+ *
+ * The free months are gated on the launch6 code, so this must not appear on
+ * the pricing page, on a full-price signup or on an upgrade — those people
+ * are being charged today and the free-months claim would be untrue.
+ */
+export const OFFER_TERM_NOTICE_TEXT =
+  "Your first six months are free. Your subscription runs for a minimum of 12 months from your start date, which includes the free months. You can cancel at any time by giving 90 days' written notice — your subscription ends on the later of your 12-month term end or 90 days from the date you give notice.";
+
+export default function TermNotice({
+  className = '',
+  offer = false,
+}: {
+  className?: string;
+  offer?: boolean;
+}) {
   return (
     <p
       // cn(), not template interpolation: the callers that inline this under a
@@ -25,7 +41,7 @@ export default function TermNotice({ className = '' }: { className?: string }) {
         className
       )}
     >
-      {TERM_NOTICE_TEXT}
+      {offer ? OFFER_TERM_NOTICE_TEXT : TERM_NOTICE_TEXT}
     </p>
   );
 }

@@ -318,13 +318,35 @@ export function cancellationEndDate(
  * drift — change both together.
  */
 export const TERM_NOTICE_SENTENCE =
-  "12-month minimum term. Subscriptions run for 12 months from your start date. To cancel, 90 days' written notice is required — your subscription ends on the later of your 12-month term end or 90 days from the date notice is given.";
+  "Your subscription runs for a minimum of 12 months from your start date. You can cancel at any time by giving 90 days' written notice — your subscription ends on the later of your 12-month term end or 90 days from the date you give notice.";
 
-/** The full Checkout button message for a billing interval. */
-export function checkoutTerms(billing: 'monthly' | 'annual'): string {
+/**
+ * The same disclosure for someone who actually qualifies for the launch
+ * offer.
+ *
+ * Split from the sentence above rather than shown to everyone: the free
+ * months are gated on the launch6 code, so promising them on a full-price
+ * Checkout button would misstate the price at the point of payment. Note the
+ * twelve months INCLUDE the free ones — that is what planMinimumTermEnd does,
+ * measuring from subscription creation rather than from the trial end.
+ */
+export const OFFER_TERM_NOTICE_SENTENCE =
+  "Your first six months are free. Your subscription runs for a minimum of 12 months from your start date, which includes the free months. You can cancel at any time by giving 90 days' written notice — your subscription ends on the later of your 12-month term end or 90 days from the date you give notice.";
+
+/**
+ * The full Checkout button message for a billing interval.
+ *
+ * `offerApplies` must be the server's own eligibility decision, never the
+ * code the client claimed.
+ */
+export function checkoutTerms(
+  billing: 'monthly' | 'annual',
+  offerApplies = false,
+): string {
   const opening =
     billing === 'annual'
       ? '⚠️ Annual recurring payment — paid upfront each year.'
       : '⚠️ Monthly recurring payment.';
-  return `${opening} ${TERM_NOTICE_SENTENCE} By completing payment you agree to these terms.`;
+  const terms = offerApplies ? OFFER_TERM_NOTICE_SENTENCE : TERM_NOTICE_SENTENCE;
+  return `${opening} ${terms} By completing payment you agree to these terms.`;
 }

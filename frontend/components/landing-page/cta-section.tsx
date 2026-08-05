@@ -50,7 +50,7 @@ const CTASection = () => {
                     >
                       {offerOpen ? "Sign Up & Get Started — It's Free!" : 'Sign Up & Get Started'}
                     </Link>
-                    {offerOpen && <TermNotice className="text-left mx-0 px-0 pt-6" />}
+                    {offerOpen && <TermNotice offer className="text-left mx-0 px-0 pt-6" />}
                 </motion.div>
                 <motion.div 
                     className="flex-1"

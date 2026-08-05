@@ -7,6 +7,7 @@ import {
   cancellationEndDate,
   planMinimumTermEnd,
   TERM_NOTICE_SENTENCE,
+  OFFER_TERM_NOTICE_SENTENCE,
   checkoutTerms,
 } from './pricing';
 
@@ -74,6 +75,21 @@ describe('checkoutTerms', () => {
   it('carries the disclosure in both billing variants', () => {
     expect(checkoutTerms('monthly')).toContain(TERM_NOTICE_SENTENCE);
     expect(checkoutTerms('annual')).toContain(TERM_NOTICE_SENTENCE);
+  });
+
+  it('promises free months only when the offer applies', () => {
+    // The default matters: a missing second argument must mean full price,
+    // so a new call site cannot accidentally promise a trial nobody granted.
+    expect(checkoutTerms('monthly')).not.toContain('first six months are free');
+    expect(checkoutTerms('annual')).not.toContain('first six months are free');
+    expect(checkoutTerms('monthly', true)).toContain(OFFER_TERM_NOTICE_SENTENCE);
+    expect(checkoutTerms('annual', true)).toContain(OFFER_TERM_NOTICE_SENTENCE);
+  });
+
+  it('says the free months sit inside the twelve, not before them', () => {
+    // The term is measured from subscription creation, so the offer must not
+    // read as six free plus twelve paid.
+    expect(checkoutTerms('monthly', true)).toContain('which includes the free months');
   });
 
   it('says upfront only on the annual variant', () => {

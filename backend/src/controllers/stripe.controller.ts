@@ -311,7 +311,7 @@ export const createCheckoutSession = async (
         existingUserId: existingUser?.id || '',
         offerCode: offerApplies ? String(offerCode) : '',
       },
-      custom_text: { submit: { message: checkoutTerms(billing) } },
+      custom_text: { submit: { message: checkoutTerms(billing, offerApplies) } },
       success_url: `${config.frontendUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${config.frontendUrl}/payment-cancelled`,
     });

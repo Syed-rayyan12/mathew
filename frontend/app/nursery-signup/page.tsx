@@ -15,6 +15,7 @@ import { UK_CITIES } from "@/lib/data/uk-cities";
 import { UK_TOWNS } from "@/lib/data/uk-towns";
 import { API_CONFIG } from "@/lib/api/config";
 import NurseryCountPicker from "@/components/sharedComponents/nursery-count-picker";
+import TermNotice from "@/components/shared/term-notice";
 import {
   MIN_GROUP_SIZE,
   formatGbp,
@@ -650,6 +651,7 @@ function NurserySignupContent() {
                 <p className="text-xs text-gray-400 mt-1">
                   {planInfo.label} · Recurring · 90 days notice to cancel
                 </p>
+                <TermNotice className="text-left mx-0 px-0 py-2" />
               </div>
 
               <Button

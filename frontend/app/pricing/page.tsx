@@ -3,6 +3,7 @@ import Header from '@/components/landing-page/header'
 import MiniNav from '@/components/landing-page/little-nav'
 import Pricing from '@/components/landing-page/pricing'
 import PricingBanner from '@/components/landing-page/pricng-banner'
+import TermNotice from '@/components/shared/term-notice'
 import React from 'react'
 
 const page = () => {
@@ -12,6 +13,7 @@ const page = () => {
       <MiniNav/>
       <Header/>
       <PricingBanner/>
+      <TermNotice/>
       <Pricing/>
       <Footer/>
     </>

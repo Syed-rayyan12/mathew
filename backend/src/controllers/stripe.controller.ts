@@ -16,6 +16,7 @@ import {
   OFFER_TRIAL_DAYS,
   planMinimumTermEnd,
   cancellationEndDate,
+  checkoutTerms,
 } from '../utils/pricing';
 import { isOfferEligible } from '../utils/offer';
 import { isLive, planLabel, normaliseTier, hasJobsAddon } from '../utils/entitlements';
@@ -310,13 +311,7 @@ export const createCheckoutSession = async (
         existingUserId: existingUser?.id || '',
         offerCode: offerApplies ? String(offerCode) : '',
       },
-      custom_text: {
-        submit: {
-          message: billing === 'annual'
-            ? '⚠️ Annual recurring payment — paid upfront each year. 90 days written notice required before renewal date to cancel. By completing payment you agree to these terms.'
-            : '⚠️ Monthly recurring payment. 90 days written notice required before renewal date to cancel. By completing payment you agree to these terms.',
-        },
-      },
+      custom_text: { submit: { message: checkoutTerms(billing) } },
       success_url: `${config.frontendUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${config.frontendUrl}/payment-cancelled`,
     });
@@ -870,13 +865,7 @@ export const createUpgradeSession = async (
         : { customer_email: user.email }),
       line_items: [{ price: prices[tier][billing], quantity: count }],
       metadata: { upgrade: 'true', userId },
-      custom_text: {
-        submit: {
-          message: billing === 'annual'
-            ? '⚠️ Annual recurring payment — paid upfront each year. 90 days written notice required before renewal date to cancel. By completing payment you agree to these terms.'
-            : '⚠️ Monthly recurring payment. 90 days written notice required before renewal date to cancel. By completing payment you agree to these terms.',
-        },
-      },
+      custom_text: { submit: { message: checkoutTerms(billing) } },
       success_url: `${config.frontendUrl}/nursery-dashboard/upgrade?session_id={CHECKOUT_SESSION_ID}&upgraded=true`,
       cancel_url: `${config.frontendUrl}/nursery-dashboard/upgrade?cancelled=true`,
     });

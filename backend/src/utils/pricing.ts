@@ -308,3 +308,23 @@ export function cancellationEndDate(
   if (!minimumTermEnd) return noticeEnd;
   return noticeEnd > minimumTermEnd ? noticeEnd : minimumTermEnd;
 }
+
+/**
+ * The contract disclosure shown on the Checkout button.
+ *
+ * Mirrored word for word by frontend/components/shared/term-notice.tsx and
+ * asserted by term-notice.test.ts. It is the reason a month-two cancellation
+ * request is answerable rather than a chargeback, so the copies must not
+ * drift — change both together.
+ */
+export const TERM_NOTICE_SENTENCE =
+  "12-month minimum term. Subscriptions run for 12 months from your start date. To cancel, 90 days' written notice is required — your subscription ends on the later of your 12-month term end or 90 days from the date notice is given.";
+
+/** The full Checkout button message for a billing interval. */
+export function checkoutTerms(billing: 'monthly' | 'annual'): string {
+  const opening =
+    billing === 'annual'
+      ? '⚠️ Annual recurring payment — paid upfront each year.'
+      : '⚠️ Monthly recurring payment.';
+  return `${opening} ${TERM_NOTICE_SENTENCE} By completing payment you agree to these terms.`;
+}

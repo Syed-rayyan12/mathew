@@ -6,6 +6,8 @@ import {
   OFFER_TRIAL_DAYS,
   cancellationEndDate,
   planMinimumTermEnd,
+  TERM_NOTICE_SENTENCE,
+  checkoutTerms,
 } from './pricing';
 
 const d = (iso: string) => new Date(iso);
@@ -65,5 +67,21 @@ describe('cancellationEndDate', () => {
     const served = new Date(termEnd.getTime() - NOTICE_DAYS * 864e5);
     expect(cancellationEndDate(termEnd, served).toISOString())
       .toBe(termEnd.toISOString());
+  });
+});
+
+describe('checkoutTerms', () => {
+  it('carries the disclosure in both billing variants', () => {
+    expect(checkoutTerms('monthly')).toContain(TERM_NOTICE_SENTENCE);
+    expect(checkoutTerms('annual')).toContain(TERM_NOTICE_SENTENCE);
+  });
+
+  it('says upfront only on the annual variant', () => {
+    expect(checkoutTerms('annual')).toContain('paid upfront each year');
+    expect(checkoutTerms('monthly')).not.toContain('paid upfront');
+  });
+
+  it('fits inside Stripe\'s 1200-character cap', () => {
+    expect(checkoutTerms('annual').length).toBeLessThan(1200);
   });
 });

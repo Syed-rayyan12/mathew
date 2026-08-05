@@ -252,3 +252,59 @@ export function parseJobsAddonLookupKey(
   if (!match) return null;
   return { version: Number(match[1]) };
 }
+
+// ── Plan minimum term and cancellation notice ────────────────────────────────
+
+/**
+ * Every new plan subscription runs for twelve months.
+ *
+ * Mirrored in frontend/lib/pricing.ts and asserted by pricing-parity.test.ts,
+ * so change both together or the suite fails.
+ */
+export const PLAN_MINIMUM_TERM_MONTHS = 12;
+
+/** Written notice required before a subscription may end. */
+export const NOTICE_DAYS = 90;
+
+/** The launch offer: six months at £0 before the first real invoice. */
+export const OFFER_TRIAL_MONTHS = 6;
+
+/**
+ * What Stripe is actually told. Stripe takes days, not months, so six months
+ * is fixed at 183 days rather than drifting with the calendar — a subscriber
+ * starting in a short month must not get a shorter trial than one starting in
+ * a long month.
+ */
+export const OFFER_TRIAL_DAYS = 183;
+
+/**
+ * Twelve calendar months from the start, clamped so that a start date with no
+ * counterpart in the target month lands on that month's last day rather than
+ * rolling into the next one. setMonth() alone rolls over.
+ */
+export function planMinimumTermEnd(start: Date): Date {
+  const end = new Date(start.getTime());
+  const day = end.getUTCDate();
+  end.setUTCDate(1);
+  end.setUTCMonth(end.getUTCMonth() + PLAN_MINIMUM_TERM_MONTHS);
+  const lastDay = new Date(
+    Date.UTC(end.getUTCFullYear(), end.getUTCMonth() + 1, 0)
+  ).getUTCDate();
+  end.setUTCDate(Math.min(day, lastDay));
+  return end;
+}
+
+/**
+ * The earliest date a subscription may end: the later of the two clocks.
+ *
+ * A null term means the account predates the twelve-month commitment, so the
+ * notice period alone governs. Null is "no term", never "term expired".
+ */
+export function cancellationEndDate(
+  minimumTermEnd: Date | null,
+  noticeServedAt: Date,
+): Date {
+  const noticeEnd = new Date(noticeServedAt.getTime() + NOTICE_DAYS * 864e5);
+  if (!minimumTermEnd) return noticeEnd;
+  return noticeEnd > minimumTermEnd ? noticeEnd : minimumTermEnd;
+}

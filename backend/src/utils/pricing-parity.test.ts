@@ -7,6 +7,9 @@ import {
   SINGLE_PLATINUM_MONTHLY_PENCE,
   JOBS_ADDON_MONTHLY_PENCE,
   JOBS_ADDON_MINIMUM_MONTHS,
+  PLAN_MINIMUM_TERM_MONTHS,
+  NOTICE_DAYS,
+  OFFER_TRIAL_MONTHS,
 } from './pricing';
 
 // process.cwd(), not __dirname — vitest transforms to ESM, where __dirname
@@ -49,5 +52,19 @@ describe('frontend jobs add-on mirror', () => {
 
   it('has the same minimum term', () => {
     expect(constant('JOBS_ADDON_MINIMUM_MONTHS')).toBe(JOBS_ADDON_MINIMUM_MONTHS);
+  });
+});
+
+describe('frontend term and notice mirror', () => {
+  it('has the same minimum term', () => {
+    expect(constant('PLAN_MINIMUM_TERM_MONTHS')).toBe(PLAN_MINIMUM_TERM_MONTHS);
+  });
+
+  it('has the same notice period', () => {
+    expect(constant('NOTICE_DAYS')).toBe(NOTICE_DAYS);
+  });
+
+  it('has the same trial length', () => {
+    expect(constant('OFFER_TRIAL_MONTHS')).toBe(OFFER_TRIAL_MONTHS);
   });
 });

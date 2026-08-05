@@ -97,3 +97,11 @@ export function priceFor(
     isGroup: true,
   };
 }
+
+// ── Plan minimum term and cancellation notice ────────────────────────────────
+// Mirrors backend/src/utils/pricing.ts. Asserted by the backend's
+// pricing-parity.test.ts — change both files together.
+
+export const PLAN_MINIMUM_TERM_MONTHS = 12;
+export const NOTICE_DAYS = 90;
+export const OFFER_TRIAL_MONTHS = 6;

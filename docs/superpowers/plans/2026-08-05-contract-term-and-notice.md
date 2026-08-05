@@ -572,16 +572,31 @@ describe('plan minimum term on checkout.session.completed', () => {
       .toBe(new Date('2027-08-05T12:00:00Z').toISOString());
   });
 
-  it('is guarded so a redelivered webhook cannot move it', () => {
-    // The guard is the `where: { minimumTermEnd: null }` clause: a row that
-    // already has a term matches nothing, so updateMany writes zero rows.
-    const where = { id: 'USR123', minimumTermEnd: null };
-    expect(where.minimumTermEnd).toBeNull();
+  it('does not drift when the same subscription is seen twice', () => {
+    // Redelivery recomputes from sub.created, which never changes, so the
+    // value the guard would have written is identical to the one already
+    // stored. The `where: { minimumTermEnd: null }` clause then makes the
+    // second write a no-op rather than an equal-value overwrite.
+    const created = new Date('2026-08-05T12:00:00Z');
+    expect(planMinimumTermEnd(created).getTime())
+      .toBe(planMinimumTermEnd(created).getTime());
+  });
+
+  it('runs from subscription creation, not from the trial end', () => {
+    // A six-month trial sits INSIDE the term. If the term were measured from
+    // the first invoice the offer would buy an 18-month commitment, which is
+    // not what the disclosure says.
+    const created = new Date('2026-08-05T12:00:00Z');
+    const trialEnd = new Date(created.getTime() + OFFER_TRIAL_DAYS * 864e5);
+    expect(planMinimumTermEnd(created).getTime())
+      .toBeLessThan(planMinimumTermEnd(trialEnd).getTime());
+    expect(planMinimumTermEnd(created).toISOString())
+      .toBe(new Date('2027-08-05T12:00:00Z').toISOString());
   });
 });
 ```
 
-Add `planMinimumTermEnd` to that file's imports from `../utils/pricing`.
+Import `planMinimumTermEnd` and `OFFER_TRIAL_DAYS` from `../utils/pricing` in that file.
 
 - [ ] **Step 4: Run the suite**
 
@@ -772,11 +787,14 @@ with (the `import` goes in the file's existing import block at lines 12-16, **no
  * notice is treated as serving it now, which is what happens when an owner
  * phones in and an admin acts on the spot.
  */
-const floorFor = (
+export const floorFor = (
   minimumTermEnd: Date | null,
   noticeServedAt: Date | null,
 ): Date => cancellationEndDate(minimumTermEnd, noticeServedAt ?? new Date());
 ```
+
+`floorFor` is exported so its test exercises the shipped function rather than
+a copy of it.
 
 - [ ] **Step 2: Widen the lookup to fetch the new columns**
 
@@ -876,12 +894,7 @@ Create `backend/src/controllers/admin-subscription.controller.test.ts`:
 
 ```ts
 import { describe, it, expect } from 'vitest';
-import { cancellationEndDate } from '../utils/pricing';
-
-const floorFor = (
-  minimumTermEnd: Date | null,
-  noticeServedAt: Date | null,
-): Date => cancellationEndDate(minimumTermEnd, noticeServedAt ?? new Date());
+import { floorFor } from './admin-subscription.controller';
 
 describe('scheduleCancellation floor', () => {
   it('is the term end when notice was served early in the term', () => {
@@ -903,13 +916,20 @@ describe('scheduleCancellation floor', () => {
     expect(floor.getTime()).toBeGreaterThanOrEqual(before + 89 * 864e5);
   });
 
-  it('rejects a date below the floor unless overridden', () => {
-    const floor = new Date('2027-01-01T00:00:00Z');
-    const requested = new Date('2026-06-01T00:00:00Z');
-    expect(requested < floor).toBe(true);
+  it('puts the floor beyond a mid-term date an admin might pick', () => {
+    // The rejection branch compares `requested < floor`. This pins the input
+    // that makes it fire: a term that has ten months to run.
+    const termEnd = new Date('2027-01-01T00:00:00Z');
+    const floor = floorFor(termEnd, new Date('2026-03-01T00:00:00Z'));
+    expect(new Date('2026-06-01T00:00:00Z').getTime()).toBeLessThan(floor.getTime());
   });
 });
 ```
+
+Importing from the controller pulls in its Prisma and Stripe imports. If that
+makes the test file fail to load under vitest, move `floorFor` and the
+`cancellationEndDate` import into a new `backend/src/utils/cancellation-floor.ts`,
+import it from both the controller and the test, and say so in your report.
 
 - [ ] **Step 5: Run the suite and type-check**
 
@@ -929,13 +949,16 @@ git commit -m "feat: enforce the term floor on scheduled cancellations"
 
 **Files:**
 - Create: `frontend/components/shared/term-notice.tsx`
+- Create: `backend/src/controllers/term-notice.test.ts`
+- Modify: `backend/src/utils/pricing.ts` (add `TERM_NOTICE_SENTENCE` and `checkoutTerms`)
+- Modify: `backend/src/utils/cancellation.test.ts` (append the `checkoutTerms` describe block)
 - Modify: `frontend/app/pricing/page.tsx:13` (after `<PricingBanner/>`)
 - Modify: `frontend/app/nursery-signup/page.tsx:651`
-- Modify: `backend/src/controllers/stripe.controller.ts:301-307` and `:846-852` (both `custom_text.submit` strings)
+- Modify: `backend/src/controllers/stripe.controller.ts:301-307` and `:846-852` (both `custom_text.submit` blocks)
 
 **Interfaces:**
-- Consumes: nothing.
-- Produces: `<TermNotice />` and the exported constant `TERM_NOTICE_TEXT: string` from `frontend/components/shared/term-notice.tsx`. Task 8 imports `TermNotice`.
+- Consumes: the constants added in Task 1.
+- Produces: `TERM_NOTICE_SENTENCE: string` and `checkoutTerms(billing: 'monthly' | 'annual'): string` from `backend/src/utils/pricing.ts`; `<TermNotice />` and `TERM_NOTICE_TEXT: string` from `frontend/components/shared/term-notice.tsx`. Task 8 imports `TermNotice`.
 
 - [ ] **Step 1: Create the component**
 
@@ -996,54 +1019,103 @@ import TermNotice from '@/components/shared/term-notice'
 
 Match the surrounding JSX indentation and keep the existing closing tag structure — read lines 645-660 before editing.
 
-- [ ] **Step 4: Update both Stripe `custom_text` strings**
+- [ ] **Step 4: Build both Stripe `custom_text` strings from one constant**
 
-In `backend/src/controllers/stripe.controller.ts`, replace the `custom_text` block at lines 301-307 with:
+The sentence must not be hand-copied into four string literals. Add to
+`backend/src/utils/pricing.ts`, beneath the term constants from Task 1:
 
 ```ts
-      custom_text: {
-        submit: {
-          message: billing === 'annual'
-            ? "⚠️ Annual recurring payment — paid upfront each year. 12-month minimum term. To cancel, 90 days' written notice is required — your subscription ends on the later of your 12-month term end or 90 days from the date notice is given. By completing payment you agree to these terms."
-            : "⚠️ Monthly recurring payment. 12-month minimum term. To cancel, 90 days' written notice is required — your subscription ends on the later of your 12-month term end or 90 days from the date notice is given. By completing payment you agree to these terms.",
-        },
-      },
+/**
+ * The contract disclosure shown on the Checkout button.
+ *
+ * Mirrored word for word by frontend/components/shared/term-notice.tsx and
+ * asserted by term-notice.test.ts. It is the reason a month-two cancellation
+ * request is answerable rather than a chargeback, so the copies must not
+ * drift — change both together.
+ */
+export const TERM_NOTICE_SENTENCE =
+  "12-month minimum term. Subscriptions run for 12 months from your start date. To cancel, 90 days' written notice is required — your subscription ends on the later of your 12-month term end or 90 days from the date notice is given.";
+
+/** The full Checkout button message for a billing interval. */
+export function checkoutTerms(billing: 'monthly' | 'annual'): string {
+  const opening =
+    billing === 'annual'
+      ? '⚠️ Annual recurring payment — paid upfront each year.'
+      : '⚠️ Monthly recurring payment.';
+  return `${opening} ${TERM_NOTICE_SENTENCE} By completing payment you agree to these terms.`;
+}
 ```
 
-Replace the block at lines 846-852 in `createUpgradeSession` with the identical two strings.
+Then replace the `custom_text` block at lines 301-307 of
+`backend/src/controllers/stripe.controller.ts` with:
 
-Stripe caps `custom_text.submit.message` at 1200 characters; both strings are well under.
+```ts
+      custom_text: { submit: { message: checkoutTerms(billing) } },
+```
+
+and the block at lines 846-852 in `createUpgradeSession` with the identical
+single line. Add `checkoutTerms` to that file's `../utils/pricing` imports.
+
+Stripe caps `custom_text.submit.message` at 1200 characters; both variants are
+well under.
+
+- [ ] **Step 4b: Test the composed strings**
+
+Append to `backend/src/utils/cancellation.test.ts`:
+
+```ts
+import { TERM_NOTICE_SENTENCE, checkoutTerms } from './pricing';
+
+describe('checkoutTerms', () => {
+  it('carries the disclosure in both billing variants', () => {
+    expect(checkoutTerms('monthly')).toContain(TERM_NOTICE_SENTENCE);
+    expect(checkoutTerms('annual')).toContain(TERM_NOTICE_SENTENCE);
+  });
+
+  it('says upfront only on the annual variant', () => {
+    expect(checkoutTerms('annual')).toContain('paid upfront each year');
+    expect(checkoutTerms('monthly')).not.toContain('paid upfront');
+  });
+
+  it('fits inside Stripe\'s 1200-character cap', () => {
+    expect(checkoutTerms('annual').length).toBeLessThan(1200);
+  });
+});
+```
 
 - [ ] **Step 5: Assert the copies agree**
 
 Create `backend/src/controllers/term-notice.test.ts`:
 
+The backend cannot import from the frontend, so the component holds the only
+second copy of the sentence. This test pins the two together.
+
 ```ts
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { TERM_NOTICE_SENTENCE } from '../utils/pricing';
 
 // Vitest runs from backend/.
-const controller = readFileSync(
-  join(process.cwd(), 'src/controllers/stripe.controller.ts'),
-  'utf8'
-);
 const component = readFileSync(
   join(process.cwd(), '../frontend/components/shared/term-notice.tsx'),
   'utf8'
 );
 
-const CLAUSE =
-  "your subscription ends on the later of your 12-month term end or 90 days from the date notice is given";
-
 describe('term disclosure parity', () => {
-  it('appears in the shared component', () => {
-    expect(component).toContain(CLAUSE);
+  it('matches the frontend component word for word', () => {
+    expect(component).toContain(TERM_NOTICE_SENTENCE);
   });
 
-  it('appears on both Checkout buttons', () => {
-    const occurrences = controller.split(CLAUSE).length - 1;
-    expect(occurrences).toBe(4); // two billing branches on each of two paths
+  it('is not hand-copied into the Checkout calls', () => {
+    // Both Checkout paths must go through checkoutTerms(). A literal copy of
+    // the sentence in the controller is the drift this whole task prevents.
+    const controller = readFileSync(
+      join(process.cwd(), 'src/controllers/stripe.controller.ts'),
+      'utf8'
+    );
+    expect(controller).not.toContain('12-month minimum term. Subscriptions run');
+    expect(controller.split('checkoutTerms(billing)').length - 1).toBe(2);
   });
 });
 ```

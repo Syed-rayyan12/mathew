@@ -12,6 +12,7 @@ import CreateNurseryHero from '@/components/landing-page/create-nursery-hero'
 import ArticleNews from '@/components/landing-page/article-news'
 import NewsletterSignup from '@/components/landing-page/newsletter-signup'
 import Footer from '@/components/landing-page/footer'
+import OfferBalloon from '@/components/landing-page/offer-balloon'
 
 
 const page = () => {
@@ -33,6 +34,7 @@ const page = () => {
       <ArticleNews />
       <NewsletterSignup  />
       <Footer />
+      <OfferBalloon />
 
 
     </>

@@ -27,6 +27,12 @@ export interface AdminSubscription {
   isLive: boolean;
   currentPeriodEnd: string | null;
   cancelAt: string | null;
+  /** The 12-month term end. Null means a grandfathered account: notice only. */
+  minimumTermEnd: string | null;
+  /** When notice was served, starting the 90-day clock. */
+  noticeServedAt: string | null;
+  /** "none" | "requested" | "confirmed". Drives the notice queue badge. */
+  noticeStatus: string;
   canCancel: boolean;
   createdAt: string;
   groups: Array<{ id: string; name: string }>;

@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { adminService, AdminCoupon, AdminPaymentRecord, AdminSubscription } from '@/lib/api/admin';
+import { ApiException } from '@/lib/api/client';
 import { toast } from 'sonner';
 
 const TAB_OPTIONS = [
@@ -177,7 +178,7 @@ export default function Subscriptions() {
       .slice(0, 10);
     const answer = window.prompt(
       `End ${item.ownerName || item.email}'s subscription on which date? ` +
-        'Billing continues until then. 90 days is the notice period.',
+        'Billing continues until then. The end date is the later of the 12-month term end and 90 days from the date notice was served.',
       suggested
     );
     if (!answer) return;
@@ -188,6 +189,16 @@ export default function Subscriptions() {
       toast.success(`Cancellation scheduled for ${formatDate(answer)}`);
       loadSubscriptions();
     } catch (err) {
+      // The server refuses a date inside the minimum term unless override is
+      // passed. Say which date would be allowed rather than just "409".
+      if (err instanceof ApiException && err.code === 'BELOW_TERM_FLOOR') {
+        toast.error(
+          `That date is inside the minimum term. The earliest this subscription may end is ${new Date(
+            err.data.floor
+          ).toLocaleDateString('en-GB')}.`
+        );
+        return;
+      }
       toast.error(err instanceof Error ? err.message : 'Failed to schedule cancellation');
     }
   };
@@ -352,6 +363,14 @@ export default function Subscriptions() {
                               : '—'}
                         </td>
                         <td className="px-3 py-5">
+                          {item.noticeStatus === 'requested' && (
+                            <span className="inline-flex items-center rounded-full bg-amber-100 text-amber-900 text-xs px-2 py-1 mb-2">
+                              Notice requested{' '}
+                              {item.noticeServedAt
+                                ? new Date(item.noticeServedAt).toLocaleDateString('en-GB')
+                                : ''}
+                            </span>
+                          )}
                           {item.canCancel ? (
                             <div className="flex flex-wrap gap-2">
                               <Button variant="outline" size="sm" onClick={() => handleSchedule(item)}>

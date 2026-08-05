@@ -510,6 +510,9 @@ export const getSubscriptions = async (
         currentPeriodEnd: true,
         cancelAt: true,
         stripeSubscriptionId: true,
+        minimumTermEnd: true,
+        noticeServedAt: true,
+        noticeStatus: true,
         groups: {
           select: { id: true, name: true },
           orderBy: { createdAt: 'asc' },
@@ -546,6 +549,10 @@ export const getSubscriptions = async (
         isLive: isLive(owner),
         currentPeriodEnd: owner.currentPeriodEnd,
         cancelAt: owner.cancelAt,
+        // The term and notice clocks the admin confirm is bound by.
+        minimumTermEnd: owner.minimumTermEnd,
+        noticeServedAt: owner.noticeServedAt,
+        noticeStatus: owner.noticeStatus,
         canCancel: Boolean(owner.stripeSubscriptionId) && isLive(owner),
         createdAt: owner.createdAt,
         groups: owner.groups,

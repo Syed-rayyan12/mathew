@@ -9,6 +9,7 @@ import {
   jobsAddonCheckout,
   jobsAddonVerifySession,
   jobsAddonCancel,
+  requestPlanCancellation,
 } from '../controllers/stripe.controller';
 import { authenticate } from '../middleware';
 
@@ -26,6 +27,10 @@ router.post('/apply-change', authenticate, applyChange);
 // because there is no subscription to update and no card guaranteed on file
 router.post('/create-upgrade-session', authenticate, createUpgradeSession);
 router.post('/verify-upgrade-session', authenticate, verifyUpgradeSession);
+
+// Serving notice on the main plan. Records the date only — an admin confirms
+// before Stripe is told anything.
+router.post('/plan/request-cancellation', authenticate, requestPlanCancellation);
 
 // Jobs add-on
 router.post('/jobs-addon/checkout', authenticate, jobsAddonCheckout);

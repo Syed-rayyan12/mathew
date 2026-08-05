@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { isUsableProrationDate } from './stripe.controller';
-import { planMinimumTermEnd, OFFER_TRIAL_DAYS } from '../utils/pricing';
+import { planMinimumTermEnd, OFFER_TRIAL_DAYS, cancellationEndDate } from '../utils/pricing';
 
 // Representative timestamps. All arithmetic is in seconds.
 const PERIOD_START = 1_700_000_000; // arbitrary fixed point
@@ -88,5 +88,19 @@ describe('plan minimum term on checkout.session.completed', () => {
       .toBeLessThan(planMinimumTermEnd(trialEnd).getTime());
     expect(planMinimumTermEnd(created).toISOString())
       .toBe(new Date('2027-08-05T12:00:00Z').toISOString());
+  });
+});
+
+describe('requestPlanCancellation date maths', () => {
+  it('reports the term end when notice is served early', () => {
+    const termEnd = new Date('2027-01-01T00:00:00Z');
+    const served = new Date('2026-03-01T00:00:00Z');
+    expect(cancellationEndDate(termEnd, served).toISOString()).toBe(termEnd.toISOString());
+  });
+
+  it('reports notice plus ninety days for a grandfathered account', () => {
+    const served = new Date('2026-03-01T00:00:00Z');
+    expect(cancellationEndDate(null, served).toISOString())
+      .toBe(new Date('2026-05-30T00:00:00Z').toISOString());
   });
 });

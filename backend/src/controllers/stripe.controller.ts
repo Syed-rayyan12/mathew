@@ -15,6 +15,7 @@ import {
   JOBS_ADDON_MONTHLY_PENCE,
   OFFER_TRIAL_DAYS,
   planMinimumTermEnd,
+  cancellationEndDate,
 } from '../utils/pricing';
 import { isOfferEligible } from '../utils/offer';
 import { isLive, planLabel, normaliseTier, hasJobsAddon } from '../utils/entitlements';
@@ -1229,6 +1230,79 @@ export const jobsAddonCancel = async (req: Request, res: Response, next: NextFun
     return res.status(500).json({
       success: false,
       message: 'Failed to cancel add-on. Please try again.',
+    });
+  }
+};
+
+/**
+ * POST /api/stripe/plan/request-cancellation
+ *
+ * Records that notice was served. Deliberately does not touch Stripe — an
+ * admin confirms before anything is scheduled, because someone has to check
+ * the notice was genuinely given. See admin-subscription.controller.ts.
+ *
+ * Idempotent by design: a second request returns the first noticeServedAt
+ * rather than restarting the clock, so an owner cannot move their own end
+ * date in either direction by clicking twice.
+ */
+export const requestPlanCancellation = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId: string = (req as any).user?.userId;
+    if (!userId) return res.status(401).json({ success: false, message: 'Unauthorised.' });
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        stripeSubscriptionId: true,
+        subscriptionStatus: true,
+        minimumTermEnd: true,
+        noticeServedAt: true,
+        noticeStatus: true,
+      },
+    });
+
+    if (!user?.stripeSubscriptionId || !isLive(user)) {
+      return res.status(409).json({
+        success: false,
+        message: 'No active subscription to cancel.',
+      });
+    }
+
+    // First request wins. Re-reading rather than re-writing is the whole
+    // point: the served date is evidence, not a mutable preference.
+    const servedAt = user.noticeServedAt ?? new Date();
+
+    if (!user.noticeServedAt) {
+      await prisma.user.updateMany({
+        where: { id: userId, noticeServedAt: null },
+        data: { noticeServedAt: servedAt, noticeStatus: 'requested' },
+      });
+    }
+
+    const fresh = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { noticeServedAt: true, minimumTermEnd: true },
+    });
+
+    const effectiveServedAt = fresh?.noticeServedAt ?? servedAt;
+    const endsAt = cancellationEndDate(fresh?.minimumTermEnd ?? null, effectiveServedAt);
+
+    res.json({
+      success: true,
+      data: {
+        noticeServedAt: effectiveServedAt.toISOString(),
+        endsAt: endsAt.toISOString(),
+      },
+    });
+  } catch (error: any) {
+    console.error('❌ requestPlanCancellation error:', error?.message || error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to record your cancellation request. Please try again.',
     });
   }
 };

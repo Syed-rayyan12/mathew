@@ -162,6 +162,7 @@ async function ensureAccount(session: any): Promise<string | null> {
           firstName: meta.firstName,
           lastName: meta.lastName,
           phone: meta.phone,
+          landline: meta.landline || null,
           nurseryName: meta.nurseryName,
           role: 'NURSERY_OWNER',
           isActive: false,
@@ -205,7 +206,7 @@ export const createCheckoutSession = async (
   next: NextFunction
 ) => {
   try {
-    const { email, password, firstName, lastName, phone, nurseryName, city, town, plan, billingPeriod, nurseryCount } = req.body;
+    const { email, password, firstName, lastName, phone, landline, nurseryName, city, town, plan, billingPeriod, nurseryCount } = req.body;
 
     // Validate required fields before creating checkout
     if (!email || !password || !firstName || !lastName || !phone || !nurseryName) {
@@ -305,6 +306,7 @@ export const createCheckoutSession = async (
         lastName,
         email,
         phone,
+        landline: landline || '',
         nurseryName,
         city: city || '',
         town: town || '',

@@ -83,6 +83,7 @@ function NurserySignupContent() {
     lastName: "",
     email: "",
     password: "",
+    landline: "",
     phone: "",
     nurseryName: "",
     city: "",
@@ -93,6 +94,7 @@ function NurserySignupContent() {
     lastName: "",
     email: "",
     password: "",
+    landline: "",
     phone: "",
     nurseryName: "",
     city: "",
@@ -103,7 +105,7 @@ function NurserySignupContent() {
     const { name, value } = e.target;
     
     // Format UK phone number as user types
-    if (name === 'phone') {
+    if (name === 'phone' || name === 'landline') {
       const cleaned = value.replace(/\D/g, '');
       let formatted = '';
       
@@ -149,6 +151,7 @@ function NurserySignupContent() {
       lastName: "",
       email: "",
       password: "",
+      landline: "",
       phone: "",
       nurseryName: "",
       city: "",
@@ -199,11 +202,17 @@ function NurserySignupContent() {
     }
 
     // UK Phone validation
+    // Optional, so only validated when the visitor actually entered something.
+    if (formData.landline.trim() && !validateUKPhone(formData.landline)) {
+      newErrors.landline = "Please enter a valid UK telephone number (e.g., 0161 234 5678)";
+      isValid = false;
+    }
+
     if (!formData.phone.trim()) {
-      newErrors.phone = "Phone number is required";
+      newErrors.phone = "Mobile number is required";
       isValid = false;
     } else if (!validateUKPhone(formData.phone)) {
-      newErrors.phone = "Please enter a valid UK phone number (e.g., +44 7123 456789 or 07123 456789)";
+      newErrors.phone = "Please enter a valid UK mobile number (e.g., +44 7123 456789 or 07123 456789)";
       isValid = false;
     }
 
@@ -406,9 +415,28 @@ function NurserySignupContent() {
               </div>
             </div>
 
-            {/* Phone */}
+            {/* Tel — landline. Optional: plenty of nurseries run from a mobile. */}
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number (UK Only) *</Label>
+              <Label htmlFor="landline">Tel (UK Only)</Label>
+              <Input
+                id="landline"
+                name="landline"
+                type="tel"
+                placeholder="0161 234 5678"
+                value={formData.landline}
+                onChange={handleChange}
+                disabled={isLoading}
+                maxLength={17}
+                className={errors.landline ? "border-red-500" : ""}
+              />
+              <div className={`overflow-hidden transition-all duration-500 ease-in-out ${errors.landline ? 'max-h-10 opacity-100 translate-y-0' : 'max-h-0 opacity-0 -translate-y-2'}`}>
+                <span className="text-red-500 text-sm block mt-1">{errors.landline || ' '}</span>
+              </div>
+            </div>
+
+            {/* Mobile */}
+            <div className="space-y-2">
+              <Label htmlFor="phone">Mobile (UK Only) *</Label>
               <Input
                 id="phone"
                 name="phone"

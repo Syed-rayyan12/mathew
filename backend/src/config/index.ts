@@ -41,6 +41,12 @@ export const config = {
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
   },
 
+  // Launch offer — the six free months advertised on the homepage CTA.
+  // Unset means the offer is closed and every signup pays from day one.
+  offer: {
+    endsAt: process.env.OFFER_ENDS_AT || '',
+  },
+
   // Cloudflare R2
   r2: {
     accountId: process.env.R2_ACCOUNT_ID || '',

@@ -13,7 +13,9 @@ import {
   type BillingPeriod,
   JOBS_ADDON_MINIMUM_MONTHS,
   JOBS_ADDON_MONTHLY_PENCE,
+  OFFER_TRIAL_DAYS,
 } from '../utils/pricing';
+import { isOfferEligible } from '../utils/offer';
 import { isLive, planLabel, normaliseTier, hasJobsAddon } from '../utils/entitlements';
 import {
   SubscriptionShapeError,
@@ -200,7 +202,7 @@ export const createCheckoutSession = async (
   next: NextFunction
 ) => {
   try {
-    const { email, password, firstName, lastName, phone, nurseryName, city, town, plan, billingPeriod, nurseryCount } = req.body;
+    const { email, password, firstName, lastName, phone, nurseryName, city, town, plan, billingPeriod, nurseryCount, offerCode } = req.body;
 
     // Validate required fields before creating checkout
     if (!email || !password || !firstName || !lastName || !phone || !nurseryName) {
@@ -271,10 +273,17 @@ export const createCheckoutSession = async (
     // leaves the site up.
     const prices = await ensurePlanPrices();
 
+    // The client may claim any code; eligibility is decided here. An
+    // ineligible claim is not an error — it just means full price.
+    const offerApplies = isOfferEligible(offerCode);
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'subscription',
       allow_promotion_codes: true,
+      ...(offerApplies
+        ? { subscription_data: { trial_period_days: OFFER_TRIAL_DAYS } }
+        : {}),
       customer_email: email,
       // A catalogue Price, not price_data. Inline prices are one-time use and
       // cannot be updated, and subscriptions.update takes a Price id — so an
@@ -297,6 +306,7 @@ export const createCheckoutSession = async (
         town: town || '',
         hashedPassword,
         existingUserId: existingUser?.id || '',
+        offerCode: offerApplies ? String(offerCode) : '',
       },
       custom_text: {
         submit: {

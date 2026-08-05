@@ -4,16 +4,25 @@ import React, { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { motion, useInView } from 'framer-motion';
 import Link from 'next/link';
+import { OFFER_CODE, offerIsOpen } from '@/lib/offer';
+import TermNotice from '@/components/shared/term-notice';
 
-const stats = [
+const statsFor = (offerOpen: boolean) => [
     { percent: '', text: 'Join Today', color: '#3CC1DC' },
-    { percent: '', text: 'Get first 6 months free', color: '#D0508C' },
+    {
+        percent: '',
+        text: offerOpen ? 'Get first 6 months free' : 'Trusted by nurseries',
+        color: '#D0508C',
+    },
     { percent: '', text: 'Multi-Year Discount', color: '#F15F25' },
 ];
 
 const CTASection = () => {
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true, amount: 0.3 });
+
+    const offerOpen = offerIsOpen();
+    const stats = statsFor(offerOpen);
 
     return (
         <div className="py-16 px-24 relative bg-white" ref={ref}>
@@ -24,14 +33,24 @@ const CTASection = () => {
                     animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
                     transition={{ duration: 0.8 }}
                 >
-                     <p className="text-primary font-medium font-heading text-[30px]">Limited Time Offer</p>
+                     {offerOpen && (
+                       <p className="text-primary font-medium font-heading text-[30px]">Limited Time Offer</p>
+                     )}
                     <h2 className="text-4xl md:text-5xl font-heading font-medium mb-2 text-foreground leading-tight">
                        Join My Nursery <span className="text-secondary">Platform</span> Today
                     </h2>
-                    <p className='text-[16px] text-muted-foreground font-sans mb-8'>Get your first 6 months completely FREE when you sign up.</p>
-                    <Link href="/pricing" className="bg-secondary hover:bg-secondary/80 text-white px-6 rounded-[6px] py-4">
-                              Sign Up & Get Started — It's Free!
-                    </Link >
+                    <p className='text-[16px] text-muted-foreground font-sans mb-8'>
+                      {offerOpen
+                        ? 'Get your first 6 months completely FREE — then a 12-month minimum term applies.'
+                        : 'List your nursery and reach families searching in your area.'}
+                    </p>
+                    <Link
+                      href={offerOpen ? `/nursery-signup?offer=${OFFER_CODE}` : '/nursery-signup'}
+                      className="bg-secondary hover:bg-secondary/80 text-white px-6 rounded-[6px] py-4"
+                    >
+                      {offerOpen ? "Sign Up & Get Started — It's Free!" : 'Sign Up & Get Started'}
+                    </Link>
+                    {offerOpen && <TermNotice className="text-left mx-0 px-0 pt-6" />}
                 </motion.div>
                 <motion.div 
                     className="flex-1"

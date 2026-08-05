@@ -18,7 +18,7 @@ import {
   cancellationEndDate,
   checkoutTerms,
 } from '../utils/pricing';
-import { isOfferEligible } from '../utils/offer';
+import { OFFER_CODE, offerAppliesTo } from '../utils/offer';
 import { isLive, planLabel, normaliseTier, hasJobsAddon } from '../utils/entitlements';
 import {
   SubscriptionShapeError,
@@ -205,7 +205,7 @@ export const createCheckoutSession = async (
   next: NextFunction
 ) => {
   try {
-    const { email, password, firstName, lastName, phone, nurseryName, city, town, plan, billingPeriod, nurseryCount, offerCode } = req.body;
+    const { email, password, firstName, lastName, phone, nurseryName, city, town, plan, billingPeriod, nurseryCount } = req.body;
 
     // Validate required fields before creating checkout
     if (!email || !password || !firstName || !lastName || !phone || !nurseryName) {
@@ -276,9 +276,10 @@ export const createCheckoutSession = async (
     // leaves the site up.
     const prices = await ensurePlanPrices();
 
-    // The client may claim any code; eligibility is decided here. An
-    // ineligible claim is not an error — it just means full price.
-    const offerApplies = isOfferEligible(offerCode);
+    // Open to anyone while the window is open. A returning owner who already
+    // had a term is the one exclusion — otherwise cancel-and-resubscribe
+    // renews the free months forever.
+    const offerApplies = offerAppliesTo(existingUser);
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -309,7 +310,7 @@ export const createCheckoutSession = async (
         town: town || '',
         hashedPassword,
         existingUserId: existingUser?.id || '',
-        offerCode: offerApplies ? String(offerCode) : '',
+        offerCode: offerApplies ? OFFER_CODE : '',
       },
       custom_text: { submit: { message: checkoutTerms(billing, offerApplies) } },
       success_url: `${config.frontendUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
@@ -856,16 +857,23 @@ export const createUpgradeSession = async (
     const stripe = getStripe();
     const prices = await ensurePlanPrices();
 
+    // Reactivating counts too, but only for an account that never had a term.
+    // Someone who subscribed before has already used their six months.
+    const offerApplies = offerAppliesTo(user);
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'subscription',
       allow_promotion_codes: true,
+      ...(offerApplies
+        ? { subscription_data: { trial_period_days: OFFER_TRIAL_DAYS } }
+        : {}),
       ...(user.stripeCustomerId
         ? { customer: user.stripeCustomerId }
         : { customer_email: user.email }),
       line_items: [{ price: prices[tier][billing], quantity: count }],
-      metadata: { upgrade: 'true', userId },
-      custom_text: { submit: { message: checkoutTerms(billing) } },
+      metadata: { upgrade: 'true', userId, offerCode: offerApplies ? OFFER_CODE : '' },
+      custom_text: { submit: { message: checkoutTerms(billing, offerApplies) } },
       success_url: `${config.frontendUrl}/nursery-dashboard/upgrade?session_id={CHECKOUT_SESSION_ID}&upgraded=true`,
       cancel_url: `${config.frontendUrl}/nursery-dashboard/upgrade?cancelled=true`,
     });

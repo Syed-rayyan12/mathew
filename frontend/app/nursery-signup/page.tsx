@@ -16,7 +16,7 @@ import { UK_TOWNS } from "@/lib/data/uk-towns";
 import { API_CONFIG } from "@/lib/api/config";
 import NurseryCountPicker from "@/components/sharedComponents/nursery-count-picker";
 import TermNotice from "@/components/shared/term-notice";
-import { OFFER_CODE, offerIsOpen } from "@/lib/offer";
+import { offerIsOpen } from "@/lib/offer";
 import {
   MIN_GROUP_SIZE,
   formatGbp,
@@ -39,10 +39,9 @@ function NurserySignupContent() {
   const searchParams = useSearchParams();
   const tierFromUrl: PlanTier = searchParams.get('plan') === 'platinum' ? 'platinum' : 'standard';
   const billingFromUrl = searchParams.get('billing') === 'annual' ? 'annual' : 'monthly';
-  const offerFromUrl = searchParams.get('offer') ?? '';
-  // Cosmetic only — the backend re-decides eligibility. This just stops the
-  // summary promising free months to someone who will be charged in full.
-  const offerApplies = offerFromUrl === OFFER_CODE && offerIsOpen();
+  // Cosmetic only — the backend re-decides eligibility, and additionally
+  // excludes accounts that have already had a term, which we cannot know here.
+  const offerApplies = offerIsOpen();
 
   // A count of 1 means a Single; anything higher is a Group. Missing or junk
   // falls back to a Single so nobody is silently upsold.
@@ -273,7 +272,6 @@ function NurserySignupContent() {
             plan: planKey,
             billingPeriod,
             nurseryCount: effectiveCount,
-            offerCode: offerFromUrl,
           }),
         });
 

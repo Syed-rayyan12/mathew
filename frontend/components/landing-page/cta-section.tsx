@@ -4,7 +4,7 @@ import React, { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { motion, useInView } from 'framer-motion';
 import Link from 'next/link';
-import { OFFER_CODE, offerIsOpen } from '@/lib/offer';
+import { offerIsOpen } from '@/lib/offer';
 import TermNotice from '@/components/shared/term-notice';
 
 const statsFor = (offerOpen: boolean) => [
@@ -45,7 +45,7 @@ const CTASection = () => {
                         : 'List your nursery and reach families searching in your area.'}
                     </p>
                     <Link
-                      href={offerOpen ? `/nursery-signup?offer=${OFFER_CODE}` : '/nursery-signup'}
+                      href="/nursery-signup"
                       className="bg-secondary hover:bg-secondary/80 text-white px-6 rounded-[6px] py-4"
                     >
                       {offerOpen ? "Sign Up & Get Started — It's Free!" : 'Sign Up & Get Started'}

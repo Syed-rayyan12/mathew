@@ -32,10 +32,9 @@ describe('term disclosure parity', () => {
   });
 
   it('promises free months only where the server granted the offer', () => {
-    // createUpgradeSession reactivates an existing account and never gets a
-    // trial, so it must call checkoutTerms with no offer flag. The signup path
-    // passes the server's own eligibility decision, never the claimed code.
-    expect(controller).toContain('checkoutTerms(billing, offerApplies)');
-    expect(controller).toContain('checkoutTerms(billing)');
+    // Both Checkout paths pass the server's own eligibility decision. Neither
+    // may hardcode the offer wording, and neither may call checkoutTerms with
+    // the billing period alone, which would silently mean "full price".
+    expect(controller.split('checkoutTerms(billing, offerApplies)').length - 1).toBe(2);
   });
 });

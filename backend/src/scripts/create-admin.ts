@@ -22,6 +22,7 @@
 
 import prisma from '../config/database';
 import { hashPassword } from '../utils';
+import { generateShortId } from '../utils/id-generator';
 
 /** Long enough that the fixed-credential era cannot repeat by accident. */
 const MIN_PASSWORD_LENGTH = 12;
@@ -59,10 +60,16 @@ async function main() {
     );
   }
 
+  // The id column is VarChar(15) but the schema's cuid() default emits ~25
+  // characters, so the default cannot be used — every caller supplies its own
+  // short id. Only generated on create; an upsert update must not move the id.
+  const id = existing ? undefined : await generateShortId('USR');
+
   const admin = await prisma.user.upsert({
     where: { email },
     update: { password: hashed, role: 'ADMIN', isActive: true, isVerified: true },
     create: {
+      id: id!,
       email,
       password: hashed,
       firstName: 'Site',

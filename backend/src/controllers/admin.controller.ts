@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../config/database';
-import { generateTokens, UnauthorizedError } from '../utils';
+import { generateTokens, UnauthorizedError, comparePassword } from '../utils';
 import { AuthRequest } from '../middleware';
 import { createNotification } from './notification.controller';
 import {
@@ -11,10 +11,18 @@ import {
   allowance,
 } from '../utils/entitlements';
 
-const ADMIN_EMAIL = 'admin@mathew.com';
-const ADMIN_PASSWORD = 'Admin@123456';
-
-// Temporary fixed-credential admin signin.
+/**
+ * Admin signin against a real User row.
+ *
+ * This used to compare two constants compiled into this file, which meant the
+ * production admin password sat in a public repository and could only be
+ * changed by deploying. The account is now an ordinary User with role ADMIN,
+ * created by src/scripts/create-admin.ts, so the existing change-password and
+ * change-email endpoints work on it.
+ *
+ * The token carries the real user id rather than the string 'admin', which is
+ * what makes those endpoints able to find the row at all.
+ */
 export const adminSignin = async (
   req: Request,
   res: Response,
@@ -23,13 +31,27 @@ export const adminSignin = async (
   try {
     const { email, password } = req.body;
 
-    if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
+    if (typeof email !== 'string' || typeof password !== 'string') {
+      throw new UnauthorizedError('Invalid email or password');
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: email.trim().toLowerCase() },
+    });
+
+    // One message for every failure — a distinct "no such admin" would let
+    // anyone enumerate which address holds the account.
+    if (!user || user.role !== 'ADMIN' || !user.isActive) {
+      throw new UnauthorizedError('Invalid email or password');
+    }
+
+    if (!(await comparePassword(password, user.password))) {
       throw new UnauthorizedError('Invalid email or password');
     }
 
     const tokens = generateTokens({
-      userId: 'admin',
-      email: ADMIN_EMAIL,
+      userId: user.id,
+      email: user.email,
       role: 'ADMIN',
     });
 
@@ -37,7 +59,7 @@ export const adminSignin = async (
       success: true,
       message: 'Admin login successful',
       data: {
-        email: ADMIN_EMAIL,
+        email: user.email,
         role: 'ADMIN',
         ...tokens,
       },

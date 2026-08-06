@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../config/database';
-import { hashPassword, comparePassword, generateTokens, verifyRefreshToken, ConflictError, UnauthorizedError, NotFoundError } from '../utils';
+import { hashPassword, comparePassword, generateTokens, verifyRefreshToken, ConflictError, UnauthorizedError, NotFoundError, BadRequestError } from '../utils';
 import { AuthRequest } from '../middleware';
 import { generateShortId } from '../utils/id-generator';
 import { createNotification } from './notification.controller';
@@ -258,6 +258,68 @@ export const changePassword = async (
     res.json({
       success: true,
       message: 'Password changed successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * PUT /api/auth/change-email
+ *
+ * Email is the login identity, which is why updateProfile deliberately does
+ * not touch it. Changing it requires the current password: an unattended
+ * session should not be able to move the account to an attacker's address and
+ * lock the owner out.
+ *
+ * There is no verification email — the backend has no mailer yet — so the
+ * change takes effect immediately. When recovery is built, this should send a
+ * confirmation to the OLD address so a silent takeover is visible.
+ */
+export const changeEmail = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { currentPassword, newEmail } = req.body;
+    const userId = req.user?.userId;
+
+    if (!userId) throw new UnauthorizedError('User not authenticated');
+
+    if (typeof newEmail !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail.trim())) {
+      throw new BadRequestError('Please provide a valid email address');
+    }
+    if (typeof currentPassword !== 'string' || !currentPassword) {
+      throw new BadRequestError('Your current password is required');
+    }
+
+    const email = newEmail.trim().toLowerCase();
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundError('User not found');
+
+    if (!(await comparePassword(currentPassword, user.password))) {
+      throw new UnauthorizedError('Current password is incorrect');
+    }
+
+    if (email === user.email) {
+      throw new BadRequestError('That is already your email address');
+    }
+
+    const taken = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+    if (taken) throw new BadRequestError('That email address is already in use');
+
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { email },
+      select: { id: true, email: true, role: true },
+    });
+
+    res.json({
+      success: true,
+      message: 'Email address updated. Use it next time you sign in.',
+      data: updated,
     });
   } catch (error) {
     next(error);

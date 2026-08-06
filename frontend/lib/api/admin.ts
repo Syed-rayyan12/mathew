@@ -251,6 +251,25 @@ export const adminService = {
     }>('/admin/signin', { email, password });
   },
 
+  // Both of these live on the shared auth routes rather than /admin, because
+  // the admin is now an ordinary User row and uses the same endpoints as
+  // everyone else. Each requires the current password.
+  changePassword: async (currentPassword: string, newPassword: string) => {
+    return adminApiClient.put<null>(
+      '/auth/change-password',
+      { currentPassword, newPassword },
+      true
+    );
+  },
+
+  changeEmail: async (currentPassword: string, newEmail: string) => {
+    return adminApiClient.put<{ id: string; email: string; role: string }>(
+      '/auth/change-email',
+      { currentPassword, newEmail },
+      true
+    );
+  },
+
   // Get dashboard stats
   getStats: async () => {
     return adminApiClient.get<{ success: boolean; data: AdminStats }>(

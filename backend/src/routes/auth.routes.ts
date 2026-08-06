@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { signup, signin, updateProfile, changePassword, nurserySignup, nurserySignin, refresh, logout, deleteAccount } from '../controllers/auth.controller';
+import { signup, signin, updateProfile, changePassword, changeEmail, nurserySignup, nurserySignin, refresh, logout, deleteAccount } from '../controllers/auth.controller';
 import { authenticate, authRateLimiter, refreshRateLimiter } from '../middleware';
 
 const router = Router();
@@ -19,6 +19,8 @@ router.post('/refresh', refreshRateLimiter, refresh);
 router.post('/logout', authenticate, logout);
 router.put('/profile', authenticate, updateProfile);
 router.put('/change-password', authenticate, changePassword);
+// Email is the login identity, so this asks for the current password too.
+router.put('/change-email', authenticate, changeEmail);
 router.delete('/delete-account', authenticate, deleteAccount);
 
 export default router;

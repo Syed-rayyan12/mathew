@@ -25,6 +25,7 @@ const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
       { name: 'Content & Article', href: '/admin-dashboard/content-article' },
       { name: 'Job Management', href: '/admin-dashboard/job-management' },
       { name: 'Applicants', href: '/admin-dashboard/applicant-management' },
+      { name: 'Account Settings', href: '/admin-dashboard/settings' },
 
   ];
     const pathname = usePathname()
